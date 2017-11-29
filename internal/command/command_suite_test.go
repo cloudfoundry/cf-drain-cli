@@ -1,7 +1,6 @@
 package command_test
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -23,18 +22,19 @@ type stubCliConnection struct {
 	getAppName  string
 	getAppError error
 
-	getServiceName  string
-	getServiceError error
+	getServicesName  string
+	getServicesError error
+	getServicesApps  []string
 
 	cliCommandArgs     [][]string
 	createServiceError error
 	bindServiceError   error
+	unbindServiceError error
+	deleteServiceError error
 }
 
 func newStubCliConnection() *stubCliConnection {
-	return &stubCliConnection{
-		getServiceError: errors.New("no-such-service"),
-	}
+	return &stubCliConnection{}
 }
 
 func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, error) {
@@ -42,9 +42,23 @@ func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, erro
 	return plugin_models.GetAppModel{}, s.getAppError
 }
 
-func (s *stubCliConnection) GetService(name string) (plugin_models.GetService_Model, error) {
-	s.getServiceName = name
-	return plugin_models.GetService_Model{}, s.getServiceError
+func (s *stubCliConnection) GetServices() ([]plugin_models.GetServices_Model, error) {
+	resp := []plugin_models.GetServices_Model{
+		{
+			Name:             "garbage-1",
+			ApplicationNames: []string{"garbage-app-1", "garbage-app-2"},
+		},
+		{
+			Name:             s.getServicesName,
+			ApplicationNames: s.getServicesApps,
+		},
+		{
+			Name:             "garbage-3",
+			ApplicationNames: []string{"garbage-app-3", "garbage-app-4"},
+		},
+	}
+
+	return resp, s.getServicesError
 }
 
 func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
@@ -54,6 +68,10 @@ func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 		err = s.createServiceError
 	case "bind-service":
 		err = s.bindServiceError
+	case "unbind-service":
+		err = s.unbindServiceError
+	case "delete-service":
+		err = s.deleteServiceError
 	}
 
 	s.cliCommandArgs = append(s.cliCommandArgs, args)

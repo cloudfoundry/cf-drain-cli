@@ -19,7 +19,7 @@ func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
 	case "create-drain":
 		command.CreateDrain(conn, args[1:], log.New(os.Stdout, "", 0))
 	case "delete-drain":
-		command.DeleteDrain(conn, args[1:])
+		command.DeleteDrain(conn, args[1:], log.New(os.Stdout, "", 0))
 	}
 }
 

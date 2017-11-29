@@ -4,9 +4,16 @@ CF Syslog CLI Plugin
 The CF Syslog CLI Plugin is a [CF CLI](cf-cli) plugin to simply for creating
 and binding to syslog user provided services
 
-## Usage
+### Installing Plugin
 
-### Create Drain
+```
+go get code.cloudfoundry.org/cf-syslog-cli
+cf install-plugin $GOPATH/bin/cf-syslog-cli
+```
+
+### Usage
+
+#### Create Drain
 ```
 $ cf create-drain --help
 NAME:
@@ -20,7 +27,7 @@ OPTIONS:
    -type       The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`
 ```
 
-### Delete Drain
+#### Delete Drain
 ```
 $ cf delete-drain --help
 NAME:

@@ -14,7 +14,7 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger) {
 
 	services, err := cli.GetServices()
 	if err != nil {
-		log.Fatalf("Unable to get services.")
+		log.Fatalf("%s", err)
 	}
 
 	var namedService *plugin_models.GetServices_Model
@@ -33,13 +33,13 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger) {
 		command := []string{"unbind-service", app, serviceName}
 		_, err := cli.CliCommand(command...)
 		if err != nil {
-			log.Fatalf("Failed to unbind service %s from %s.", serviceName, app)
+			log.Fatalf("%s", err)
 		}
 	}
 
 	command := []string{"delete-service", serviceName}
 	_, err = cli.CliCommand(command...)
 	if err != nil {
-		log.Fatalf("Failed to delete service %s.", serviceName)
+		log.Fatalf("%s", err)
 	}
 }

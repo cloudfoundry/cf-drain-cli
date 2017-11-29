@@ -59,14 +59,14 @@ var _ = Describe("DeleteDrain", func() {
 		Expect(logger.fatalfMessage).To(Equal("Unable to find service not-a-service."))
 	})
 
-	It("fatally logs when getting the service fails", func() {
-		cli.getServicesError = errors.New("not a service")
+	It("fatally logs when getting the services fails", func() {
+		cli.getServicesError = errors.New("no get services")
 
 		Expect(func() {
 			command.DeleteDrain(cli, []string{"my-drain"}, logger)
 		}).To(Panic())
 
-		Expect(logger.fatalfMessage).To(Equal("Unable to get services."))
+		Expect(logger.fatalfMessage).To(Equal("no get services"))
 	})
 
 	It("fatally logs when unbinding a service fails", func() {
@@ -76,7 +76,7 @@ var _ = Describe("DeleteDrain", func() {
 			command.DeleteDrain(cli, []string{"my-drain"}, logger)
 		}).To(Panic())
 
-		Expect(logger.fatalfMessage).To(Equal("Failed to unbind service my-drain from app-1."))
+		Expect(logger.fatalfMessage).To(Equal("unbind failed"))
 	})
 
 	It("fatally logs when deleting the service fails", func() {
@@ -86,6 +86,6 @@ var _ = Describe("DeleteDrain", func() {
 			command.DeleteDrain(cli, []string{"my-drain"}, logger)
 		}).To(Panic())
 
-		Expect(logger.fatalfMessage).To(Equal("Failed to delete service my-drain."))
+		Expect(logger.fatalfMessage).To(Equal("delete failed"))
 	})
 })

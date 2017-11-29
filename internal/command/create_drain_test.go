@@ -115,7 +115,7 @@ var _ = Describe("CreateDrain", func() {
 			command.CreateDrain(cli, []string{"not-an-app", "my-drain", "syslog://a.com"}, logger)
 		}).To(Panic())
 
-		Expect(logger.fatalfMessage).To(Equal("Invalid app name: not-an-app"))
+		Expect(logger.fatalfMessage).To(Equal("not an app"))
 		Expect(cli.getAppName).To(Equal("not-an-app"))
 	})
 
@@ -126,7 +126,7 @@ var _ = Describe("CreateDrain", func() {
 			command.CreateDrain(cli, []string{"app-name", "my-drain", "syslog://a.com"}, logger)
 		}).To(Panic())
 
-		Expect(logger.fatalfMessage).To(Equal("Failed to create service binding: my-drain"))
+		Expect(logger.fatalfMessage).To(Equal("failed to create"))
 	})
 
 	It("fatally logs when binding the service fails", func() {
@@ -136,6 +136,6 @@ var _ = Describe("CreateDrain", func() {
 			command.CreateDrain(cli, []string{"app-name", "my-drain", "syslog://a.com"}, logger)
 		}).To(Panic())
 
-		Expect(logger.fatalfMessage).To(Equal("Failed to bind app-name to my-drain."))
+		Expect(logger.fatalfMessage).To(Equal("failed to bind"))
 	})
 })

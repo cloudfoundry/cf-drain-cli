@@ -30,7 +30,7 @@ func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
 
 	_, err = cli.GetApp(appName)
 	if err != nil {
-		log.Fatalf("Invalid app name: %s", appName)
+		log.Fatalf("%s", err)
 	}
 
 	u, err := url.Parse(drainURL)
@@ -51,13 +51,13 @@ func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
 	command := []string{"create-user-provided-service", serviceName, "-l", u.String()}
 	_, err = cli.CliCommand(command...)
 	if err != nil {
-		log.Fatalf("Failed to create service binding: %s", serviceName)
+		log.Fatalf("%s", err)
 	}
 
 	command = []string{"bind-service", appName, serviceName}
 	_, err = cli.CliCommand(command...)
 	if err != nil {
-		log.Fatalf("Failed to bind %s to %s.", appName, serviceName)
+		log.Fatalf("%s", err)
 	}
 }
 

@@ -28,7 +28,8 @@ func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
 		Name: "CF Syslog CLI Plugin",
 		Commands: []plugin.Command{
 			{
-				Name: "create-drain",
+				Name:     "create-drain",
+				HelpText: "Creates a user provided service for syslog drains and binds it to a given application.",
 				UsageDetails: plugin.Usage{
 					Usage: "create-drain [options] <app-name> <drain-name> <syslog-drain-url>",
 					Options: map[string]string{
@@ -37,7 +38,8 @@ func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
 				},
 			},
 			{
-				Name: "delete-drain",
+				Name:     "delete-drain",
+				HelpText: "Unbinds the service from applications and deletes the service.",
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain <drain-name>",
 				},

@@ -20,6 +20,8 @@ func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
 		command.CreateDrain(conn, args[1:], log.New(os.Stdout, "", 0))
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], log.New(os.Stdout, "", 0))
+	case "bind-drain":
+		command.BindDrain(conn, args[1:], log.New(os.Stdout, "", 0))
 	}
 }
 
@@ -35,6 +37,13 @@ func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
 					Options: map[string]string{
 						"type": "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
 					},
+				},
+			},
+			{
+				Name:     "bind-drain",
+				HelpText: "Binds an application to an existing syslog drain.",
+				UsageDetails: plugin.Usage{
+					Usage: "bind-drain <app-name> <drain-name>",
 				},
 			},
 			{

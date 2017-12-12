@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"code.cloudfoundry.org/cf-syslog-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-syslog-cli/internal/command"
 	"code.cloudfoundry.org/cli/plugin"
 )
@@ -22,6 +23,9 @@ func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
 		command.DeleteDrain(conn, args[1:], log.New(os.Stdout, "", 0))
 	case "bind-drain":
 		command.BindDrain(conn, args[1:], log.New(os.Stdout, "", 0))
+	case "drains":
+		ccClient := cloudcontroller.NewCurlClient(conn)
+		command.Drains(conn, ccClient, nil, log.New(os.Stdout, "", 0))
 	}
 }
 
@@ -29,6 +33,13 @@ func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name: "CF Syslog CLI Plugin",
 		Commands: []plugin.Command{
+			{
+				Name:     "drains",
+				HelpText: "Lists all services for syslog drains.",
+				UsageDetails: plugin.Usage{
+					Usage: "drains",
+				},
+			},
 			{
 				Name:     "create-drain",
 				HelpText: "Creates a user provided service for syslog drains and binds it to a given application.",

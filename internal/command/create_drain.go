@@ -9,6 +9,7 @@ import (
 
 // Logger is used for outputting log-cache results and errors
 type Logger interface {
+	Printf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 }
 

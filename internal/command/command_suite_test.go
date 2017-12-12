@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -26,20 +27,37 @@ type stubCliConnection struct {
 	getServicesError error
 	getServicesApps  []string
 
+	cliCommandWithoutTerminalOutputArgs     [][]string
+	cliCommandWithoutTerminalOutputError    error
+	cliCommandWithoutTerminalOutputResponse map[string]string
+
 	cliCommandArgs     [][]string
 	createServiceError error
 	bindServiceError   error
 	unbindServiceError error
 	deleteServiceError error
+
+	currentSpaceGuid  string
+	currentSpaceError error
 }
 
 func newStubCliConnection() *stubCliConnection {
-	return &stubCliConnection{}
+	return &stubCliConnection{
+		cliCommandWithoutTerminalOutputResponse: make(map[string]string),
+	}
 }
 
 func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, error) {
 	s.getAppName = name
 	return plugin_models.GetAppModel{}, s.getAppError
+}
+
+func (s *stubCliConnection) GetCurrentSpace() (plugin_models.Space, error) {
+	return plugin_models.Space{
+		plugin_models.SpaceFields{
+			Guid: s.currentSpaceGuid,
+		},
+	}, s.currentSpaceError
 }
 
 func (s *stubCliConnection) GetServices() ([]plugin_models.GetServices_Model, error) {
@@ -61,6 +79,20 @@ func (s *stubCliConnection) GetServices() ([]plugin_models.GetServices_Model, er
 	return resp, s.getServicesError
 }
 
+func (s *stubCliConnection) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {
+	s.cliCommandWithoutTerminalOutputArgs = append(
+		s.cliCommandWithoutTerminalOutputArgs,
+		args,
+	)
+
+	output, ok := s.cliCommandWithoutTerminalOutputResponse[strings.Join(args, " ")]
+	if !ok {
+		output = "{}"
+	}
+
+	return strings.Split(output, "\n"), s.cliCommandWithoutTerminalOutputError
+}
+
 func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 	var err error
 	switch args[0] {
@@ -79,10 +111,33 @@ func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 }
 
 type stubLogger struct {
-	fatalfMessage string
+	fatalfMessage  string
+	printfMessages []string
+}
+
+func (l *stubLogger) Printf(format string, args ...interface{}) {
+	l.printfMessages = append(l.printfMessages, fmt.Sprintf(format, args...))
 }
 
 func (l *stubLogger) Fatalf(format string, args ...interface{}) {
 	l.fatalfMessage = fmt.Sprintf(format, args...)
 	panic(l.fatalfMessage)
+}
+
+type stubCloudControllerClient struct {
+	URLs     []string
+	resps    map[string]string
+	respErrs map[string]error
+}
+
+func newStubCloudControllerClient() *stubCloudControllerClient {
+	return &stubCloudControllerClient{
+		resps:    make(map[string]string),
+		respErrs: make(map[string]error),
+	}
+}
+
+func (c *stubCloudControllerClient) Curl(URL string) ([]byte, error) {
+	c.URLs = append(c.URLs, URL)
+	return []byte(c.resps[URL]), c.respErrs[URL]
 }

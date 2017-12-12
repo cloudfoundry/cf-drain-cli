@@ -24,8 +24,9 @@ func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
 	case "bind-drain":
 		command.BindDrain(conn, args[1:], log.New(os.Stdout, "", 0))
 	case "drains":
-		ccClient := cloudcontroller.NewCurlClient(conn)
-		command.Drains(conn, ccClient, nil, log.New(os.Stdout, "", 0))
+		ccCurler := cloudcontroller.NewCurlClient(conn)
+		dClient := cloudcontroller.NewDrainsClient(ccCurler)
+		command.Drains(conn, dClient, nil, log.New(os.Stdout, "", 0))
 	}
 }
 

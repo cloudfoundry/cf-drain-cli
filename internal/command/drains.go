@@ -1,20 +1,19 @@
 package command
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
+	"code.cloudfoundry.org/cf-syslog-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cli/plugin"
 )
 
-type CloudControllerClient interface {
-	Curl(URL string) ([]byte, error)
+type DrainFetcher interface {
+	Drains(spaceGuid string) ([]cloudcontroller.Drain, error)
 }
 
 func Drains(
 	cli plugin.CliConnection,
-	ccClient CloudControllerClient,
+	fetcher DrainFetcher,
 	args []string,
 	log Logger) {
 	if len(args) != 0 {
@@ -25,41 +24,20 @@ func Drains(
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
-
-	resp, err := ccClient.Curl(
-		fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", space.Guid),
-	)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	var ups UserProvidedServiceInstancesResponse
-	err = json.Unmarshal(resp, &ups)
-	if err != nil {
-		log.Fatalf("Failed to parse response body: %s", err)
-	}
+	_ = space
 
 	// Header
 	log.Printf("name\tbound apps")
 
-	for _, u := range ups.Resources {
-		resp, _ = ccClient.Curl(
-			u.Entity.ServiceBindingsURL,
-		)
-		var serviceBindings ServiceBindingsResponse
-		_ = json.Unmarshal(resp, &serviceBindings)
-
-		appGuids := []string{}
-		for _, sb := range serviceBindings.Resources {
-			appGuids = append(
-				appGuids,
-				sb.Entity.AppGuid,
-			)
-		}
-		tabularServices := []string{u.Entity.Name, strings.Join(appGuids, ", ")}
-		log.Printf(strings.Join(tabularServices, "\t"))
+	drains, err := fetcher.Drains(space.Guid)
+	if err != nil {
+		log.Fatalf("Failed to fetch drains: %s", err)
 	}
 
+	for _, d := range drains {
+		drain := []string{d.Name, strings.Join(d.Apps, ", ")}
+		log.Printf(strings.Join(drain, "\t"))
+	}
 }
 
 // curl /v2/user_provided_service_instances filtered by space guid

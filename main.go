@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 
@@ -30,9 +31,20 @@ func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
 	}
 }
 
+// version is set via ldflags at compile time. It should be JSON encoded
+// plugin.VersionType. If it does not unmarshal, the plugin version will be
+// left empty.
+var version string
+
 func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
+	var v plugin.VersionType
+	// Ignore the error. If this doesn't unmarshal, then we want the default
+	// VersionType.
+	_ = json.Unmarshal([]byte(version), &v)
+
 	return plugin.PluginMetadata{
-		Name: "CF Syslog CLI Plugin",
+		Name:    "CF Syslog CLI Plugin",
+		Version: v,
 		Commands: []plugin.Command{
 			{
 				Name:     "drains",

@@ -27,25 +27,21 @@ var _ = Describe("DrainsClient", func() {
 		curler.resps[key] = serviceBindingsJSON1
 		key = "/v2/user_provided_service_instances/drain-2/service_bindings"
 		curler.resps[key] = serviceBindingsJSON2
+		key = "/v3/apps?guids=app-1,app-2,app-1"
+		curler.resps[key] = appJSON
 
 		d, err := c.Drains("space-guid")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(d).To(HaveLen(2))
 
 		Expect(d[0].Name).To(Equal("drain-1"))
-		Expect(d[0].Apps).To(Equal([]string{"app-1", "app-2"}))
+		Expect(d[0].Apps).To(Equal([]string{"My App One", "My App Two"}))
 		Expect(d[0].Type).To(Equal("logs"))
 
 		Expect(d[1].Name).To(Equal("drain-2"))
-		Expect(d[1].Apps).To(Equal([]string{"app-1"}))
+		Expect(d[0].Apps).To(Equal([]string{"My App One", "My App Two"}))
 		Expect(d[1].Type).To(Equal("metrics"))
 	})
-
-	// 	PIt("reads service instances from multiple pages", func() {
-	// 	})
-
-	// 	PIt("reads service bindings from multiple pages", func() {
-	// 	})
 
 	// TODO how to test this more clearly (rather than appending to services
 	//      below in JSON)
@@ -88,31 +84,34 @@ var _ = Describe("DrainsClient", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
-	Context("TypeFromDrainURL", func() {
-		It("returns default type logs if no query parameters", func() {
-			drainType, _ := c.TypeFromDrainURL("https://papertrail.com")
-			Expect(drainType).To(Equal("logs"))
-		})
+	It("returns the error if requesting the apps fails", func() {
+		key := "/v2/user_provided_service_instances?q=space_guid:space-guid"
+		curler.resps[key] = userProvidedServiceInstancesJSON
+		key = "/v2/user_provided_service_instances/drain-1/service_bindings"
+		curler.resps[key] = serviceBindingsJSON1
+		key = "/v2/user_provided_service_instances/drain-2/service_bindings"
+		curler.resps[key] = serviceBindingsJSON2
 
-		It("returns logs type if drain-type query parameter is logs", func() {
-			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=logs")
-			Expect(drainType).To(Equal("logs"))
-		})
+		key = "/v3/apps?guids=app-1,app-2,app-1"
+		curler.errs[key] = errors.New("some error")
 
-		It("returns metrics type if drain-type query parameter is metrics", func() {
-			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=metrics")
-			Expect(drainType).To(Equal("metrics"))
-		})
+		_, err := c.Drains("space-guid")
+		Expect(err).To(MatchError("some error"))
+	})
 
-		It("returns all type if drain-type query parameter is all", func() {
-			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=all")
-			Expect(drainType).To(Equal("all"))
-		})
+	It("returns the error if unmarshalling the apps fails", func() {
+		key := "/v2/user_provided_service_instances?q=space_guid:space-guid"
+		curler.resps[key] = userProvidedServiceInstancesJSON
+		key = "/v2/user_provided_service_instances/drain-1/service_bindings"
+		curler.resps[key] = serviceBindingsJSON1
+		key = "/v2/user_provided_service_instances/drain-2/service_bindings"
+		curler.resps[key] = serviceBindingsJSON2
 
-		It("returns default type if url is invalid", func() {
-			drainType, _ := c.TypeFromDrainURL("!!!so invalid")
-			Expect(drainType).To(Equal("logs"))
-		})
+		key = "/v3/apps?guids=app-1,app-2,app-1"
+		curler.resps[key] = "not a json"
+
+		_, err := c.Drains("space-guid")
+		Expect(err).To(HaveOccurred())
 	})
 
 	Context("Paging", func() {
@@ -158,6 +157,9 @@ var _ = Describe("DrainsClient", func() {
 			curler.resps[key] = serviceBindingsJSON1
 			key = "/v2/user_provided_service_instances/drain-2/service_bindings"
 			curler.resps[key] = serviceBindingsJSON2
+
+			key = "/v3/apps?guids=app-1,app-2,app-1"
+			curler.resps[key] = appJSON
 
 			d, err := c.Drains("space-guid")
 			Expect(err).ToNot(HaveOccurred())
@@ -209,11 +211,87 @@ var _ = Describe("DrainsClient", func() {
 			curler.resps[key] = pageTwo
 			key = "/v2/user_provided_service_instances/drain-2/service_bindings"
 			curler.resps[key] = serviceBindingsJSON2
+			key = "/v3/apps?guids=app-1,app-2,app-1"
+			curler.resps[key] = appJSON
 
 			drains, err := c.Drains("space-guid")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(drains).ToNot(BeNil())
-			Expect(drains[0].Apps).To(Equal([]string{"app-1", "app-2"}))
+			Expect(drains[0].Apps).To(Equal([]string{"My App One", "My App Two"}))
+		})
+		It("returns all app names", func() {
+			pageOne := `{
+   "pagination": {
+      "total_results": 2,
+      "total_pages": 2,
+      "next": "/v3/apps/?guids=app-1&page=2",
+      "previous": null
+   },
+   "resources": [
+      {
+         "guid": "app-1",
+         "name": "My App One"
+      }
+   ]
+}`
+			pageTwo :=
+				`{
+   "pagination": {
+      "total_results": 2,
+      "total_pages": 2,
+      "next": null,
+      "previous": "/v3/apps/?guids=app-1&page=1"
+   },
+   "resources": [
+      {
+         "guid": "app-2",
+         "name": "My App Two"
+      }
+   ]
+}`
+			key := "/v2/user_provided_service_instances?q=space_guid:space-guid"
+			curler.resps[key] = userProvidedServiceInstancesJSON
+
+			key = "/v2/user_provided_service_instances/drain-1/service_bindings"
+			curler.resps[key] = serviceBindingsJSON1
+			key = "/v2/user_provided_service_instances/drain-2/service_bindings"
+			curler.resps[key] = serviceBindingsJSON2
+
+			key = "/v3/apps?guids=app-1,app-2,app-1"
+			curler.resps[key] = pageOne
+			key = "/v3/apps/?guids=app-1&page=2"
+			curler.resps[key] = pageTwo
+
+			d, err := c.Drains("space-guid")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(d[0].Apps).To(Equal([]string{"My App One", "My App Two"}))
+		})
+	})
+
+	Describe("TypeFromDrainURL", func() {
+		It("returns default type logs if no query parameters", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com")
+			Expect(drainType).To(Equal("logs"))
+		})
+
+		It("returns logs type if drain-type query parameter is logs", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=logs")
+			Expect(drainType).To(Equal("logs"))
+		})
+
+		It("returns metrics type if drain-type query parameter is metrics", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=metrics")
+			Expect(drainType).To(Equal("metrics"))
+		})
+
+		It("returns all type if drain-type query parameter is all", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=all")
+			Expect(drainType).To(Equal("all"))
+		})
+
+		It("returns default type if url is invalid", func() {
+			drainType, _ := c.TypeFromDrainURL("!!!so invalid")
+			Expect(drainType).To(Equal("logs"))
 		})
 	})
 })
@@ -307,6 +385,25 @@ var serviceBindingsJSON2 = `{
             "name": null,
             "app_url": "/v2/apps/app-1"
          }
+      }
+   ]
+}`
+
+var appJSON = `{
+   "pagination": {
+      "total_results": 2,
+      "total_pages": 1,
+      "next": null,
+      "previous": null
+   },
+   "resources": [
+      {
+         "guid": "app-1",
+         "name": "My App One"
+      },
+      {
+         "guid": "app-2",
+         "name": "My App Two"
       }
    ]
 }`

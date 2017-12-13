@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 type DrainsClient struct {
@@ -34,6 +35,7 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 		return nil, err
 	}
 
+	var appGuids []string
 	var drains []Drain
 	for _, s := range instances {
 		if s.Entity.SyslogDrainURL == "" {
@@ -44,6 +46,7 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 		if err != nil {
 			return nil, err
 		}
+		appGuids = append(appGuids, apps...)
 
 		drainType, err := c.TypeFromDrainURL(s.Entity.SyslogDrainURL)
 		if err != nil {
@@ -58,7 +61,22 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 		drains = append(drains, drain)
 	}
 
-	return drains, nil
+	appNames, err := c.fetchAppNames(appGuids)
+	if err != nil {
+		return nil, err
+	}
+
+	var namedDrains []Drain
+	for _, d := range drains {
+		var names []string
+		for _, guid := range d.Apps {
+			names = append(names, appNames[guid])
+		}
+		d.Apps = names
+		namedDrains = append(namedDrains, d)
+	}
+
+	return namedDrains, nil
 }
 
 func (c *DrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
@@ -101,6 +119,32 @@ func (c *DrainsClient) fetchApps(url string) ([]string, error) {
 		}
 
 		url = serviceBindingsResponse.NextURL
+	}
+
+	return apps, nil
+}
+
+func (c *DrainsClient) fetchAppNames(guids []string) (map[string]string, error) {
+	allGuids := strings.Join(guids, ",")
+	apps := make(map[string]string)
+
+	url := fmt.Sprintf("/v3/apps?guids=%s", allGuids)
+	for url != "" {
+		resp, err := c.c.Curl(url)
+		if err != nil {
+			return nil, err
+		}
+
+		var appsResp appsResponse
+		err = json.Unmarshal(resp, &appsResp)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, a := range appsResp.Apps {
+			apps[a.Guid] = a.Name
+		}
+		url = appsResp.Pagination.Next
 	}
 
 	return apps, nil
@@ -151,4 +195,16 @@ type serviceBinding struct {
 		AppGuid string `json:"app_guid"`
 		AppUrl  string `json:"app_url"`
 	} `json:"entity"`
+}
+
+type appsResponse struct {
+	Apps       []appData `json:"resources"`
+	Pagination struct {
+		Next string `json:"next"`
+	} `json:pagination`
+}
+
+type appData struct {
+	Name string `json:"name"`
+	Guid string `json:"guid"`
 }

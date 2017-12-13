@@ -30,7 +30,7 @@ var _ = Describe("Drains", func() {
 		command.Drains(cli, drainFetcher, []string{}, logger)
 
 		Expect(logger.printfMessages).To(HaveLen(1))
-		Expect(logger.printfMessages[0]).To(MatchRegexp(`\Aname\s+bound apps`))
+		Expect(logger.printfMessages[0]).To(MatchRegexp(`\Aname\s+bound apps\s+type`))
 	})
 
 	It("writes the drain name in the first column", func() {
@@ -59,8 +59,18 @@ var _ = Describe("Drains", func() {
 		Expect(logger.printfMessages[2]).To(MatchRegexp(`\Adrain-2\s+app-1`))
 	})
 
-	// 	PIt("writes the drain type in the third column", func() {
-	// 	})
+	It("writes the drain type in the third column", func() {
+		drainFetcher.drains = []cloudcontroller.Drain{
+			{Name: "drain-1", Apps: []string{"app-1", "app-2"}, Type: "metrics"},
+			{Name: "drain-2", Apps: []string{"app-1"}, Type: "logs"},
+		}
+		command.Drains(cli, drainFetcher, []string{}, logger)
+
+		// Header + 2 drains
+		Expect(logger.printfMessages).To(HaveLen(3))
+		Expect(logger.printfMessages[1]).To(MatchRegexp(`\Adrain-1\s+app-1,\s+app-2\s+metrics`))
+		Expect(logger.printfMessages[2]).To(MatchRegexp(`\Adrain-2\s+app-1\s+logs`))
+	})
 
 	It("fatally logs when failing to get current space", func() {
 		cli.currentSpaceError = errors.New("no space error")

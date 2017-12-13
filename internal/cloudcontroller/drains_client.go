@@ -44,13 +44,13 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 		if err != nil {
 			return nil, err
 		}
-		drainName := s.Entity.Name
+
 		drainType, err := c.TypeFromDrainURL(s.Entity.SyslogDrainURL)
 		if err != nil {
 			return nil, err
 		}
 
-		drain, err := c.buildDrain(apps, drainName, drainType)
+		drain, err := c.buildDrain(apps, s.Entity.Name, drainType)
 		if err != nil {
 			return nil, err
 		}
@@ -64,20 +64,20 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 func (c *DrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
 	instances := []userProvidedServiceInstance{}
 	for url != "" {
-		resp, err := c.c.Curl(
-			url,
-		)
+		resp, err := c.c.Curl(url)
 		if err != nil {
 			return nil, err
 		}
 
 		var services userProvidedServiceInstancesResponse
-		if err := json.Unmarshal(resp, &services); err != nil {
+		err = json.Unmarshal(resp, &services)
+		if err != nil {
 			return nil, err
 		}
 
-		url = services.NextURL
 		instances = append(instances, services.Resources...)
+
+		url = services.NextURL
 	}
 	return instances, nil
 }
@@ -99,6 +99,7 @@ func (c *DrainsClient) fetchApps(url string) ([]string, error) {
 		for _, r := range serviceBindingsResponse.Resources {
 			apps = append(apps, r.Entity.AppGuid)
 		}
+
 		url = serviceBindingsResponse.NextURL
 	}
 
@@ -110,6 +111,7 @@ func (c *DrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	drainTypes := uri.Query()["drain-type"]
 	if len(drainTypes) == 0 {
 		return "logs", nil

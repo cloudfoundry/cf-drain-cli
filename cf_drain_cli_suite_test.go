@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCfSyslogCli(t *testing.T) {
+func TestCfDrainCli(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "CfSyslogCli Suite")
+	RunSpecs(t, "CfDrainCli Suite")
 }

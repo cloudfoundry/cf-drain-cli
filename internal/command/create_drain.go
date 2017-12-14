@@ -14,7 +14,7 @@ type Logger interface {
 }
 
 func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
-	f := flag.NewFlagSet("cf-syslog-drain", flag.ContinueOnError)
+	f := flag.NewFlagSet("", flag.ContinueOnError)
 	drainType := f.String("type", "", "")
 	err := f.Parse(args)
 	if err != nil {

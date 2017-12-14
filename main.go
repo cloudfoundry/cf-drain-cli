@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"code.cloudfoundry.org/cf-syslog-cli/internal/cloudcontroller"
-	"code.cloudfoundry.org/cf-syslog-cli/internal/command"
+	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/command"
 	"code.cloudfoundry.org/cli/plugin"
 )
 

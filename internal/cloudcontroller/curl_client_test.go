@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"code.cloudfoundry.org/cf-syslog-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cli/plugin"
 
 	. "github.com/onsi/ginkgo"

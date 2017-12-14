@@ -3,7 +3,7 @@ package command_test
 import (
 	"errors"
 
-	"code.cloudfoundry.org/cf-syslog-cli/internal/command"
+	"code.cloudfoundry.org/cf-drain-cli/internal/command"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

@@ -3,7 +3,7 @@ package cloudcontroller_test
 import (
 	"errors"
 
-	"code.cloudfoundry.org/cf-syslog-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

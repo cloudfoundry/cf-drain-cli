@@ -125,6 +125,10 @@ func (c *DrainsClient) fetchApps(url string) ([]string, error) {
 }
 
 func (c *DrainsClient) fetchAppNames(guids []string) (map[string]string, error) {
+	if len(guids) == 0 {
+		return nil, nil
+	}
+
 	allGuids := strings.Join(guids, ",")
 	apps := make(map[string]string)
 

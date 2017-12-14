@@ -10,9 +10,9 @@ import (
 	"code.cloudfoundry.org/cli/plugin"
 )
 
-type CFSyslogCLI struct{}
+type CFDrainCLI struct{}
 
-func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
+func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	if len(args) == 0 {
 		log.Fatalf("Expected atleast 1 argument, but got 0.")
 	}
@@ -36,14 +36,14 @@ func (c CFSyslogCLI) Run(conn plugin.CliConnection, args []string) {
 // left empty.
 var version string
 
-func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
+func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 	var v plugin.VersionType
 	// Ignore the error. If this doesn't unmarshal, then we want the default
 	// VersionType.
 	_ = json.Unmarshal([]byte(version), &v)
 
 	return plugin.PluginMetadata{
-		Name:    "CF Syslog CLI Plugin",
+		Name:    "CF Drain CLI Plugin",
 		Version: v,
 		Commands: []plugin.Command{
 			{
@@ -82,5 +82,5 @@ func (c CFSyslogCLI) GetMetadata() plugin.PluginMetadata {
 }
 
 func main() {
-	plugin.Start(CFSyslogCLI{})
+	plugin.Start(CFDrainCLI{})
 }

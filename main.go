@@ -43,7 +43,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 	_ = json.Unmarshal([]byte(version), &v)
 
 	return plugin.PluginMetadata{
-		Name:    "CF Drain CLI Plugin",
+		Name:    "drains",
 		Version: v,
 		Commands: []plugin.Command{
 			{

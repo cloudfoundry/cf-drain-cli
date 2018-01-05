@@ -123,21 +123,3 @@ func (l *stubLogger) Fatalf(format string, args ...interface{}) {
 	l.fatalfMessage = fmt.Sprintf(format, args...)
 	panic(l.fatalfMessage)
 }
-
-type stubCloudControllerClient struct {
-	URLs     []string
-	resps    map[string]string
-	respErrs map[string]error
-}
-
-func newStubCloudControllerClient() *stubCloudControllerClient {
-	return &stubCloudControllerClient{
-		resps:    make(map[string]string),
-		respErrs: make(map[string]error),
-	}
-}
-
-func (c *stubCloudControllerClient) Curl(URL string) ([]byte, error) {
-	c.URLs = append(c.URLs, URL)
-	return []byte(c.resps[URL]), c.respErrs[URL]
-}

@@ -15,7 +15,8 @@ func Drains(
 	cli plugin.CliConnection,
 	fetcher DrainFetcher,
 	args []string,
-	log Logger) {
+	log Logger,
+) {
 	if len(args) != 0 {
 		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
 	}

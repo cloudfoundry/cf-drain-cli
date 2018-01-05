@@ -14,14 +14,12 @@ var _ = Describe("Drains", func() {
 	var (
 		logger       *stubLogger
 		cli          *stubCliConnection
-		ccClient     *stubCloudControllerClient
 		drainFetcher *stubDrainFetcher
 	)
 
 	BeforeEach(func() {
 		logger = &stubLogger{}
 		drainFetcher = newStubDrainFetcher()
-		ccClient = newStubCloudControllerClient()
 		cli = newStubCliConnection()
 		cli.currentSpaceGuid = "my-space-guid"
 	})

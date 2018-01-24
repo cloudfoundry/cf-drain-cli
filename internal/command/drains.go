@@ -1,14 +1,17 @@
 package command
 
 import (
+	"fmt"
+	"io"
 	"strings"
+	"text/tabwriter"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cli/plugin"
 )
 
 type DrainFetcher interface {
-	Drains(spaceGuid string) ([]cloudcontroller.Drain, error)
+	Drains(spaceGUID string) ([]cloudcontroller.Drain, error)
 }
 
 func Drains(
@@ -16,6 +19,7 @@ func Drains(
 	fetcher DrainFetcher,
 	args []string,
 	log Logger,
+	tableWriter io.Writer,
 ) {
 	if len(args) != 0 {
 		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
@@ -31,11 +35,14 @@ func Drains(
 		log.Fatalf("Failed to fetch drains: %s", err)
 	}
 
-	// Header
-	log.Printf("name\tbound apps\ttype")
+	tw := tabwriter.NewWriter(tableWriter, 10, 2, 2, ' ', 0)
 
+	// Header
+	fmt.Fprintln(tw, "name\tbound apps\ttype")
 	for _, d := range drains {
 		drain := []string{d.Name, strings.Join(d.Apps, ", "), d.Type}
-		log.Printf(strings.Join(drain, "\t"))
+		fmt.Fprintln(tw, strings.Join(drain, "\t"))
 	}
+
+	tw.Flush()
 }

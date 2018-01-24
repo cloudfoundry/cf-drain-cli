@@ -19,16 +19,17 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 
 	ccCurler := cloudcontroller.NewCurlClient(conn)
 	dClient := cloudcontroller.NewDrainsClient(ccCurler)
+	logger := log.New(os.Stdout, "", 0)
 
 	switch args[0] {
 	case "create-drain":
-		command.CreateDrain(conn, args[1:], log.New(os.Stdout, "", 0))
+		command.CreateDrain(conn, args[1:], logger)
 	case "delete-drain":
-		command.DeleteDrain(conn, args[1:], log.New(os.Stdout, "", 0))
+		command.DeleteDrain(conn, args[1:], logger)
 	case "bind-drain":
-		command.BindDrain(conn, dClient, args[1:], log.New(os.Stdout, "", 0))
+		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
-		command.Drains(conn, dClient, nil, log.New(os.Stdout, "", 0))
+		command.Drains(conn, dClient, nil, logger, os.Stdout)
 	}
 }
 

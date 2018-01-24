@@ -1,7 +1,9 @@
 package command_test
 
 import (
+	"bytes"
 	"errors"
+	"strings"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
@@ -15,6 +17,7 @@ var _ = Describe("Drains", func() {
 		logger       *stubLogger
 		cli          *stubCliConnection
 		drainFetcher *stubDrainFetcher
+		tableWriter  *bytes.Buffer
 	)
 
 	BeforeEach(func() {
@@ -22,13 +25,16 @@ var _ = Describe("Drains", func() {
 		drainFetcher = newStubDrainFetcher()
 		cli = newStubCliConnection()
 		cli.currentSpaceGuid = "my-space-guid"
+		tableWriter = bytes.NewBuffer(nil)
 	})
 
 	It("writes the headers", func() {
-		command.Drains(cli, drainFetcher, []string{}, logger)
+		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 
-		Expect(logger.printfMessages).To(HaveLen(1))
-		Expect(logger.printfMessages[0]).To(MatchRegexp(`\Aname\s+bound apps\s+type`))
+		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
+			"name      bound apps  type",
+			"",
+		}))
 	})
 
 	It("writes the drain name in the first column", func() {
@@ -36,12 +42,15 @@ var _ = Describe("Drains", func() {
 			{Name: "drain-1"},
 			{Name: "drain-2"},
 		}
-		command.Drains(cli, drainFetcher, []string{}, logger)
+		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 
 		// Header + 2 drains
-		Expect(logger.printfMessages).To(HaveLen(3))
-		Expect(logger.printfMessages[1]).To(MatchRegexp(`\Adrain-1`))
-		Expect(logger.printfMessages[2]).To(MatchRegexp(`\Adrain-2`))
+		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
+			"name      bound apps  type",
+			"drain-1               ",
+			"drain-2               ",
+			"",
+		}))
 	})
 
 	It("writes the app guid in the second column", func() {
@@ -49,12 +58,15 @@ var _ = Describe("Drains", func() {
 			{Name: "drain-1", Apps: []string{"app-1", "app-2"}},
 			{Name: "drain-2", Apps: []string{"app-1"}},
 		}
-		command.Drains(cli, drainFetcher, []string{}, logger)
+		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 
 		// Header + 2 drains
-		Expect(logger.printfMessages).To(HaveLen(3))
-		Expect(logger.printfMessages[1]).To(MatchRegexp(`\Adrain-1\s+app-1,\s+app-2`))
-		Expect(logger.printfMessages[2]).To(MatchRegexp(`\Adrain-2\s+app-1`))
+		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
+			"name      bound apps    type",
+			"drain-1   app-1, app-2  ",
+			"drain-2   app-1         ",
+			"",
+		}))
 	})
 
 	It("writes the drain type in the third column", func() {
@@ -62,19 +74,22 @@ var _ = Describe("Drains", func() {
 			{Name: "drain-1", Apps: []string{"app-1", "app-2"}, Type: "metrics"},
 			{Name: "drain-2", Apps: []string{"app-1"}, Type: "logs"},
 		}
-		command.Drains(cli, drainFetcher, []string{}, logger)
+		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 
 		// Header + 2 drains
-		Expect(logger.printfMessages).To(HaveLen(3))
-		Expect(logger.printfMessages[1]).To(MatchRegexp(`\Adrain-1\s+app-1,\s+app-2\s+metrics`))
-		Expect(logger.printfMessages[2]).To(MatchRegexp(`\Adrain-2\s+app-1\s+logs`))
+		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
+			"name      bound apps    type",
+			"drain-1   app-1, app-2  metrics",
+			"drain-2   app-1         logs",
+			"",
+		}))
 	})
 
 	It("fatally logs when failing to get current space", func() {
 		cli.currentSpaceError = errors.New("no space error")
 
 		Expect(func() {
-			command.Drains(cli, drainFetcher, []string{}, logger)
+			command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("no space error"))
 	})
@@ -83,7 +98,7 @@ var _ = Describe("Drains", func() {
 		drainFetcher.err = errors.New("omg error")
 
 		Expect(func() {
-			command.Drains(cli, drainFetcher, []string{}, logger)
+			command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("Failed to fetch drains: omg error"))
 	})

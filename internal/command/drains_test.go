@@ -32,55 +32,52 @@ var _ = Describe("Drains", func() {
 		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps  type",
-			"",
-		}))
-	})
-
-	It("writes the drain name in the first column", func() {
-		drainFetcher.drains = []cloudcontroller.Drain{
-			{Name: "drain-1"},
-			{Name: "drain-2"},
-		}
-		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
-
-		// Header + 2 drains
-		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps  type",
-			"drain-1               ",
-			"drain-2               ",
-			"",
-		}))
-	})
-
-	It("writes the app guid in the second column", func() {
-		drainFetcher.drains = []cloudcontroller.Drain{
-			{Name: "drain-1", Apps: []string{"app-1", "app-2"}},
-			{Name: "drain-2", Apps: []string{"app-1"}},
-		}
-		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
-
-		// Header + 2 drains
-		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps    type",
-			"drain-1   app-1, app-2  ",
-			"drain-2   app-1         ",
+			"name      bound apps  type      url",
 			"",
 		}))
 	})
 
 	It("writes the drain type in the third column", func() {
 		drainFetcher.drains = []cloudcontroller.Drain{
-			{Name: "drain-1", Apps: []string{"app-1", "app-2"}, Type: "metrics"},
-			{Name: "drain-2", Apps: []string{"app-1"}, Type: "logs"},
+			{
+				Name:     "drain-1",
+				Apps:     []string{"app-1", "app-2"},
+				Type:     "metrics",
+				DrainURL: "syslog://my-drain:1233",
+			},
+			{
+				Name:     "drain-2",
+				Apps:     []string{"app-1"},
+				Type:     "logs",
+				DrainURL: "syslog-tls://my-drain:1234",
+			},
 		}
 		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
 
 		// Header + 2 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps    type",
-			"drain-1   app-1, app-2  metrics",
-			"drain-2   app-1         logs",
+			"name      bound apps    type      url",
+			"drain-1   app-1, app-2  metrics   syslog://my-drain:1233",
+			"drain-2   app-1         logs      syslog-tls://my-drain:1234",
+			"",
+		}))
+	})
+
+	It("sanities drain urls", func() {
+		drainFetcher.drains = []cloudcontroller.Drain{
+			{
+				Name:     "drain-1",
+				Apps:     []string{"app-1", "app-2"},
+				Type:     "metrics",
+				DrainURL: "syslog://username:password@my-drain:1233?some-query=secret&drain-type=metrics",
+			},
+		}
+		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
+
+		// Header + 2 drains
+		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
+			"name      bound apps    type      url",
+			"drain-1   app-1, app-2  metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
 			"",
 		}))
 	})

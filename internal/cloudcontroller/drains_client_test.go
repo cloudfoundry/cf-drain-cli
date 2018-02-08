@@ -80,10 +80,12 @@ var _ = Describe("DrainsClient", func() {
 					Expect(d[0].Name).To(Equal("drain-1"))
 					Expect(d[0].Apps).To(Equal([]string{"My App One", "My App Two"}))
 					Expect(d[0].Type).To(Equal("logs"))
+					Expect(d[0].DrainURL).To(Equal("syslog://your-app.cf-app.com"))
 
 					Expect(d[1].Name).To(Equal("drain-2"))
 					Expect(d[1].Apps).To(Equal([]string{"My App One"}))
 					Expect(d[1].Type).To(Equal("metrics"))
+					Expect(d[1].DrainURL).To(Equal("https://your-app2.cf-app.com?drain-type=metrics"))
 				})
 
 			})

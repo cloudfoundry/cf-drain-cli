@@ -63,7 +63,7 @@ var _ = Describe("Drains", func() {
 		}))
 	})
 
-	It("sanities drain urls", func() {
+	It("sanitizes drain urls", func() {
 		drainFetcher.drains = []cloudcontroller.Drain{
 			{
 				Name:     "drain-1",

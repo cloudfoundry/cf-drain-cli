@@ -22,9 +22,10 @@ func NewDrainsClient(c Curler) *DrainsClient {
 }
 
 type Drain struct {
-	Name string
-	Apps []string
-	Type string
+	Name     string
+	Apps     []string
+	Type     string
+	DrainURL string
 }
 
 func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
@@ -53,7 +54,7 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 			return nil, err
 		}
 
-		drain, err := c.buildDrain(apps, s.Entity.Name, drainType)
+		drain, err := c.buildDrain(apps, s.Entity.Name, drainType, s.Entity.SyslogDrainURL)
 		if err != nil {
 			return nil, err
 		}
@@ -168,11 +169,12 @@ func (c *DrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *DrainsClient) buildDrain(apps []string, name string, drainType string) (Drain, error) {
+func (c *DrainsClient) buildDrain(apps []string, name, drainType, drainURL string) (Drain, error) {
 	return Drain{
-		Name: name,
-		Apps: apps,
-		Type: drainType,
+		Name:     name,
+		Apps:     apps,
+		Type:     drainType,
+		DrainURL: drainURL,
 	}, nil
 }
 

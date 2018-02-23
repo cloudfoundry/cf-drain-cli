@@ -9,16 +9,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("DrainsClient", func() {
+var _ = Describe("ListDrainsClient", func() {
 	var (
 		curler *stubCurler
-		c      *cloudcontroller.DrainsClient
+		c      *cloudcontroller.ListDrainsClient
 		key    string
 	)
 
 	BeforeEach(func() {
 		curler = newStubCurler()
-		c = cloudcontroller.NewDrainsClient(curler)
+		c = cloudcontroller.NewListDrainsClient(curler)
 	})
 
 	It("only displays syslog services", func() {

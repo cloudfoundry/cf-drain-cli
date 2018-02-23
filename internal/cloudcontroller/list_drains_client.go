@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type DrainsClient struct {
+type ListDrainsClient struct {
 	c Curler
 }
 
@@ -15,8 +15,8 @@ type Curler interface {
 	Curl(URL string) ([]byte, error)
 }
 
-func NewDrainsClient(c Curler) *DrainsClient {
-	return &DrainsClient{
+func NewListDrainsClient(c Curler) *ListDrainsClient {
+	return &ListDrainsClient{
 		c: c,
 	}
 }
@@ -28,7 +28,7 @@ type Drain struct {
 	DrainURL string
 }
 
-func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
+func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 	var url string
 	url = fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid)
 	instances, err := c.fetchServiceInstances(url)
@@ -80,7 +80,7 @@ func (c *DrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 	return namedDrains, nil
 }
 
-func (c *DrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
+func (c *ListDrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
 	instances := []userProvidedServiceInstance{}
 	for url != "" {
 		resp, err := c.c.Curl(url)
@@ -101,7 +101,7 @@ func (c *DrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceI
 	return instances, nil
 }
 
-func (c *DrainsClient) fetchApps(url string) ([]string, error) {
+func (c *ListDrainsClient) fetchApps(url string) ([]string, error) {
 	var apps []string
 	for url != "" {
 		resp, err := c.c.Curl(url)
@@ -125,7 +125,7 @@ func (c *DrainsClient) fetchApps(url string) ([]string, error) {
 	return apps, nil
 }
 
-func (c *DrainsClient) fetchAppNames(guids []string) (map[string]string, error) {
+func (c *ListDrainsClient) fetchAppNames(guids []string) (map[string]string, error) {
 	if len(guids) == 0 {
 		return nil, nil
 	}
@@ -155,7 +155,7 @@ func (c *DrainsClient) fetchAppNames(guids []string) (map[string]string, error) 
 	return apps, nil
 }
 
-func (c *DrainsClient) TypeFromDrainURL(URL string) (string, error) {
+func (c *ListDrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	uri, err := url.Parse(URL)
 	if err != nil {
 		return "", err
@@ -169,7 +169,7 @@ func (c *DrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *DrainsClient) buildDrain(apps []string, name, drainType, drainURL string) (Drain, error) {
+func (c *ListDrainsClient) buildDrain(apps []string, name, drainType, drainURL string) (Drain, error) {
 	return Drain{
 		Name:     name,
 		Apps:     apps,

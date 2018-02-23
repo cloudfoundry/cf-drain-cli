@@ -18,7 +18,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	}
 
 	ccCurler := cloudcontroller.NewCurlClient(conn)
-	dClient := cloudcontroller.NewDrainsClient(ccCurler)
+	dClient := cloudcontroller.NewListDrainsClient(ccCurler)
 	logger := log.New(os.Stdout, "", 0)
 
 	switch args[0] {

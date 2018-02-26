@@ -17,7 +17,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		log.Fatalf("Expected atleast 1 argument, but got 0.")
 	}
 
-	ccCurler := cloudcontroller.NewCurlClient(conn)
+	ccCurler := cloudcontroller.NewCLICurlClient(conn)
 	dClient := cloudcontroller.NewListDrainsClient(ccCurler)
 	logger := log.New(os.Stdout, "", 0)
 

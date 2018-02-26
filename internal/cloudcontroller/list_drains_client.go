@@ -12,7 +12,7 @@ type ListDrainsClient struct {
 }
 
 type Curler interface {
-	Curl(URL string) ([]byte, error)
+	Curl(URL, method, body string) ([]byte, error)
 }
 
 func NewListDrainsClient(c Curler) *ListDrainsClient {
@@ -23,7 +23,9 @@ func NewListDrainsClient(c Curler) *ListDrainsClient {
 
 type Drain struct {
 	Name     string
+	Guid     string
 	Apps     []string
+	AppGuids []string
 	Type     string
 	DrainURL string
 }
@@ -54,7 +56,13 @@ func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 			return nil, err
 		}
 
-		drain, err := c.buildDrain(apps, s.Entity.Name, drainType, s.Entity.SyslogDrainURL)
+		drain, err := c.buildDrain(
+			apps,
+			s.Entity.Name,
+			s.MetaData.Guid,
+			drainType,
+			s.Entity.SyslogDrainURL,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -70,10 +78,13 @@ func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 	var namedDrains []Drain
 	for _, d := range drains {
 		var names []string
+		var guids []string
 		for _, guid := range d.Apps {
 			names = append(names, appNames[guid])
+			guids = append(guids, guid)
 		}
 		d.Apps = names
+		d.AppGuids = guids
 		namedDrains = append(namedDrains, d)
 	}
 
@@ -83,7 +94,7 @@ func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 func (c *ListDrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
 	instances := []userProvidedServiceInstance{}
 	for url != "" {
-		resp, err := c.c.Curl(url)
+		resp, err := c.c.Curl(url, "GET", "")
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +115,7 @@ func (c *ListDrainsClient) fetchServiceInstances(url string) ([]userProvidedServ
 func (c *ListDrainsClient) fetchApps(url string) ([]string, error) {
 	var apps []string
 	for url != "" {
-		resp, err := c.c.Curl(url)
+		resp, err := c.c.Curl(url, "GET", "")
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +146,7 @@ func (c *ListDrainsClient) fetchAppNames(guids []string) (map[string]string, err
 
 	url := fmt.Sprintf("/v3/apps?guids=%s", allGuids)
 	for url != "" {
-		resp, err := c.c.Curl(url)
+		resp, err := c.c.Curl(url, "GET", "")
 		if err != nil {
 			return nil, err
 		}
@@ -169,9 +180,10 @@ func (c *ListDrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *ListDrainsClient) buildDrain(apps []string, name, drainType, drainURL string) (Drain, error) {
+func (c *ListDrainsClient) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
 	return Drain{
 		Name:     name,
+		Guid:     guid,
 		Apps:     apps,
 		Type:     drainType,
 		DrainURL: drainURL,
@@ -184,6 +196,9 @@ type userProvidedServiceInstancesResponse struct {
 }
 
 type userProvidedServiceInstance struct {
+	MetaData struct {
+		Guid string `json:"guid"`
+	} `json:"metadata"`
 	Entity struct {
 		Name               string `json:"name"`
 		ServiceBindingsURL string `json:"service_bindings_url"`

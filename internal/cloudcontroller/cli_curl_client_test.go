@@ -11,19 +11,22 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// Assert that the CurlClient is a Curler
+var _ cloudcontroller.Curler = &cloudcontroller.CLICurlClient{}
+
 var _ = Describe("CurlClient", func() {
 	var (
 		conn *stubCliConnection
-		c    *cloudcontroller.CurlClient
+		c    *cloudcontroller.CLICurlClient
 	)
 
 	BeforeEach(func() {
 		conn = newStubCliConnection()
-		c = cloudcontroller.NewCurlClient(conn)
+		c = cloudcontroller.NewCLICurlClient(conn)
 	})
 
 	It("uses 'curl' command", func() {
-		c.Curl("some-url")
+		c.Curl("some-url", "GET", "")
 		Expect(conn.args).To(HaveLen(1))
 		Expect(conn.args[0][0]).To(Equal("curl"))
 		Expect(conn.args[0][1]).To(Equal("some-url"))
@@ -33,7 +36,7 @@ var _ = Describe("CurlClient", func() {
 		conn.resp["curl some-url"] = `{
 			"snacks" : []
 		}`
-		resp, err := c.Curl("some-url")
+		resp, err := c.Curl("some-url", "GET", "")
 
 		Expect(string(resp)).To(Equal(`{
 			"snacks" : []
@@ -43,9 +46,19 @@ var _ = Describe("CurlClient", func() {
 
 	It("returns any error", func() {
 		conn.err = errors.New("some error")
-		_, err := c.Curl("some-url")
+		_, err := c.Curl("some-url", "GET", "")
 
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("panics if method is not GET or body is populated", func() {
+		Expect(func() {
+			c.Curl("some-url", "POST", "")
+		}).To(Panic())
+
+		Expect(func() {
+			c.Curl("some-url", "GET", "something")
+		}).To(Panic())
 	})
 })
 

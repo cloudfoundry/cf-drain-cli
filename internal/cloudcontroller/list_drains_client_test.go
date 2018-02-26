@@ -61,7 +61,6 @@ var _ = Describe("ListDrainsClient", func() {
 				curler.resps[key] = serviceBindingsJSON1page2
 				key = "/v2/user_provided_service_instances/drain-2/service_bindings"
 				curler.resps[key] = serviceBindingsJSON2
-
 			})
 
 			Context("when requesting app names succeeds", func() {
@@ -78,14 +77,22 @@ var _ = Describe("ListDrainsClient", func() {
 					Expect(d).To(HaveLen(2))
 
 					Expect(d[0].Name).To(Equal("drain-1"))
+					Expect(d[0].Guid).To(Equal("guid-1"))
 					Expect(d[0].Apps).To(Equal([]string{"My App One", "My App Two"}))
+					Expect(d[0].AppGuids).To(Equal([]string{"app-1", "app-2"}))
 					Expect(d[0].Type).To(Equal("logs"))
 					Expect(d[0].DrainURL).To(Equal("syslog://your-app.cf-app.com"))
 
 					Expect(d[1].Name).To(Equal("drain-2"))
+					Expect(d[1].Guid).To(Equal("guid-2"))
 					Expect(d[1].Apps).To(Equal([]string{"My App One"}))
+					Expect(d[1].AppGuids).To(Equal([]string{"app-1"}))
 					Expect(d[1].Type).To(Equal("metrics"))
 					Expect(d[1].DrainURL).To(Equal("https://your-app2.cf-app.com?drain-type=metrics"))
+
+					// 7 => 2 service fetch + (2 app fetches) +  (3 app name fetches)
+					Expect(curler.methods).To(ConsistOf("GET", "GET", "GET", "GET", "GET", "GET", "GET"))
+					Expect(curler.bodies).To(ConsistOf("", "", "", "", "", "", ""))
 				})
 
 			})
@@ -169,9 +176,11 @@ var _ = Describe("ListDrainsClient", func() {
 })
 
 type stubCurler struct {
-	URLs  []string
-	resps map[string]string
-	errs  map[string]error
+	URLs    []string
+	methods []string
+	bodies  []string
+	resps   map[string]string
+	errs    map[string]error
 }
 
 func newStubCurler() *stubCurler {
@@ -181,8 +190,10 @@ func newStubCurler() *stubCurler {
 	}
 }
 
-func (s *stubCurler) Curl(URL string) ([]byte, error) {
+func (s *stubCurler) Curl(URL, method, body string) ([]byte, error) {
 	s.URLs = append(s.URLs, URL)
+	s.methods = append(s.methods, method)
+	s.bodies = append(s.bodies, body)
 	return []byte(s.resps[URL]), s.errs[URL]
 }
 
@@ -193,6 +204,9 @@ var serviceInstancesJSONpage1 = `{
    "next_url": "/v2/user_provided_service_instances?q=space_guid:space-guid&page:2",
    "resources": [
       {
+		 "metadata": {
+			"guid": "guid-1"
+		 },
          "entity": {
             "name": "drain-1",
             "syslog_drain_url": "syslog://your-app.cf-app.com",
@@ -209,6 +223,9 @@ var serviceInstancesJSONpage2 = `{
    "next_url": null,
    "resources": [
       {
+		 "metadata": {
+			"guid": "guid-2"
+		 },
          "entity": {
             "name": "drain-2",
             "syslog_drain_url": "https://your-app2.cf-app.com?drain-type=metrics",

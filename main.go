@@ -30,6 +30,8 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
+	case "push-space-drain":
+		command.PushSpaceDrain(conn, args[1:], logger)
 	}
 }
 
@@ -77,6 +79,21 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				HelpText: "Unbinds the service from applications and deletes the service.",
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain <drain-name>",
+				},
+			},
+			{
+				Name:     "push-space-drain",
+				HelpText: "Pushes app to bind all apps in the space to the configured syslog drain",
+				UsageDetails: plugin.Usage{
+					Usage: "push-space-drain [OPTIONS]",
+					Options: map[string]string{
+						"path":                "Path to the space drain app to push",
+						"drain-name":          "Name for the space drain",
+						"drain-url":           "Syslog endpoint for the space drain",
+						"username":            "Username to use when pushing the app",
+						"password":            "Password to use when pushing the app",
+						"skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
+					},
 				},
 			},
 		},

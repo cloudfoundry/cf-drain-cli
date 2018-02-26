@@ -28,7 +28,6 @@ type stubCliConnection struct {
 	getServicesApps  []string
 
 	cliCommandWithoutTerminalOutputArgs     [][]string
-	cliCommandWithoutTerminalOutputError    error
 	cliCommandWithoutTerminalOutputResponse map[string]string
 
 	cliCommandArgs     [][]string
@@ -36,14 +35,21 @@ type stubCliConnection struct {
 	bindServiceError   error
 	unbindServiceError error
 	deleteServiceError error
+	pushAppError       error
 
 	currentSpaceGuid  string
 	currentSpaceError error
+
+	apiEndpoint    string
+	apiEndpointErr error
+
+	setEnvErrors map[string]error
 }
 
 func newStubCliConnection() *stubCliConnection {
 	return &stubCliConnection{
 		cliCommandWithoutTerminalOutputResponse: make(map[string]string),
+		setEnvErrors:                            make(map[string]error),
 	}
 }
 
@@ -90,7 +96,13 @@ func (s *stubCliConnection) CliCommandWithoutTerminalOutput(args ...string) ([]s
 		output = "{}"
 	}
 
-	return strings.Split(output, "\n"), s.cliCommandWithoutTerminalOutputError
+	var err error
+	switch args[0] {
+	case "set-env":
+		err = s.setEnvErrors[args[2]]
+	}
+
+	return strings.Split(output, "\n"), err
 }
 
 func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
@@ -104,10 +116,16 @@ func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 		err = s.unbindServiceError
 	case "delete-service":
 		err = s.deleteServiceError
+	case "push":
+		err = s.pushAppError
 	}
 
 	s.cliCommandArgs = append(s.cliCommandArgs, args)
 	return nil, err
+}
+
+func (s *stubCliConnection) ApiEndpoint() (string, error) {
+	return s.apiEndpoint, s.apiEndpointErr
 }
 
 type stubLogger struct {

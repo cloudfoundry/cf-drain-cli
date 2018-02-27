@@ -50,7 +50,12 @@ func main() {
 		drain, ok := hasDrain(cfg.DrainName, drains)
 		if !ok {
 			log.Printf("creating %s drain...", cfg.DrainName)
-			if err := drainCreator.CreateDrain(cfg.DrainName, cfg.DrainURL, cfg.SpaceID); err != nil {
+			if err := drainCreator.CreateDrain(
+				cfg.DrainName,
+				cfg.DrainURL,
+				cfg.SpaceID,
+				cfg.DrainType,
+			); err != nil {
 				log.Printf("failed to create drain: %s", err)
 				continue
 			}

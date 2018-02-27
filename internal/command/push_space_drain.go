@@ -14,6 +14,7 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
 	path := f.String("path", "", "")
 	drainName := f.String("drain-name", "", "")
 	drainURL := f.String("drain-url", "", "")
+	drainType := f.String("type", "all", "")
 	username := f.String("username", "", "")
 	password := f.String("password", "", "")
 	skipCertVerify := f.Bool("skip-ssl-validation", false, "")
@@ -23,7 +24,7 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
 	}
 
 	f.VisitAll(func(flag *flag.Flag) {
-		if flag.Value.String() == "" && flag.Name != "skip-ssl-validation" {
+		if flag.Value.String() == "" && (flag.Name != "skip-ssl-validation" || flag.Name != "type") {
 			log.Fatalf("required flag --%s missing", flag.Name)
 		}
 	})
@@ -54,6 +55,7 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
 		"SPACE_ID":         space.Guid,
 		"DRAIN_NAME":       *drainName,
 		"DRAIN_URL":        *drainURL,
+		"DRAIN_TYPE":       *drainType,
 		"API_ADDR":         api,
 		"UAA_ADDR":         strings.Replace(api, "api", "uaa", 1),
 		"CLIENT_ID":        "cf",

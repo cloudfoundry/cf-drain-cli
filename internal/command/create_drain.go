@@ -11,6 +11,7 @@ import (
 type Logger interface {
 	Printf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
+	Print(...interface{})
 }
 
 func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {

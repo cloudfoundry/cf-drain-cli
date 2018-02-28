@@ -131,6 +131,7 @@ func (s *stubCliConnection) ApiEndpoint() (string, error) {
 type stubLogger struct {
 	fatalfMessage  string
 	printfMessages []string
+	printMessages  []string
 }
 
 func (l *stubLogger) Printf(format string, args ...interface{}) {
@@ -140,4 +141,8 @@ func (l *stubLogger) Printf(format string, args ...interface{}) {
 func (l *stubLogger) Fatalf(format string, args ...interface{}) {
 	l.fatalfMessage = fmt.Sprintf(format, args...)
 	panic(l.fatalfMessage)
+}
+
+func (l *stubLogger) Print(a ...interface{}) {
+	l.printMessages = append(l.printMessages, fmt.Sprint(a...))
 }

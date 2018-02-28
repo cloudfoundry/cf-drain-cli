@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -19,13 +21,13 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
 	dClient := cloudcontroller.NewListDrainsClient(ccCurler)
-	logger := log.New(os.Stdout, "", 0)
+	logger := newLogger(os.Stdout)
 
 	switch args[0] {
 	case "create-drain":
 		command.CreateDrain(conn, args[1:], logger)
 	case "delete-drain":
-		command.DeleteDrain(conn, args[1:], logger)
+		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
 	case "bind-drain":
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
@@ -103,4 +105,21 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 
 func main() {
 	plugin.Start(CFDrainCLI{})
+}
+
+type logger struct {
+	*log.Logger
+
+	w io.Writer
+}
+
+func newLogger(w io.Writer) *logger {
+	return &logger{
+		Logger: log.New(os.Stdout, "", 0),
+		w:      w,
+	}
+}
+
+func (l *logger) Print(a ...interface{}) {
+	fmt.Fprint(os.Stdout, a...)
 }

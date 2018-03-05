@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
@@ -33,7 +35,11 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
 	case "push-space-drain":
-		command.PushSpaceDrain(conn, args[1:], logger)
+		httpClient := &http.Client{
+			Timeout: 5 * time.Second,
+		}
+		d := command.NewGithubReleaseDownloader(httpClient, logger)
+		command.PushSpaceDrain(conn, args[1:], d, logger)
 	}
 }
 

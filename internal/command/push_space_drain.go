@@ -2,16 +2,20 @@ package command
 
 import (
 	"flag"
+	"path"
 	"strconv"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
 )
 
-func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
+type Downloader interface {
+	Download() string
+}
 
+func PushSpaceDrain(cli plugin.CliConnection, args []string, d Downloader, log Logger) {
 	f := flag.NewFlagSet("", flag.ContinueOnError)
-	path := f.String("path", "", "")
+	p := f.String("path", "", "")
 	drainName := f.String("drain-name", "", "")
 	drainURL := f.String("drain-url", "", "")
 	drainType := f.String("type", "all", "")
@@ -24,14 +28,20 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
 	}
 
 	f.VisitAll(func(flag *flag.Flag) {
-		if flag.Value.String() == "" && (flag.Name != "skip-ssl-validation" || flag.Name != "type") {
+		if flag.Value.String() == "" && (flag.Name != "skip-ssl-validation" && flag.Name != "type" && flag.Name != "path") {
 			log.Fatalf("required flag --%s missing", flag.Name)
 		}
 	})
 
+	if *p == "" {
+		log.Printf("Downloading latest space drain from github...")
+		*p = path.Dir(d.Download())
+		log.Printf("Done downloading space drain from github.")
+	}
+
 	_, err = cli.CliCommand(
 		"push", "space-drain",
-		"-p", *path,
+		"-p", *p,
 		"-b", "binary_buildpack",
 		"-c", "./space_drain",
 		"--health-check-type", "process",

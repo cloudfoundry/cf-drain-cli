@@ -44,7 +44,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				"push", "space-drain",
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
-				"-c", "./space_manager",
+				"-c", "./space_drain",
 				"--health-check-type", "process",
 				"--no-start",
 			},

@@ -33,7 +33,7 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
 		"push", "space-drain",
 		"-p", *path,
 		"-b", "binary_buildpack",
-		"-c", "./space_manager",
+		"-c", "./space_drain",
 		"--health-check-type", "process",
 		"--no-start",
 	)

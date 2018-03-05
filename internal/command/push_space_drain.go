@@ -36,6 +36,7 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, log Logger) {
 		"-c", "./space_drain",
 		"--health-check-type", "process",
 		"--no-start",
+		"--no-route",
 	)
 	if err != nil {
 		log.Fatalf("%s", err)

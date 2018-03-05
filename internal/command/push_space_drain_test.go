@@ -47,6 +47,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				"-c", "./space_drain",
 				"--health-check-type", "process",
 				"--no-start",
+				"--no-route",
 			},
 		))
 

@@ -39,15 +39,17 @@ func Drains(
 	tw := tabwriter.NewWriter(tableWriter, 10, 2, 2, ' ', 0)
 
 	// Header
-	fmt.Fprintln(tw, "name\tbound apps\ttype\turl")
+	fmt.Fprintln(tw, "App\tDrain\tType\tURL")
 	for _, d := range drains {
-		drain := []string{
-			d.Name,
-			strings.Join(d.Apps, ", "),
-			d.Type,
-			sanitizeDrainURL(d.DrainURL),
+		for _, app := range d.Apps {
+			drain := []string{
+				app,
+				d.Name,
+				strings.Title(d.Type),
+				sanitizeDrainURL(d.DrainURL),
+			}
+			fmt.Fprintln(tw, strings.Join(drain, "\t"))
 		}
-		fmt.Fprintln(tw, strings.Join(drain, "\t"))
 	}
 
 	tw.Flush()

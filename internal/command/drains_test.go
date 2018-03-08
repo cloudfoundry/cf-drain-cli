@@ -28,15 +28,6 @@ var _ = Describe("Drains", func() {
 		tableWriter = bytes.NewBuffer(nil)
 	})
 
-	It("writes the headers", func() {
-		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
-
-		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps  type      url",
-			"",
-		}))
-	})
-
 	It("writes the drain type in the third column", func() {
 		drainFetcher.drains = []cloudcontroller.Drain{
 			{
@@ -56,9 +47,10 @@ var _ = Describe("Drains", func() {
 
 		// Header + 2 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps    type      url",
-			"drain-1   app-1, app-2  metrics   syslog://my-drain:1233",
-			"drain-2   app-1         logs      syslog-tls://my-drain:1234",
+			"App       Drain     Type      URL",
+			"app-1     drain-1   Metrics   syslog://my-drain:1233",
+			"app-2     drain-1   Metrics   syslog://my-drain:1233",
+			"app-1     drain-2   Logs      syslog-tls://my-drain:1234",
 			"",
 		}))
 	})
@@ -76,8 +68,9 @@ var _ = Describe("Drains", func() {
 
 		// Header + 2 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"name      bound apps    type      url",
-			"drain-1   app-1, app-2  metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
+			"App       Drain     Type      URL",
+			"app-1     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
+			"app-2     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
 			"",
 		}))
 	})

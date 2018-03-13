@@ -1,8 +1,8 @@
 CF Drain CLI Plugin
 ====================
 
-The CF Drain CLI Plugin is a [CF CLI](cf-cli) plugin to simply for creating
-and binding to syslog user provided services
+The CF Drain CLI Plugin is a [CF CLI](cf-cli) plugin to simplify interactions
+with user provided syslog drains. 
 
 ### Installing Plugin
 

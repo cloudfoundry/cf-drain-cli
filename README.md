@@ -59,3 +59,21 @@ USAGE:
 ```
 
 [cf-cli]: https://code.cloudfoundry.org/cli
+
+#### Space Drain (Experimental)
+```
+NAME:
+   push-space-drain - Pushes app to bind all apps in the space to the configured syslog drain
+
+USAGE:
+   push-space-drain [OPTIONS]
+
+OPTIONS:
+   -path                      Path to the space drain app to push
+   -skip-ssl-validation       Whether to ignore certificate errors. Default is false
+   -type                      Which log type to filter on (logs, metrics, all). Default is all
+   -username                  Username to use when pushing the app
+   -drain-name                Name for the space drain
+   -drain-url                 Syslog endpoint for the space drain
+   -password                  Password to use when pushing the app
+```

@@ -1,7 +1,9 @@
 package command
 
 import (
+	"bufio"
 	"flag"
+	"io"
 	"path"
 	"strconv"
 	"strings"
@@ -13,7 +15,7 @@ type Downloader interface {
 	Download() string
 }
 
-func PushSpaceDrain(cli plugin.CliConnection, args []string, d Downloader, log Logger) {
+func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, args []string, d Downloader, log Logger) {
 	f := flag.NewFlagSet("", flag.ContinueOnError)
 	p := f.String("path", "", "")
 	drainName := f.String("drain-name", "", "")
@@ -22,6 +24,7 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, d Downloader, log L
 	username := f.String("username", "", "")
 	password := f.String("password", "", "")
 	skipCertVerify := f.Bool("skip-ssl-validation", false, "")
+	force := f.Bool("force", false, "")
 	err := f.Parse(args)
 	if err != nil {
 		log.Fatalf("%s", err)
@@ -32,6 +35,23 @@ func PushSpaceDrain(cli plugin.CliConnection, args []string, d Downloader, log L
 			log.Fatalf("required flag --%s missing", flag.Name)
 		}
 	})
+
+	if !*force {
+		log.Print(
+			"The space drain functionality is an experimental feature. ",
+			"See https://github.com/cloudfoundry/cf-drain-cli#space-drain-experimental for more details.\n",
+			"Do you wish to proceed? [y/N] ",
+		)
+
+		buf := bufio.NewReader(reader)
+		resp, err := buf.ReadString('\n')
+		if err != nil {
+			log.Fatalf("Failed to read user input: %s", err)
+		}
+		if strings.TrimSpace(strings.ToLower(resp)) != "y" {
+			log.Fatalf("OK, exiting.")
+		}
+	}
 
 	if *p == "" {
 		log.Printf("Downloading latest space drain from github...")

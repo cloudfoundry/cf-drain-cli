@@ -2,7 +2,7 @@ CF Drain CLI Plugin
 ====================
 
 The CF Drain CLI Plugin is a [CF CLI](cf-cli) plugin to simplify interactions
-with user provided syslog drains. 
+with user provided syslog drains.
 
 ### Installing Plugin
 
@@ -58,9 +58,14 @@ USAGE:
    drains
 ```
 
-[cf-cli]: https://code.cloudfoundry.org/cli
-
 #### Space Drain (Experimental)
+
+**Note:**
+The space drain functionality is an experimental feature. In large
+deployments, it can create additional load because it binds every app in the
+space to a drain. Be sure to consider your deployment size when deciding
+whether to use a full space drain.
+
 ```
 NAME:
    push-space-drain - Pushes app to bind all apps in the space to the configured syslog drain
@@ -76,4 +81,7 @@ OPTIONS:
    -drain-name                Name for the space drain
    -drain-url                 Syslog endpoint for the space drain
    -password                  Password to use when pushing the app
+   -force                     Skip warning prompt. Default is false
 ```
+
+[cf-cli]: https://code.cloudfoundry.org/cli

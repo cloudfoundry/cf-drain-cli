@@ -39,7 +39,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			Timeout: 5 * time.Second,
 		}
 		d := command.NewGithubReleaseDownloader(httpClient, logger)
-		command.PushSpaceDrain(conn, args[1:], d, logger)
+		command.PushSpaceDrain(conn, os.Stdin, args[1:], d, logger)
 	}
 }
 
@@ -102,6 +102,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 						"username":            "Username to use when pushing the app",
 						"password":            "Password to use when pushing the app",
 						"skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
+						"force":               "Skip warning prompt. Default is false",
 					},
 				},
 			},

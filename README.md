@@ -1,5 +1,4 @@
 CF Drain CLI Plugin
-
 [![Concourse Badge][ci-badge]][ci-tests]
 ====================
 

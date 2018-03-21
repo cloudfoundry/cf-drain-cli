@@ -1,9 +1,9 @@
 CF Drain CLI Plugin
 
-[![Concourse Badge](ci-badge)](ci-tests)
+[![Concourse Badge][ci-badge]][ci-tests]
 ====================
 
-The CF Drain CLI Plugin is a [CF CLI](cf-cli) plugin to simplify interactions
+The CF Drain CLI Plugin is a [CF CLI][cf-cli] plugin to simplify interactions
 with user provided syslog drains.
 
 ### Installing Plugin
@@ -87,5 +87,5 @@ OPTIONS:
 ```
 
 [cf-cli]: https://code.cloudfoundry.org/cli
-[ci-badge]: http://crossorigin.me/https://loggregator.ci.cf-app.com/api/v1/pipelines/products/jobs/cf-drain-cli-tests/badge
+[ci-badge]: https://loggregator.ci.cf-app.com/api/v1/pipelines/products/jobs/cf-drain-cli-tests/badge
 [ci-tests]: https://loggregator.ci.cf-app.com/teams/main/pipelines/products/jobs/cf-drain-cli-tests

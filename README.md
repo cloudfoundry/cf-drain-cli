@@ -18,14 +18,17 @@ cf install-plugin $GOPATH/bin/cf-drain-cli
 ```
 $ cf create-drain --help
 NAME:
-   create-drain - Creates a user provided service for syslog drains and binds
-it to a given application.
+   create-drain - Creates a user provided service for syslog drains and binds it to a given application.
 
 USAGE:
-   create-drain [options] <app-name> <drain-name> <syslog-drain-url>
+   create-drain [options] <app-name> <syslog-drain-url>
 
 OPTIONS:
-   -type       The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`
+   -password           The password to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.
+   -type               The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`
+   -username           The username to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.
+   -adapter-type       Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`
+   -drain-name         The name of the app that will be created to forward messages to your drain. Default is `cf-drain-UUID`
 ```
 
 #### Delete Drain

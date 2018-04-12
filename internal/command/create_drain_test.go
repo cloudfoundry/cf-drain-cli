@@ -210,14 +210,14 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "SOURCE_ID", "application-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
-				[]string{"set-env", "my-drain", "UAA_ADDR", "uaa.example.com"},
+				[]string{"set-env", "my-drain", "UAA_URL", "uaa.example.com"},
 				[]string{"set-env", "my-drain", "CLIENT_ID", "cf"},
 
 				[]string{"set-env", "my-drain", "USERNAME", "user"},
 				[]string{"set-env", "my-drain", "PASSWORD", "pass"},
 
 				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
-				[]string{"set-env", "my-drain", "SYSLOG_ADDR", "syslog://a.com?a=b"},
+				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(

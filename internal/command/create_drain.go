@@ -157,12 +157,12 @@ func pushSyslogForwarder(
 	envCommands := [][]string{
 		{"set-env", serviceName, "SOURCE_ID", app.Guid},
 		{"set-env", serviceName, "SOURCE_HOST_NAME", hostName},
-		{"set-env", serviceName, "UAA_ADDR", uaaAddr},
+		{"set-env", serviceName, "UAA_URL", uaaAddr},
 		{"set-env", serviceName, "CLIENT_ID", "cf"},
 		{"set-env", serviceName, "USERNAME", username},
 		{"set-env", serviceName, "PASSWORD", password},
 		{"set-env", serviceName, "LOG_CACHE_HTTP_ADDR", logCacheAddr},
-		{"set-env", serviceName, "SYSLOG_ADDR", u.String()},
+		{"set-env", serviceName, "SYSLOG_URL", u.String()},
 	}
 
 	for _, cmd := range envCommands {

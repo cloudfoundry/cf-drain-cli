@@ -24,10 +24,14 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
 	dClient := cloudcontroller.NewListDrainsClient(ccCurler)
 	logger := newLogger(os.Stdout)
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	downloader := command.NewGithubReleaseDownloader(httpClient, logger)
 
 	switch args[0] {
 	case "create-drain":
-		command.CreateDrain(conn, args[1:], logger)
+		command.CreateDrain(conn, args[1:], downloader, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
 	case "bind-drain":
@@ -35,11 +39,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
 	case "push-space-drain":
-		httpClient := &http.Client{
-			Timeout: 5 * time.Second,
-		}
-		d := command.NewGithubReleaseDownloader(httpClient, logger)
-		command.PushSpaceDrain(conn, os.Stdin, args[1:], d, logger)
+		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, logger)
 	}
 }
 
@@ -71,7 +71,10 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "create-drain [options] <app-name> <drain-name> <syslog-drain-url>",
 					Options: map[string]string{
-						"type": "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
+						"type":         "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
+						"adapter-type": "Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`",
+						"username":     "The username to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.",
+						"password":     "The password to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.",
 					},
 				},
 			},

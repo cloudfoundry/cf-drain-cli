@@ -21,6 +21,7 @@ type stubCliConnection struct {
 	plugin.CliConnection
 
 	getAppName  string
+	getAppGuid  string
 	getAppError error
 
 	getServicesName  string
@@ -36,12 +37,16 @@ type stubCliConnection struct {
 	unbindServiceError error
 	deleteServiceError error
 	pushAppError       error
+	startAppError      error
 
+	currentSpaceName  string
 	currentSpaceGuid  string
 	currentSpaceError error
+	currentOrgName    string
+	currentOrgError   error
 
-	apiEndpoint    string
-	apiEndpointErr error
+	apiEndpoint      string
+	apiEndpointError error
 
 	setEnvErrors map[string]error
 }
@@ -55,15 +60,27 @@ func newStubCliConnection() *stubCliConnection {
 
 func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, error) {
 	s.getAppName = name
-	return plugin_models.GetAppModel{}, s.getAppError
+	return plugin_models.GetAppModel{
+		Name: name,
+		Guid: s.getAppGuid,
+	}, s.getAppError
 }
 
 func (s *stubCliConnection) GetCurrentSpace() (plugin_models.Space, error) {
 	return plugin_models.Space{
 		plugin_models.SpaceFields{
+			Name: s.currentSpaceName,
 			Guid: s.currentSpaceGuid,
 		},
 	}, s.currentSpaceError
+}
+
+func (s *stubCliConnection) GetCurrentOrg() (plugin_models.Organization, error) {
+	return plugin_models.Organization{
+		plugin_models.OrganizationFields{
+			Name: s.currentOrgName,
+		},
+	}, s.currentOrgError
 }
 
 func (s *stubCliConnection) GetServices() ([]plugin_models.GetServices_Model, error) {
@@ -118,6 +135,8 @@ func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 		err = s.deleteServiceError
 	case "push":
 		err = s.pushAppError
+	case "start":
+		err = s.startAppError
 	}
 
 	s.cliCommandArgs = append(s.cliCommandArgs, args)
@@ -125,7 +144,7 @@ func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 }
 
 func (s *stubCliConnection) ApiEndpoint() (string, error) {
-	return s.apiEndpoint, s.apiEndpointErr
+	return s.apiEndpoint, s.apiEndpointError
 }
 
 type stubLogger struct {
@@ -145,4 +164,18 @@ func (l *stubLogger) Fatalf(format string, args ...interface{}) {
 
 func (l *stubLogger) Print(a ...interface{}) {
 	l.printMessages = append(l.printMessages, fmt.Sprint(a...))
+}
+
+type stubDownloader struct {
+	path      string
+	assetName string
+}
+
+func newStubDownloader() *stubDownloader {
+	return &stubDownloader{}
+}
+
+func (s *stubDownloader) Download(assetName string) string {
+	s.assetName = assetName
+	return s.path
 }

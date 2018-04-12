@@ -322,7 +322,7 @@ var _ = Describe("PushSpaceDrain", func() {
 	})
 
 	It("fatally logs if fetching the api endpoint fails", func() {
-		cli.apiEndpointErr = errors.New("some-error")
+		cli.apiEndpointError = errors.New("some-error")
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
@@ -435,17 +435,3 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(logger.fatalfMessage).To(Equal("required flag --password missing"))
 	})
 })
-
-type stubDownloader struct {
-	path      string
-	assetName string
-}
-
-func newStubDownloader() *stubDownloader {
-	return &stubDownloader{}
-}
-
-func (s *stubDownloader) Download(assetName string) string {
-	s.assetName = assetName
-	return s.path
-}

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"path"
+	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
+	"code.cloudfoundry.org/cli/plugin/models"
 	uuid "github.com/nu7hatch/gouuid"
 )
 
@@ -17,13 +20,31 @@ type Logger interface {
 	Print(...interface{})
 }
 
-func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
+func CreateDrain(
+	cli plugin.CliConnection,
+	args []string,
+	d Downloader,
+	log Logger,
+) {
 	f := flag.NewFlagSet("", flag.ContinueOnError)
 	drainType := f.String("type", "", "")
 	drainName := f.String("drain-name", "", "")
+	adapterType := f.String("adapter-type", "service", "")
+	username := f.String("username", "", "")
+	password := f.String("password", "", "")
+
 	err := f.Parse(args)
 	if err != nil {
 		log.Fatalf("%s", err)
+	}
+
+	if *adapterType == "application" {
+		if *username == "" {
+			log.Fatalf("missing required flag: username")
+		}
+		if *password == "" {
+			log.Fatalf("missing required flag: password")
+		}
 	}
 
 	if len(f.Args()) != 2 {
@@ -34,7 +55,7 @@ func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
 	drainURL := f.Args()[1]
 	serviceName := buildDrainName(*drainName)
 
-	_, err = cli.GetApp(appName)
+	app, err := cli.GetApp(appName)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
@@ -54,10 +75,31 @@ func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
 		u.RawQuery = qValues.Encode()
 	}
 
-	createAndBindService(cli, u, appName, serviceName, log)
+	switch *adapterType {
+	case "service":
+		createAndBindService(cli, u, appName, serviceName, log)
+	case "application":
+		pushSyslogForwarder(
+			cli,
+			u,
+			app,
+			serviceName,
+			*username,
+			*password,
+			d,
+			log,
+		)
+	default:
+		log.Fatalf("unsupported adapter type, must be 'service' or 'application'")
+	}
 }
 
-func createAndBindService(cli plugin.CliConnection, u *url.URL, appName, serviceName string, log Logger) {
+func createAndBindService(
+	cli plugin.CliConnection,
+	u *url.URL,
+	appName, serviceName string,
+	log Logger,
+) {
 	command := []string{"create-user-provided-service", serviceName, "-l", u.String()}
 	_, err := cli.CliCommand(command...)
 	if err != nil {
@@ -65,6 +107,72 @@ func createAndBindService(cli plugin.CliConnection, u *url.URL, appName, service
 	}
 
 	command = []string{"bind-service", appName, serviceName}
+	_, err = cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+}
+
+func pushSyslogForwarder(
+	cli plugin.CliConnection,
+	u *url.URL,
+	app plugin_models.GetAppModel,
+	serviceName string,
+	username string,
+	password string,
+	d Downloader,
+	log Logger,
+) {
+	org, err := cli.GetCurrentOrg()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	space, err := cli.GetCurrentSpace()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	apiEndpoint, err := cli.ApiEndpoint()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	path := path.Dir(d.Download("syslog_forwarder"))
+
+	command := []string{
+		"push",
+		serviceName,
+		"-p", path,
+		"-b", "binary_buildpack",
+		"-c", "./syslog_forwarder",
+		"--no-start",
+	}
+	_, err = cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	hostName := fmt.Sprintf("%s.%s.%s", org.Name, space.Name, app.Name)
+	uaaAddr := strings.Replace(apiEndpoint, "api.", "uaa.", 1)
+	logCacheAddr := strings.Replace(apiEndpoint, "api.", "log-cache.", 1)
+	envCommands := [][]string{
+		{"set-env", serviceName, "SOURCE_ID", app.Guid},
+		{"set-env", serviceName, "SOURCE_HOST_NAME", hostName},
+		{"set-env", serviceName, "UAA_ADDR", uaaAddr},
+		{"set-env", serviceName, "CLIENT_ID", "cf"},
+		{"set-env", serviceName, "USERNAME", username},
+		{"set-env", serviceName, "PASSWORD", password},
+		{"set-env", serviceName, "LOG_CACHE_HTTP_ADDR", logCacheAddr},
+		{"set-env", serviceName, "SYSLOG_ADDR", u.String()},
+	}
+
+	for _, cmd := range envCommands {
+		_, err = cli.CliCommandWithoutTerminalOutput(cmd...)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
+
+	command = []string{"start", serviceName}
 	_, err = cli.CliCommand(command...)
 	if err != nil {
 		log.Fatalf("%s", err)

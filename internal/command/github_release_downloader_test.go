@@ -43,7 +43,7 @@ var _ = Describe("GithubReleaseDownloader", func() {
 			},
 		}
 
-		p := d.Download()
+		p := d.Download("space_drain")
 		Expect(path.Base(p)).To(Equal("space_drain"))
 
 		file, err := os.Open(p)
@@ -59,13 +59,32 @@ var _ = Describe("GithubReleaseDownloader", func() {
 		Expect(int(info.Mode() & 0111)).To(Equal(0111))
 	})
 
+	It("works for any asset on the release", func() {
+		httpClient.m["https://api.github.com/repos/cloudfoundry/cf-drain-cli/releases"] = httpResponse{
+			r: &http.Response{
+				StatusCode: 200,
+				Body:       releasesResponse(),
+			},
+		}
+
+		httpClient.m["https://github.com/cloudfoundry/cf-drain-cli/releases/download/v0.5/syslog_forwarder"] = httpResponse{
+			r: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader(`Github File`)),
+			},
+		}
+
+		p := d.Download("syslog_forwarder")
+		Expect(path.Base(p)).To(Equal("syslog_forwarder"))
+	})
+
 	It("fatally logs when fetching releases returns a non-200", func() {
 		httpClient.m["https://api.github.com/repos/cloudfoundry/cf-drain-cli/releases"] = httpResponse{
 			r: &http.Response{StatusCode: 404},
 		}
 
 		Expect(func() {
-			d.Download()
+			d.Download("space_drain")
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("unexpected status code (404) from github"))
 	})
@@ -83,7 +102,7 @@ var _ = Describe("GithubReleaseDownloader", func() {
 		}
 
 		Expect(func() {
-			d.Download()
+			d.Download("space_drain")
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("unexpected status code (404) from github"))
 	})
@@ -97,7 +116,7 @@ var _ = Describe("GithubReleaseDownloader", func() {
 		}
 
 		Expect(func() {
-			d.Download()
+			d.Download("space_drain")
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("unable to find space_drain asset in releases"))
 	})
@@ -111,7 +130,7 @@ var _ = Describe("GithubReleaseDownloader", func() {
 		}
 
 		Expect(func() {
-			d.Download()
+			d.Download("space_drain")
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("failed to decode releases response from github"))
 	})
@@ -122,7 +141,7 @@ var _ = Describe("GithubReleaseDownloader", func() {
 		}
 
 		Expect(func() {
-			d.Download()
+			d.Download("space_drain")
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("failed to read from github: some error"))
 	})
@@ -141,6 +160,10 @@ func releasesResponse() io.ReadCloser {
         {
           "name": "space_drain",
           "browser_download_url": "https://github.com/cloudfoundry/cf-drain-cli/releases/download/v0.4.1/space_drain"
+        },
+        {
+          "name": "syslog_forwarder",
+          "browser_download_url": "https://github.com/cloudfoundry/cf-drain-cli/releases/download/v0.4.1/syslog_forwarder"
         }
       ]
      },
@@ -154,6 +177,10 @@ func releasesResponse() io.ReadCloser {
         {
           "name": "space_drain",
           "browser_download_url": "https://github.com/cloudfoundry/cf-drain-cli/releases/download/v0.5/space_drain"
+        },
+        {
+          "name": "syslog_forwarder",
+          "browser_download_url": "https://github.com/cloudfoundry/cf-drain-cli/releases/download/v0.5/syslog_forwarder"
         }
       ]
      }

@@ -224,6 +224,7 @@ var _ = Describe("PushSpaceDrain", func() {
 			},
 		))
 
+		Expect(downloader.assetName).To(Equal("space_drain"))
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
 			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
 			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
@@ -436,13 +437,15 @@ var _ = Describe("PushSpaceDrain", func() {
 })
 
 type stubDownloader struct {
-	path string
+	path      string
+	assetName string
 }
 
 func newStubDownloader() *stubDownloader {
 	return &stubDownloader{}
 }
 
-func (s *stubDownloader) Download() string {
+func (s *stubDownloader) Download(assetName string) string {
+	s.assetName = assetName
 	return s.path
 }

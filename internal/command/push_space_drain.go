@@ -12,7 +12,7 @@ import (
 )
 
 type Downloader interface {
-	Download() string
+	Download(assetName string) string
 }
 
 func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, args []string, d Downloader, log Logger) {
@@ -55,7 +55,7 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, args []string, d
 
 	if *p == "" {
 		log.Printf("Downloading latest space drain from github...")
-		*p = path.Dir(d.Download())
+		*p = path.Dir(d.Download("space_drain"))
 		log.Printf("Done downloading space drain from github.")
 	}
 

@@ -28,25 +28,25 @@ func NewGithubReleaseDownloader(c HTTPClient, log Logger) GithubReleaseDownloade
 	}
 }
 
-func (d GithubReleaseDownloader) Download() string {
+func (d GithubReleaseDownloader) Download(assetName string) string {
 	releases := d.getReleases()
 
 	sort.Sort(githubReleases(releases))
 	for _, release := range releases {
 		for _, asset := range release.Assets {
-			if asset.Name == "space_drain" {
-				tmp, err := ioutil.TempDir("", "space_drain")
+			if asset.Name == assetName {
+				tmp, err := ioutil.TempDir("", asset.Name)
 				if err != nil {
 					d.log.Fatalf("failed to create temp directory: %s", err)
 				}
-				p := path.Join(tmp, "space_drain")
-				d.downloadAsset(asset.BrowserDownloadURL, p)
+				p := path.Join(tmp, asset.Name)
+				d.downloadAsset(asset.Name, asset.BrowserDownloadURL, p)
 				return p
 			}
 		}
 	}
 
-	d.log.Fatalf("unable to find space_drain asset in releases")
+	d.log.Fatalf("unable to find %s asset in releases", assetName)
 	return ""
 }
 
@@ -78,7 +78,7 @@ func (d GithubReleaseDownloader) getReleases() githubReleases {
 	return releases
 }
 
-func (d GithubReleaseDownloader) downloadAsset(URL, p string) {
+func (d GithubReleaseDownloader) downloadAsset(assetName, URL, p string) {
 	req, err := http.NewRequest(http.MethodGet, URL, nil)
 	if err != nil {
 		d.log.Fatalf("failed to create request to github: %s", err)
@@ -112,7 +112,7 @@ func (d GithubReleaseDownloader) downloadAsset(URL, p string) {
 
 	err = f.Chmod(os.ModePerm)
 	if err != nil {
-		d.log.Fatalf("failed to make space_drain executable: %s", err)
+		d.log.Fatalf("failed to make %s executable: %s", assetName, err)
 	}
 }
 

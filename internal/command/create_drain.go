@@ -54,8 +54,12 @@ func CreateDrain(cli plugin.CliConnection, args []string, log Logger) {
 		u.RawQuery = qValues.Encode()
 	}
 
+	createAndBindService(cli, u, appName, serviceName, log)
+}
+
+func createAndBindService(cli plugin.CliConnection, u *url.URL, appName, serviceName string, log Logger) {
 	command := []string{"create-user-provided-service", serviceName, "-l", u.String()}
-	_, err = cli.CliCommand(command...)
+	_, err := cli.CliCommand(command...)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}

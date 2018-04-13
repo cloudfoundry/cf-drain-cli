@@ -30,7 +30,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	downloader := command.NewGithubReleaseDownloader(httpClient, logger)
 
 	switch args[0] {
-	case "create-drain":
+	case "drain":
 		command.CreateDrain(conn, args[1:], downloader, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
@@ -38,7 +38,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
-	case "push-space-drain":
+	case "drain-space":
 		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, logger)
 	}
 }
@@ -66,10 +66,10 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				},
 			},
 			{
-				Name:     "create-drain",
+				Name:     "drain",
 				HelpText: "Creates a user provided service for syslog drains and binds it to a given application.",
 				UsageDetails: plugin.Usage{
-					Usage: "create-drain [options] <app-name> <syslog-drain-url>",
+					Usage: "drain [options] <app-name> <syslog-drain-url>",
 					Options: map[string]string{
 						"type":         "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
 						"adapter-type": "Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`",
@@ -94,10 +94,10 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				},
 			},
 			{
-				Name:     "push-space-drain",
+				Name:     "drain-space",
 				HelpText: "Pushes app to bind all apps in the space to the configured syslog drain",
 				UsageDetails: plugin.Usage{
-					Usage: "push-space-drain [OPTIONS]",
+					Usage: "drain-space [OPTIONS]",
 					Options: map[string]string{
 						"path":                "Path to the space drain app to push",
 						"drain-name":          "Name for the space drain",

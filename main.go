@@ -69,7 +69,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				Name:     "create-drain",
 				HelpText: "Creates a user provided service for syslog drains and binds it to a given application.",
 				UsageDetails: plugin.Usage{
-					Usage: "create-drain [options] <app-name> <syslog-drain-url>",
+					Usage: "create-drain [options] <app | service> <syslog-drain-url>",
 					Options: map[string]string{
 						"type":         "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
 						"adapter-type": "Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`",

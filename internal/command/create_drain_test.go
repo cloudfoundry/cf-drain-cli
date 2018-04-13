@@ -227,6 +227,45 @@ var _ = Describe("CreateDrain", func() {
 			))
 		})
 
+		It("sets the service instance ID as source ID if app is unknown", func() {
+			cli.getAppError = errors.New("unknown app")
+			cli.getServiceGuid = "service-instance-guid"
+
+			command.CreateDrain(cli, args, downloader, logger)
+
+			Expect(downloader.assetName).To(Equal("syslog_forwarder"))
+			Expect(cli.cliCommandArgs).To(HaveLen(2))
+			Expect(cli.cliCommandArgs[0]).To(Equal(
+				[]string{
+					"push", "my-drain",
+					"-p", "/downloaded/temp/dir",
+					"-b", "binary_buildpack",
+					"-c", "./syslog_forwarder",
+					"--no-start",
+				},
+			))
+
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
+				[]string{"set-env", "my-drain", "SOURCE_ID", "service-instance-guid"},
+				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
+
+				[]string{"set-env", "my-drain", "UAA_URL", "uaa.example.com"},
+				[]string{"set-env", "my-drain", "CLIENT_ID", "cf"},
+
+				[]string{"set-env", "my-drain", "USERNAME", "user"},
+				[]string{"set-env", "my-drain", "PASSWORD", "pass"},
+
+				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
+				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
+			))
+
+			Expect(cli.cliCommandArgs[1]).To(Equal(
+				[]string{
+					"start", "my-drain",
+				},
+			))
+		})
+
 		It("fatally logs when we fail to get current org", func() {
 			cli.currentOrgError = errors.New("an error")
 
@@ -319,6 +358,17 @@ var _ = Describe("CreateDrain", func() {
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("start error"))
+		})
+
+		It("fatally logs if starting an app or service is not found with the given name", func() {
+			cli.getAppError = errors.New("unknown app")
+			cli.getServiceError = errors.New("unknown service")
+
+			Expect(func() {
+				command.CreateDrain(cli, args, downloader, logger)
+			}).To(Panic())
+
+			Expect(logger.fatalfMessage).To(Equal("unknown application or service \"app-name\""))
 		})
 	})
 

@@ -32,6 +32,8 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	switch args[0] {
 	case "drain":
 		command.CreateDrain(conn, args[1:], downloader, logger)
+	case "create-drain":
+		command.CreateDrain(conn, args[1:], downloader, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
 	case "bind-drain":
@@ -77,6 +79,13 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 						"username":     "The username to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.",
 						"password":     "The password to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.",
 					},
+				},
+			},
+			{
+				Name :		"create-drain",
+				HelpText:	"Deprecated see the drain command for details",
+				UsageDetails: plugin.Usage{
+					Usage: "drain [options] <app-name> <syslog-drain-url>",
 				},
 			},
 			{

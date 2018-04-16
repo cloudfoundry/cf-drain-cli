@@ -16,12 +16,12 @@ cf install-plugin $GOPATH/bin/cf-drain-cli
 
 #### Create Drain
 ```
-$ cf create-drain --help
+$ cf drain --help
 NAME:
-   create-drain - Creates a user provided service for syslog drains and binds it to a given application.
+   drain - Creates a user provided service for syslog drains and binds it to a given application.
 
 USAGE:
-   create-drain [options] <app-name> <syslog-drain-url>
+   drain [options] <app-name> <syslog-drain-url>
 
 OPTIONS:
    -password           The password to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.
@@ -72,10 +72,10 @@ whether to use a full space drain.
 
 ```
 NAME:
-   push-space-drain - Pushes app to bind all apps in the space to the configured syslog drain
+   drain-space - Pushes app to bind all apps in the space to the configured syslog drain
 
 USAGE:
-   push-space-drain [OPTIONS]
+   drain-space [OPTIONS]
 
 OPTIONS:
    -path                      Path to the space drain app to push

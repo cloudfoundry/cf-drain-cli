@@ -25,7 +25,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	dClient := cloudcontroller.NewListDrainsClient(ccCurler)
 	logger := newLogger(os.Stdout)
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 	downloader := command.NewGithubReleaseDownloader(httpClient, logger)
 

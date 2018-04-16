@@ -206,7 +206,8 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(9))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:8]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", "application-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -218,6 +219,11 @@ var _ = Describe("CreateDrain", func() {
 
 				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
+			))
+
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[8]).To(ConsistOf(
+				"set-env", "my-drain", "GROUP_NAME",
+				MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -245,7 +251,8 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(9))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:8]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", "service-instance-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -257,6 +264,11 @@ var _ = Describe("CreateDrain", func() {
 
 				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
+			))
+
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[8]).To(ConsistOf(
+				"set-env", "my-drain", "GROUP_NAME",
+				MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(

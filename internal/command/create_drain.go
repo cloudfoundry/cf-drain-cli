@@ -158,6 +158,10 @@ func pushSyslogForwarder(
 	hostName := fmt.Sprintf("%s.%s.%s", org.Name, space.Name, appOrServiceName)
 	uaaAddr := strings.Replace(apiEndpoint, "api.", "uaa.", 1)
 	logCacheAddr := strings.Replace(apiEndpoint, "api.", "log-cache.", 1)
+	groupName, err := uuid.NewV4()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 	envCommands := [][]string{
 		{"set-env", serviceName, "SOURCE_ID", sourceID},
 		{"set-env", serviceName, "SOURCE_HOST_NAME", hostName},
@@ -167,6 +171,7 @@ func pushSyslogForwarder(
 		{"set-env", serviceName, "PASSWORD", password},
 		{"set-env", serviceName, "LOG_CACHE_HTTP_ADDR", logCacheAddr},
 		{"set-env", serviceName, "SYSLOG_URL", u.String()},
+		{"set-env", serviceName, "GROUP_NAME", groupName.String()},
 	}
 
 	for _, cmd := range envCommands {

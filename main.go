@@ -42,6 +42,8 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
 	case "drain-space":
 		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, logger)
+	case "push-space-drain":
+		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, logger)
 	}
 }
 
@@ -83,7 +85,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 			},
 			{
 				Name :		"create-drain",
-				HelpText:	"Deprecated see the drain command for details",
+				HelpText:	"Deprecated. See the drain command for details.",
 				UsageDetails: plugin.Usage{
 					Usage: "drain [options] <app-name> <syslog-drain-url>",
 				},
@@ -100,6 +102,13 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				HelpText: "Unbinds the service from applications and deletes the service.",
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain <drain-name>",
+				},
+			},
+			{
+				Name:				"push-space-drain",
+				HelpText:			"Deprecated. See the drain-space command for details.",
+				UsageDetails: plugin.Usage{
+					Usage: "push-space-drain [OPTIONS]",
 				},
 			},
 			{

@@ -28,6 +28,10 @@ type stubCliConnection struct {
 	getServicesError error
 	getServicesApps  []string
 
+	getServiceName  string
+	getServiceGuid  string
+	getServiceError error
+
 	cliCommandWithoutTerminalOutputArgs     [][]string
 	cliCommandWithoutTerminalOutputResponse map[string]string
 
@@ -100,6 +104,15 @@ func (s *stubCliConnection) GetServices() ([]plugin_models.GetServices_Model, er
 	}
 
 	return resp, s.getServicesError
+}
+
+func (s *stubCliConnection) GetService(name string) (plugin_models.GetService_Model, error) {
+	s.getServicesName = name
+
+	return plugin_models.GetService_Model{
+		Name: name,
+		Guid: s.getServiceGuid,
+	}, s.getServiceError
 }
 
 func (s *stubCliConnection) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {

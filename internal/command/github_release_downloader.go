@@ -107,7 +107,7 @@ func (d GithubReleaseDownloader) downloadAsset(assetName, URL, p string) {
 
 	_, err = io.Copy(f, resp.Body)
 	if err != nil {
-		d.log.Fatalf("failed to read github asset: %s", err)
+		d.log.Fatalf("failed to read github asset %s: %s", assetName, err)
 	}
 
 	err = f.Chmod(os.ModePerm)

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
-	"code.cloudfoundry.org/cli/plugin/models"
 	uuid "github.com/nu7hatch/gouuid"
 )
 
@@ -55,11 +54,6 @@ func CreateDrain(
 	drainURL := f.Args()[1]
 	serviceName := buildDrainName(*drainName)
 
-	app, err := cli.GetApp(appName)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
 	u, err := url.Parse(drainURL)
 	if err != nil {
 		log.Fatalf("Invalid syslog drain URL: %s", err)
@@ -82,7 +76,7 @@ func CreateDrain(
 		pushSyslogForwarder(
 			cli,
 			u,
-			app,
+			appName,
 			serviceName,
 			*username,
 			*password,
@@ -100,8 +94,13 @@ func createAndBindService(
 	appName, serviceName string,
 	log Logger,
 ) {
+	_, err := cli.GetApp(appName)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
 	command := []string{"create-user-provided-service", serviceName, "-l", u.String()}
-	_, err := cli.CliCommand(command...)
+	_, err = cli.CliCommand(command...)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
@@ -116,13 +115,18 @@ func createAndBindService(
 func pushSyslogForwarder(
 	cli plugin.CliConnection,
 	u *url.URL,
-	app plugin_models.GetAppModel,
+	appOrServiceName string,
 	serviceName string,
 	username string,
 	password string,
 	d Downloader,
 	log Logger,
 ) {
+	sourceID, err := sourceID(cli, appOrServiceName)
+	if err != nil {
+		log.Fatalf("unknown application or service %q", appOrServiceName)
+	}
+
 	org, err := cli.GetCurrentOrg()
 	if err != nil {
 		log.Fatalf("%s", err)
@@ -151,11 +155,15 @@ func pushSyslogForwarder(
 		log.Fatalf("%s", err)
 	}
 
-	hostName := fmt.Sprintf("%s.%s.%s", org.Name, space.Name, app.Name)
+	hostName := fmt.Sprintf("%s.%s.%s", org.Name, space.Name, appOrServiceName)
 	uaaAddr := strings.Replace(apiEndpoint, "api.", "uaa.", 1)
 	logCacheAddr := strings.Replace(apiEndpoint, "api.", "log-cache.", 1)
+	groupName, err := uuid.NewV4()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 	envCommands := [][]string{
-		{"set-env", serviceName, "SOURCE_ID", app.Guid},
+		{"set-env", serviceName, "SOURCE_ID", sourceID},
 		{"set-env", serviceName, "SOURCE_HOST_NAME", hostName},
 		{"set-env", serviceName, "UAA_URL", uaaAddr},
 		{"set-env", serviceName, "CLIENT_ID", "cf"},
@@ -163,6 +171,7 @@ func pushSyslogForwarder(
 		{"set-env", serviceName, "PASSWORD", password},
 		{"set-env", serviceName, "LOG_CACHE_HTTP_ADDR", logCacheAddr},
 		{"set-env", serviceName, "SYSLOG_URL", u.String()},
+		{"set-env", serviceName, "GROUP_NAME", groupName.String()},
 	}
 
 	for _, cmd := range envCommands {
@@ -177,6 +186,20 @@ func pushSyslogForwarder(
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
+}
+
+func sourceID(cli plugin.CliConnection, appOrServiceName string) (string, error) {
+	app, err := cli.GetApp(appOrServiceName)
+	if err != nil {
+		svc, err := cli.GetService(appOrServiceName)
+		if err != nil {
+			return "", err
+		}
+
+		return svc.Guid, nil
+	}
+
+	return app.Guid, nil
 }
 
 func validDrainType(drainType string) bool {

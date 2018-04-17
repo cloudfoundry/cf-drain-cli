@@ -378,7 +378,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				logger,
 			)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("required flag --drain-name missing"))
+		Expect(logger.fatalfMessage).To(Equal("the required flag `--drain-name' was not specified"))
 	})
 
 	It("fatally logs if the space-drain drain-url is not provided", func() {
@@ -396,7 +396,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				logger,
 			)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("required flag --drain-url missing"))
+		Expect(logger.fatalfMessage).To(Equal("the required flag `--drain-url' was not specified"))
 	})
 
 	It("fatally logs if the space-drain username is not provided", func() {
@@ -414,7 +414,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				logger,
 			)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("required flag --username missing"))
+		Expect(logger.fatalfMessage).To(Equal("the required flag `--username' was not specified"))
 	})
 
 	It("fatally logs if the space-drain password is not provided", func() {
@@ -432,6 +432,6 @@ var _ = Describe("PushSpaceDrain", func() {
 				logger,
 			)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("required flag --password missing"))
+		Expect(logger.fatalfMessage).To(Equal("the required flag `--password' was not specified"))
 	})
 })

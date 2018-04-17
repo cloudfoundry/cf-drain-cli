@@ -78,14 +78,13 @@ USAGE:
    drain-space [OPTIONS]
 
 OPTIONS:
-   -path                      Path to the space drain app to push
-   -skip-ssl-validation       Whether to ignore certificate errors. Default is false
-   -type                      Which log type to filter on (logs, metrics, all). Default is all
-   -username                  Username to use when pushing the app
-   -drain-name                Name for the space drain
-   -drain-url                 Syslog endpoint for the space drain
-   -password                  Password to use when pushing the app
-   -force                     Skip warning prompt. Default is false
+   --drain-name               Name for the space drain. Required
+   --drain-url                Syslog endpoint for the space drain. Required
+   --force                    Skip warning prompt. Default is false
+   --path                     Path to the space drain app to push. If omitted the latest release will be downloaded
+   --skip-ssl-validation      Whether to ignore certificate errors. Default is false
+   --type                     Which log type to filter on (logs, metrics, all). Default is all
+   --username                 Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)
 ```
 
 [cf-cli]: https://code.cloudfoundry.org/cli

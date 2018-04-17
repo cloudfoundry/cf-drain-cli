@@ -119,12 +119,11 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "drain-space [OPTIONS]",
 					Options: map[string]string{
-						"path":                "Path to the space drain app to push",
-						"drain-name":          "Name for the space drain",
-						"drain-url":           "Syslog endpoint for the space drain",
+						"path":                "Path to the space drain app to push. If omitted the latest release will be downloaded",
+						"drain-name":          "Name for the space drain. Required",
+						"drain-url":           "Syslog endpoint for the space drain. Required",
 						"type":                "Which log type to filter on (logs, metrics, all). Default is all",
-						"username":            "Username to use when pushing the app",
-						"password":            "Password to use when pushing the app",
+						"username":            "Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)",
 						"skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
 						"force":               "Skip warning prompt. Default is false",
 					},

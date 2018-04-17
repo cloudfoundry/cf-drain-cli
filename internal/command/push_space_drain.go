@@ -39,6 +39,9 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, args []string, d
 		log.Fatalf("%s", err)
 	}
 
+	if len(args) > 0 {
+		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
+	}
 
 	if !opts.Force {
 		log.Print(

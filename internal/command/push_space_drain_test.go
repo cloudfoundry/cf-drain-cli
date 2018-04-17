@@ -434,4 +434,24 @@ var _ = Describe("PushSpaceDrain", func() {
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("the required flag `--password' was not specified"))
 	})
+
+	It("fatally logs if there are extra command line arguments", func() {
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--username", "some-user",
+					"--password", "some-password",
+					"some-unknown-arg",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 0, got 1."))
+	})
 })

@@ -36,6 +36,7 @@ type stubCliConnection struct {
 	cliCommandWithoutTerminalOutputResponse map[string]string
 
 	cliCommandArgs     [][]string
+	createUserError    error
 	createServiceError error
 	bindServiceError   error
 	unbindServiceError error
@@ -138,6 +139,8 @@ func (s *stubCliConnection) CliCommandWithoutTerminalOutput(args ...string) ([]s
 func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 	var err error
 	switch args[0] {
+	case "create-user":
+		err = s.createUserError
 	case "create-user-provided-service":
 		err = s.createServiceError
 	case "bind-service":

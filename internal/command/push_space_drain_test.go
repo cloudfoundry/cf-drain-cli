@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -17,6 +18,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		cli        *stubCliConnection
 		downloader *stubDownloader
 		reader     *strings.Reader
+		pr         func(int) ([]byte, error)
 	)
 
 	BeforeEach(func() {
@@ -27,19 +29,22 @@ var _ = Describe("PushSpaceDrain", func() {
 		downloader = newStubDownloader()
 		downloader.path = "/downloaded/temp/dir/space_drain"
 		reader = strings.NewReader("y\n")
+		pr = func(int) ([]byte, error) {
+			return []byte("some-password"), nil
+		}
 	})
 
 	It("pushes app from the given space-drain directory", func() {
 		command.PushSpaceDrain(
 			cli,
 			reader,
+			pr,
 			[]string{
 				"--path", "some-temp-dir",
 				"--drain-name", "some-drain",
 				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 				"--username", "some-user",
-				"--password", "some-password",
 				"--skip-ssl-validation",
 			},
 			downloader,
@@ -90,13 +95,13 @@ var _ = Describe("PushSpaceDrain", func() {
 		command.PushSpaceDrain(
 			cli,
 			reader,
+			pr,
 			[]string{
 				"--path", "some-temp-dir",
 				"--drain-name", "some-drain",
 				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 				"--username", "some-user",
-				"--password", "some-password",
 				"--skip-ssl-validation",
 			},
 			downloader,
@@ -146,13 +151,13 @@ var _ = Describe("PushSpaceDrain", func() {
 		command.PushSpaceDrain(
 			cli,
 			nil,
+			pr,
 			[]string{
 				"--path", "some-temp-dir",
 				"--drain-name", "some-drain",
 				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 				"--username", "some-user",
-				"--password", "some-password",
 				"--skip-ssl-validation",
 				"--force",
 			},
@@ -199,12 +204,12 @@ var _ = Describe("PushSpaceDrain", func() {
 		command.PushSpaceDrain(
 			cli,
 			reader,
+			pr,
 			[]string{
 				"--drain-name", "some-drain",
 				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 				"--username", "some-user",
-				"--password", "some-password",
 				"--skip-ssl-validation",
 			},
 			downloader,
@@ -245,6 +250,135 @@ var _ = Describe("PushSpaceDrain", func() {
 		))
 	})
 
+	It("prompts for password if --username is provided", func() {
+		command.PushSpaceDrain(
+			cli,
+			reader,
+			func(int) ([]byte, error) { return []byte("user-provided-password"), nil },
+			[]string{
+				"--drain-name", "some-drain",
+				"--drain-url", "https://some-drain",
+				"--username", "some-user",
+				"--skip-ssl-validation",
+			},
+			downloader,
+			logger,
+		)
+
+		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ContainElement(
+			[]string{"set-env", "space-drain", "PASSWORD", "user-provided-password"},
+		))
+	})
+
+	It("creates a user if username is not provided", func() {
+		guid := "deadbeef-dead-dead-dead-deadbeeffeed"
+		cli.getAppGuid = guid
+		cli.currentSpaceName = "SPACE"
+		cli.currentOrgName = "ORG"
+
+		command.PushSpaceDrain(
+			cli,
+			reader,
+			pr,
+			[]string{
+				"--path", "some-temp-dir",
+				"--drain-name", "some-drain",
+				"--drain-url", "https://some-drain",
+				"--skip-ssl-validation",
+				"--force",
+			},
+			downloader,
+			logger,
+		)
+
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
+		Expect(cli.cliCommandArgs[0]).To(Equal(
+			[]string{
+				"push", "space-drain",
+				"-p", "some-temp-dir",
+				"-b", "binary_buildpack",
+				"-c", "./space_drain",
+				"--health-check-type", "process",
+				"--no-start",
+				"--no-route",
+			},
+		))
+
+		Expect(cli.cliCommandArgs[1]).To(HaveLen(3))
+		Expect(cli.cliCommandArgs[1][0]).To(Equal("create-user"))
+		Expect(cli.cliCommandArgs[1][1]).To(Equal(fmt.Sprintf("space-drain-%s", guid)))
+		Expect(cli.cliCommandArgs[1][2]).ToNot(BeEmpty())
+		generatedPassword := cli.cliCommandArgs[1][2]
+
+		Expect(cli.cliCommandArgs[2]).To(Equal(
+			[]string{
+				"set-space-role",
+				fmt.Sprintf("space-drain-%s", guid),
+				"ORG", "SPACE",
+				"SpaceDeveloper",
+			},
+		))
+
+		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
+			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
+			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
+			[]string{"set-env", "space-drain", "DRAIN_URL", "https://some-drain"},
+			[]string{"set-env", "space-drain", "DRAIN_TYPE", "all"},
+			[]string{"set-env", "space-drain", "API_ADDR", "https://api.something.com"},
+			[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
+			[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
+			[]string{"set-env", "space-drain", "USERNAME", fmt.Sprintf("space-drain-%s", guid)},
+			[]string{"set-env", "space-drain", "PASSWORD", generatedPassword},
+			[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+		))
+
+		Expect(cli.cliCommandArgs[3]).To(Equal(
+			[]string{
+				"start", "space-drain",
+			},
+		))
+	})
+
+	It("fatally logs if user-provided password is blank", func() {
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				func(int) ([]byte, error) { return []byte{}, nil },
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--username", "some-user",
+					"--skip-ssl-validation",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal("Password cannot be blank."))
+	})
+
+	It("fatally logs if reading password input fails", func() {
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				func(int) ([]byte, error) { return []byte("don't use this"), errors.New("some-error") },
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--username", "some-user",
+					"--skip-ssl-validation",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal("some-error"))
+	})
+
 	DescribeTable("fatally logs if setting env variables fails", func(env string) {
 		cli.setEnvErrors[env] = errors.New("some-error")
 
@@ -252,12 +386,12 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 					"--skip-ssl-validation",
 				},
 				downloader,
@@ -284,12 +418,12 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 					"--skip-ssl-validation",
 				},
 				downloader,
@@ -300,18 +434,78 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(logger.fatalfMessage).To(Equal("OK, exiting."))
 	})
 
+	It("fatally logs if creating user fails", func() {
+		cli.createUserError = errors.New("some-error")
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				pr,
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--skip-ssl-validation",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal("some-error"))
+	})
+
+	It("fatally logs if fetching the app fails", func() {
+		cli.getAppError = errors.New("some-error")
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				pr,
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--skip-ssl-validation",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal("some-error"))
+	})
+
 	It("fatally logs if fetching the space fails", func() {
 		cli.currentSpaceError = errors.New("some-error")
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
+					"--skip-ssl-validation",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal("some-error"))
+	})
+
+	It("fatally logs if fetching the org fails", func() {
+		cli.currentOrgError = errors.New("some-error")
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				pr,
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
 					"--skip-ssl-validation",
 				},
 				downloader,
@@ -327,12 +521,12 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 					"--skip-ssl-validation",
 				},
 				downloader,
@@ -348,12 +542,12 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 					"--skip-ssl-validation",
 				},
 				downloader,
@@ -368,11 +562,11 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 				},
 				downloader,
 				logger,
@@ -386,11 +580,11 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 				},
 				downloader,
 				logger,
@@ -399,53 +593,17 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(logger.fatalfMessage).To(Equal("the required flag `--drain-url' was not specified"))
 	})
 
-	It("fatally logs if the space-drain username is not provided", func() {
-		Expect(func() {
-			command.PushSpaceDrain(
-				cli,
-				reader,
-				[]string{
-					"--path", "some-temp-dir",
-					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
-					"--password", "some-password",
-				},
-				downloader,
-				logger,
-			)
-		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("the required flag `--username' was not specified"))
-	})
-
-	It("fatally logs if the space-drain password is not provided", func() {
-		Expect(func() {
-			command.PushSpaceDrain(
-				cli,
-				reader,
-				[]string{
-					"--path", "some-temp-dir",
-					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
-					"--username", "some-user",
-				},
-				downloader,
-				logger,
-			)
-		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("the required flag `--password' was not specified"))
-	})
-
 	It("fatally logs if there are extra command line arguments", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
+				pr,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--password", "some-password",
 					"some-unknown-arg",
 				},
 				downloader,

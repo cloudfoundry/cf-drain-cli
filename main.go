@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/crypto/ssh/terminal"
+
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
 	"code.cloudfoundry.org/cli/plugin"
@@ -41,9 +43,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
 	case "drain-space":
-		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, logger)
+		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
 	case "push-space-drain":
-		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, logger)
+		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
 	}
 }
 

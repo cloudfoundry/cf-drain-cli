@@ -2,6 +2,9 @@ package command
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/sha256"
+	"fmt"
 	"io"
 	"path"
 	"strconv"
@@ -17,30 +20,46 @@ type Downloader interface {
 }
 
 type optionsFlags struct {
-	Path           string `long:"path"`
 	DrainName      string `long:"drain-name" required:"true"`
 	DrainURL       string `long:"drain-url" required:"true"`
+	Username       string `long:"username"`
+	Path           string `long:"path"`
 	DrainType      string `long:"type"`
-	Username       string `long:"username" required:"true"`
-	Password       string `long:"password" required:"true"`
 	SkipCertVerify bool   `long:"skip-ssl-validation"`
 	Force          bool   `long:"force"`
+	Password       string
 }
 
-func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, args []string, d Downloader, log Logger) {
+type passwordReader func(int) ([]byte, error)
+
+func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReader, args []string, d Downloader, log Logger) {
 	opts := optionsFlags{
 		DrainType:      "all",
 		SkipCertVerify: false,
 		Force:          false,
 	}
 
-	args, err := flags.ParseArgs(&opts, args)
+	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
+	args, err := parser.ParseArgs(args)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
 	if len(args) > 0 {
 		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
+	}
+
+	if opts.Username != "" {
+		log.Printf("Enter a password for %s: ", opts.Username)
+		bytePassword, err := pw(0)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+
+		if string(bytePassword) == "" {
+			log.Fatalf("Password cannot be blank.")
+		}
+		opts.Password = string(bytePassword)
 	}
 
 	if !opts.Force {
@@ -87,6 +106,40 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, args []string, d
 	api, err := cli.ApiEndpoint()
 	if err != nil {
 		log.Fatalf("%s", err)
+	}
+
+	if opts.Username == "" {
+		app, err := cli.GetApp("space-drain")
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		opts.Username = fmt.Sprintf("space-drain-%s", app.Guid)
+		data := make([]byte, 20)
+		_, err = rand.Read(data)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		opts.Password = fmt.Sprintf("%x", sha256.Sum256(data))
+
+		_, err = cli.CliCommand(
+			"create-user",
+			opts.Username,
+			opts.Password,
+		)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		org, err := cli.GetCurrentOrg()
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		_, err = cli.CliCommand(
+			"set-space-role",
+			opts.Username,
+			org.Name,
+			space.Name,
+			"SpaceDeveloper",
+		)
 	}
 
 	envs := map[string]string{

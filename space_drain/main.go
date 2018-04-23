@@ -70,7 +70,7 @@ func main() {
 			continue
 		}
 
-		log.Printf("binding apps to drain...")
+		log.Printf("binding %d apps to drain...", len(apps))
 		for _, appGuid := range apps {
 			if containsApp(appGuid, drain.AppGuids) {
 				continue

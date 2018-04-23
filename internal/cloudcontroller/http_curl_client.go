@@ -50,8 +50,8 @@ func (c *HTTPCurlClient) Curl(url, method, body string) ([]byte, error) {
 	url = c.a.String() + url
 	req, _ := http.NewRequest(method, url, ioutil.NopCloser(strings.NewReader(body)))
 	req.Header.Set("Authorization", token)
-	resp, err := c.d.Do(req)
 
+	resp, err := c.d.Do(req)
 	if err != nil {
 		return nil, err
 	}

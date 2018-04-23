@@ -59,6 +59,10 @@ func (f *UAATokenFetcher) Token() (string, error) {
 		return "", err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get auth token, expected 200, got %d", resp.StatusCode)
+	}
+
 	var tokenOutput struct {
 		AccessToken string `json:"access_token"`
 		TokenType   string `json:"token_type"`

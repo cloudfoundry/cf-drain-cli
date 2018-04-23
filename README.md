@@ -7,6 +7,20 @@ with user provided syslog drains.
 
 ### Installing Plugin
 
+#### From Binary Release
+
+1. Download the binary for the [latest release][latest-release] for your
+   platform.
+1. Install it into the cf cli:
+
+```
+cf install-plugin download/path/cf-drain-cli
+```
+
+#### From Source Code
+
+Make sure to have the [latest Go toolchain][golang-dl] installed.
+
 ```
 go get code.cloudfoundry.org/cf-drain-cli
 cf install-plugin $GOPATH/bin/cf-drain-cli
@@ -90,3 +104,5 @@ OPTIONS:
 [cf-cli]: https://code.cloudfoundry.org/cli
 [ci-badge]: https://loggregator.ci.cf-app.com/api/v1/pipelines/products/jobs/cf-drain-cli-tests/badge
 [ci-tests]: https://loggregator.ci.cf-app.com/teams/main/pipelines/products/jobs/cf-drain-cli-tests
+[golang-dl]: https://golang.org/dl/
+[latest-release]: https://github.com/cloudfoundry/cf-drain-cli/releases/latest

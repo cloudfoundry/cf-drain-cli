@@ -32,38 +32,24 @@ type optionsFlags struct {
 
 type passwordReader func(int) ([]byte, error)
 
-func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReader, args []string, d Downloader, log Logger) {
-	opts := optionsFlags{
-		DrainType:      "all",
-		SkipCertVerify: false,
-		Force:          false,
-	}
-
-	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
-	args, err := parser.ParseArgs(args)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	if len(args) > 0 {
-		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
-	}
+func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReader, args []string, d Downloader, logger Logger) {
+	opts := parseOpts(args, logger)
 
 	if opts.Username != "" {
-		log.Printf("Enter a password for %s: ", opts.Username)
+		logger.Printf("Enter a password for %s: ", opts.Username)
 		bytePassword, err := pw(0)
 		if err != nil {
-			log.Fatalf("%s", err)
+			logger.Fatalf("%s", err)
 		}
 
 		if string(bytePassword) == "" {
-			log.Fatalf("Password cannot be blank.")
+			logger.Fatalf("Password cannot be blank.")
 		}
 		opts.Password = string(bytePassword)
 	}
 
 	if !opts.Force {
-		log.Print(
+		logger.Print(
 			"The space drain functionality is an experimental feature. ",
 			"See https://github.com/cloudfoundry/cf-drain-cli#space-drain-experimental for more details.\n",
 			"Do you wish to proceed? [y/N] ",
@@ -72,20 +58,20 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReade
 		buf := bufio.NewReader(reader)
 		resp, err := buf.ReadString('\n')
 		if err != nil {
-			log.Fatalf("Failed to read user input: %s", err)
+			logger.Fatalf("Failed to read user input: %s", err)
 		}
 		if strings.TrimSpace(strings.ToLower(resp)) != "y" {
-			log.Fatalf("OK, exiting.")
+			logger.Fatalf("OK, exiting.")
 		}
 	}
 
 	if opts.Path == "" {
-		log.Printf("Downloading latest space drain from github...")
+		logger.Printf("Downloading latest space drain from github...")
 		opts.Path = path.Dir(d.Download("space_drain"))
-		log.Printf("Done downloading space drain from github.")
+		logger.Printf("Done downloading space drain from github.")
 	}
 
-	_, err = cli.CliCommand(
+	_, err := cli.CliCommand(
 		"push", "space-drain",
 		"-p", opts.Path,
 		"-b", "binary_buildpack",
@@ -95,29 +81,29 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReade
 		"--no-route",
 	)
 	if err != nil {
-		log.Fatalf("%s", err)
+		logger.Fatalf("%s", err)
 	}
 
 	space, err := cli.GetCurrentSpace()
 	if err != nil {
-		log.Fatalf("%s", err)
+		logger.Fatalf("%s", err)
 	}
 
 	api, err := cli.ApiEndpoint()
 	if err != nil {
-		log.Fatalf("%s", err)
+		logger.Fatalf("%s", err)
 	}
 
 	if opts.Username == "" {
 		app, err := cli.GetApp("space-drain")
 		if err != nil {
-			log.Fatalf("%s", err)
+			logger.Fatalf("%s", err)
 		}
 		opts.Username = fmt.Sprintf("space-drain-%s", app.Guid)
 		data := make([]byte, 20)
 		_, err = rand.Read(data)
 		if err != nil {
-			log.Fatalf("%s", err)
+			logger.Fatalf("%s", err)
 		}
 		opts.Password = fmt.Sprintf("%x", sha256.Sum256(data))
 
@@ -127,11 +113,11 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReade
 			opts.Password,
 		)
 		if err != nil {
-			log.Fatalf("%s", err)
+			logger.Fatalf("%s", err)
 		}
 		org, err := cli.GetCurrentOrg()
 		if err != nil {
-			log.Fatalf("%s", err)
+			logger.Fatalf("%s", err)
 		}
 		_, err = cli.CliCommand(
 			"set-space-role",
@@ -160,9 +146,29 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReade
 			"set-env", "space-drain", name, value,
 		)
 		if err != nil {
-			log.Fatalf("%s", err)
+			logger.Fatalf("%s", err)
 		}
 	}
 
 	cli.CliCommand("start", "space-drain")
+}
+
+func parseOpts(args []string, logger Logger) optionsFlags {
+	opts := optionsFlags{
+		DrainType:      "all",
+		SkipCertVerify: false,
+		Force:          false,
+	}
+
+	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
+	args, err := parser.ParseArgs(args)
+	if err != nil {
+		logger.Fatalf("%s", err)
+	}
+
+	if len(args) > 0 {
+		logger.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
+	}
+
+	return opts
 }

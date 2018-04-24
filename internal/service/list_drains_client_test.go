@@ -1,9 +1,9 @@
-package cloudcontroller_test
+package service_test
 
 import (
 	"errors"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/service"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,13 +12,13 @@ import (
 var _ = Describe("ListDrainsClient", func() {
 	var (
 		curler *stubCurler
-		c      *cloudcontroller.ListDrainsClient
+		c      *service.ListDrainsClient
 		key    string
 	)
 
 	BeforeEach(func() {
 		curler = newStubCurler()
-		c = cloudcontroller.NewListDrainsClient(curler)
+		c = service.NewListDrainsClient(curler)
 	})
 
 	It("only displays syslog services", func() {
@@ -174,28 +174,6 @@ var _ = Describe("ListDrainsClient", func() {
 		})
 	})
 })
-
-type stubCurler struct {
-	URLs    []string
-	methods []string
-	bodies  []string
-	resps   map[string]string
-	errs    map[string]error
-}
-
-func newStubCurler() *stubCurler {
-	return &stubCurler{
-		resps: make(map[string]string),
-		errs:  make(map[string]error),
-	}
-}
-
-func (s *stubCurler) Curl(URL, method, body string) ([]byte, error) {
-	s.URLs = append(s.URLs, URL)
-	s.methods = append(s.methods, method)
-	s.bodies = append(s.bodies, body)
-	return []byte(s.resps[URL]), s.errs[URL]
-}
 
 var serviceInstancesJSONpage1 = `{
    "total_results": 2,

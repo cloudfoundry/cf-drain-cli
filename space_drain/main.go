@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/service"
 	"code.cloudfoundry.org/cf-drain-cli/internal/uaa"
 )
 
@@ -36,9 +37,10 @@ func main() {
 
 	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)
 
-	drainLister := cloudcontroller.NewListDrainsClient(curler)
-	drainCreator := cloudcontroller.NewCreateDrainClient(curler)
-	drainBinder := cloudcontroller.NewBindDrainClient(curler)
+	drainLister := service.NewListDrainsClient(curler)
+	drainCreator := service.NewCreateDrainClient(curler)
+	drainBinder := service.NewBindDrainClient(curler)
+
 	appLister := cloudcontroller.NewAppListerClient(curler)
 
 	for range time.Tick(time.Minute) {

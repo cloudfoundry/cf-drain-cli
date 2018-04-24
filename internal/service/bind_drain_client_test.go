@@ -1,4 +1,4 @@
-package cloudcontroller_test
+package service_test
 
 import (
 	"errors"
@@ -6,18 +6,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/service"
 )
 
 var _ = Describe("BindDrainClient", func() {
 	var (
 		curler *stubCurler
-		c      *cloudcontroller.BindDrainClient
+		c      *service.BindDrainClient
 	)
 
 	BeforeEach(func() {
 		curler = newStubCurler()
-		c = cloudcontroller.NewBindDrainClient(curler)
+		c = service.NewBindDrainClient(curler)
 	})
 
 	It("POSTs the correct body", func() {

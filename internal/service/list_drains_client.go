@@ -1,10 +1,12 @@
-package cloudcontroller
+package service
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 )
 
 type ListDrainsClient struct {
@@ -21,16 +23,7 @@ func NewListDrainsClient(c Curler) *ListDrainsClient {
 	}
 }
 
-type Drain struct {
-	Name     string
-	Guid     string
-	Apps     []string
-	AppGuids []string
-	Type     string
-	DrainURL string
-}
-
-func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
+func (c *ListDrainsClient) Drains(spaceGuid string) ([]cloudcontroller.Drain, error) {
 	var url string
 	url = fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid)
 	instances, err := c.fetchServiceInstances(url)
@@ -39,7 +32,7 @@ func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 	}
 
 	var appGuids []string
-	var drains []Drain
+	var drains []cloudcontroller.Drain
 	for _, s := range instances {
 		if s.Entity.SyslogDrainURL == "" {
 			continue
@@ -75,7 +68,7 @@ func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 		return nil, err
 	}
 
-	var namedDrains []Drain
+	var namedDrains []cloudcontroller.Drain
 	for _, d := range drains {
 		var names []string
 		var guids []string
@@ -180,8 +173,8 @@ func (c *ListDrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *ListDrainsClient) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
-	return Drain{
+func (c *ListDrainsClient) buildDrain(apps []string, name, guid, drainType, drainURL string) (cloudcontroller.Drain, error) {
+	return cloudcontroller.Drain{
 		Name:     name,
 		Guid:     guid,
 		Apps:     apps,

@@ -18,6 +18,10 @@ type Doer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
+type Curler interface {
+	Curl(URL, method, body string) ([]byte, error)
+}
+
 type TokenFetcher interface {
 	Token() (string, error)
 }

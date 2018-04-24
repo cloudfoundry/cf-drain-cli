@@ -1,4 +1,4 @@
-package cloudcontroller_test
+package service_test
 
 import (
 	"errors"
@@ -9,18 +9,18 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/service"
 )
 
 var _ = Describe("CreateDrainClient", func() {
 	var (
 		curler *stubCurler
-		c      *cloudcontroller.CreateDrainClient
+		c      *service.CreateDrainClient
 	)
 
 	BeforeEach(func() {
 		curler = newStubCurler()
-		c = cloudcontroller.NewCreateDrainClient(curler)
+		c = service.NewCreateDrainClient(curler)
 	})
 
 	It("POSTs the request to the Curler", func() {

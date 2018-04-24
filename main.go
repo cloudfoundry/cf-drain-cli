@@ -13,6 +13,7 @@ import (
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
+	"code.cloudfoundry.org/cf-drain-cli/internal/service"
 	"code.cloudfoundry.org/cli/plugin"
 )
 
@@ -24,7 +25,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	}
 
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
-	dClient := cloudcontroller.NewListDrainsClient(ccCurler)
+	dClient := service.NewListDrainsClient(ccCurler)
 	logger := newLogger(os.Stdout)
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,

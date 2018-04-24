@@ -32,9 +32,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	downloader := command.NewGithubReleaseDownloader(httpClient, logger)
 
 	switch args[0] {
-	case "drain":
-		command.CreateDrain(conn, args[1:], downloader, logger)
-	case "create-drain":
+	case "drain", "create-drain":
 		command.CreateDrain(conn, args[1:], downloader, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
@@ -42,9 +40,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
-	case "drain-space":
-		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
-	case "push-space-drain":
+	case "drain-space", "push-space-drain":
 		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/uaa"
 )
 
 func main() {
@@ -24,7 +25,7 @@ func main() {
 		},
 	}
 
-	tokenFetcher := cloudcontroller.NewUAATokenFetcher(
+	tokenFetcher := uaa.NewUAATokenFetcher(
 		cfg.UAAAddr,
 		cfg.ClientID,
 		cfg.ClientSecret,

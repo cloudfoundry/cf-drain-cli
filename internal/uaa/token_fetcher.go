@@ -1,4 +1,4 @@
-package cloudcontroller
+package uaa
 
 import (
 	"encoding/json"
@@ -8,6 +8,10 @@ import (
 	"net/url"
 	"strings"
 )
+
+type Doer interface {
+	Do(*http.Request) (*http.Response, error)
+}
 
 type UAATokenFetcher struct {
 	d        Doer

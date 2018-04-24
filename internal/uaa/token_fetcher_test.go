@@ -1,24 +1,28 @@
-package cloudcontroller_test
+package uaa_test
 
 import (
 	"errors"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/uaa"
 )
 
 var _ = Describe("UaaTokenFetcher", func() {
 	var (
 		doer *spyDoer
-		f    *cloudcontroller.UAATokenFetcher
+		f    *uaa.UAATokenFetcher
 	)
 
 	BeforeEach(func() {
 		doer = newSpyDoer()
 		doer.respBody = `{"access_token": "some-token", "token_type": "bearer"}`
-		f = cloudcontroller.NewUAATokenFetcher(
+		f = uaa.NewUAATokenFetcher(
 			"https://uaa.system-domain.com",
 			"some-id",
 			"some-secret",
@@ -59,3 +63,44 @@ var _ = Describe("UaaTokenFetcher", func() {
 		Expect(err).To(HaveOccurred())
 	})
 })
+
+type spyDoer struct {
+	URLs    []string
+	bodies  []string
+	methods []string
+	headers []http.Header
+	users   []*url.Userinfo
+
+	statusCode int
+	err        error
+	respBody   string
+}
+
+func newSpyDoer() *spyDoer {
+	return &spyDoer{
+		statusCode: 200,
+	}
+}
+
+func (s *spyDoer) Do(r *http.Request) (*http.Response, error) {
+	s.URLs = append(s.URLs, r.URL.String())
+	s.methods = append(s.methods, r.Method)
+	s.headers = append(s.headers, r.Header)
+	s.users = append(s.users, r.URL.User)
+
+	var body []byte
+	if r.Body != nil {
+		var err error
+		body, err = ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	s.bodies = append(s.bodies, string(body))
+
+	return &http.Response{
+		StatusCode: s.statusCode,
+		Body:       ioutil.NopCloser(strings.NewReader(s.respBody)),
+	}, s.err
+}

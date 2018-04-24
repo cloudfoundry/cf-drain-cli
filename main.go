@@ -122,6 +122,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 						"username":            "Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)",
 						"skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
 						"force":               "Skip warning prompt. Default is false",
+						"adapter-type":        "Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drains. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drains. Application will deploy cf applications that read from log-cache and forward to the drains. Default is `service`",
 					},
 				},
 			},

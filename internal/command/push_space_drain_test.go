@@ -339,6 +339,74 @@ var _ = Describe("PushSpaceDrain", func() {
 		))
 	})
 
+	DescribeTable("passes the adapter type to the space_drain app", func(adapterType string) {
+		args := []string{
+			"--path", "some-temp-dir",
+			"--drain-name", "some-drain",
+			"--drain-url", "https://some-drain",
+			"--username", "some-user",
+			"--skip-ssl-validation",
+			"--force",
+		}
+		if adapterType != "" {
+			args = append(args, []string{"--adapter-type", adapterType}...)
+		}
+
+		command.PushSpaceDrain(
+			cli,
+			reader,
+			pr,
+			args,
+			downloader,
+			logger,
+		)
+
+		commands := []interface{}{
+			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
+			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
+			[]string{"set-env", "space-drain", "DRAIN_URL", "https://some-drain"},
+			[]string{"set-env", "space-drain", "DRAIN_TYPE", "all"},
+			[]string{"set-env", "space-drain", "API_ADDR", "https://api.something.com"},
+			[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
+			[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
+			[]string{"set-env", "space-drain", "USERNAME", "some-user"},
+			[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
+			[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+		}
+		if adapterType != "" {
+			commands = append(commands, []string{"set-env", "space-drain", "ADAPTER_TYPE", adapterType})
+		}
+
+		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
+			commands...,
+		))
+	},
+		Entry("no adapter type", ""),
+		Entry("application", "application"),
+		Entry("service", "service"),
+	)
+
+	It("fatally logs if adapter-type is invalid", func() {
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				func(int) ([]byte, error) { return []byte("some-password"), nil },
+				[]string{
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--username", "some-user",
+					"--skip-ssl-validation",
+					"--adapter-type", "foobar",
+				},
+				downloader,
+				logger,
+			)
+		}).To(Panic())
+		Expect(logger.fatalfMessage).To(Equal(`Invalid adapter-type. Must be "application" or "service".`))
+	})
+
 	It("fatally logs if user-provided password is blank", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
@@ -392,6 +460,7 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
+					"--adapter-type", "application",
 					"--skip-ssl-validation",
 				},
 				downloader,
@@ -409,6 +478,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		Entry("USERNAME", "USERNAME"),
 		Entry("PASSWORD", "PASSWORD"),
 		Entry("SKIP_CERT_VERIFY", "SKIP_CERT_VERIFY"),
+		Entry("ADAPTER_TYPE", "ADAPTER_TYPE"),
 	)
 
 	It("fatally logs if confirmation is given anything other than y", func() {

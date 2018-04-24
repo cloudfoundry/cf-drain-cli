@@ -27,7 +27,9 @@ type optionsFlags struct {
 	DrainType      string `long:"type"`
 	SkipCertVerify bool   `long:"skip-ssl-validation"`
 	Force          bool   `long:"force"`
-	Password       string
+	AdapterType    string `long:"adapter-type"`
+
+	Password string
 }
 
 type passwordReader func(int) ([]byte, error)
@@ -140,6 +142,9 @@ func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReade
 		"PASSWORD":         opts.Password,
 		"SKIP_CERT_VERIFY": strconv.FormatBool(opts.SkipCertVerify),
 	}
+	if opts.AdapterType != "" {
+		envs["ADAPTER_TYPE"] = opts.AdapterType
+	}
 
 	for name, value := range envs {
 		_, err := cli.CliCommandWithoutTerminalOutput(
@@ -168,6 +173,12 @@ func parseOpts(args []string, logger Logger) optionsFlags {
 
 	if len(args) > 0 {
 		logger.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
+	}
+
+	switch opts.AdapterType {
+	case "", "application", "service":
+	default:
+		logger.Fatalf(`Invalid adapter-type. Must be "application" or "service".`)
 	}
 
 	return opts

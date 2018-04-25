@@ -7,6 +7,12 @@ with user provided syslog drains.
 
 ### Installing Plugin
 
+#### From CF Community Release
+
+```
+cf install-plugin -r CF-Community "drains"
+```
+
 #### From Binary Release
 
 1. Download the binary for the [latest release][latest-release] for your

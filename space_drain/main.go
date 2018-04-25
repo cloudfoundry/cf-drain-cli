@@ -37,6 +37,12 @@ func main() {
 
 	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)
 
+	// switch adapterType {
+	// case "application":
+	// case "service":
+	// default:
+	// }
+
 	drainLister := service.NewListDrainsClient(curler)
 	drainCreator := service.NewCreateDrainClient(curler)
 	drainBinder := service.NewBindDrainClient(curler)

@@ -25,6 +25,8 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	}
 
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
+	// TODO: consider allowing adapter type to control how this is created vs
+	//       just using the service adapter type
 	dClient := service.NewListDrainsClient(ccCurler)
 	logger := newLogger(os.Stdout)
 	httpClient := &http.Client{
@@ -38,8 +40,12 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
 	case "bind-drain":
+		// TODO: consider allowing adapter type to control how this is created vs
+		//       just using the service adapter type
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
+		// TODO: consider allowing adapter type to control how this is created vs
+		//       just using the service adapter type
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
 	case "drain-space", "push-space-drain":
 		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)

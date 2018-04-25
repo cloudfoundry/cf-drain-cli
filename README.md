@@ -7,7 +7,7 @@ with user provided syslog drains.
 
 ### Installing Plugin
 
-#### From CF Community Release
+#### From CF-Community 
 
 ```
 cf install-plugin -r CF-Community "drains"

@@ -19,7 +19,7 @@ type Logger interface {
 	Print(...interface{})
 }
 
-type createDrainFlags struct {
+type createDrainOpts struct {
 	AppName     string
 	AdapterType string `long:"adapter-type"`
 	DrainName   string `long:"drain-name"`
@@ -29,7 +29,7 @@ type createDrainFlags struct {
 	Password    string `long:"password"`
 }
 
-func (f *createDrainFlags) serviceName() string {
+func (f *createDrainOpts) serviceName() string {
 	if f.DrainName != "" {
 		return f.DrainName
 	}
@@ -48,7 +48,7 @@ func CreateDrain(
 	d Downloader,
 	log Logger,
 ) {
-	opts := createDrainFlags{
+	opts := createDrainOpts{
 		AdapterType: "service",
 	}
 

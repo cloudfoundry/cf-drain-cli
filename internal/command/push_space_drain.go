@@ -19,7 +19,7 @@ type Downloader interface {
 	Download(assetName string) string
 }
 
-type optionsFlags struct {
+type pushSpaceDrainOpts struct {
 	DrainName      string `long:"drain-name" required:"true"`
 	DrainURL       string `long:"drain-url" required:"true"`
 	Username       string `long:"username"`
@@ -32,8 +32,15 @@ type optionsFlags struct {
 
 type passwordReader func(int) ([]byte, error)
 
-func PushSpaceDrain(cli plugin.CliConnection, reader io.Reader, pw passwordReader, args []string, d Downloader, log Logger) {
-	opts := optionsFlags{
+func PushSpaceDrain(
+	cli plugin.CliConnection,
+	reader io.Reader,
+	pw passwordReader,
+	args []string,
+	d Downloader,
+	log Logger,
+) {
+	opts := pushSpaceDrainOpts{
 		DrainType:      "all",
 		SkipCertVerify: false,
 		Force:          false,

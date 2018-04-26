@@ -32,19 +32,15 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	downloader := command.NewGithubReleaseDownloader(httpClient, logger)
 
 	switch args[0] {
-	case "drain":
-		command.CreateDrain(conn, args[1:], downloader, logger)
-	case "create-drain":
-		command.CreateDrain(conn, args[1:], downloader, logger)
+	case "drain", "create-drain":
+		command.CreateDrain(conn, args[1:], downloader, terminal.ReadPassword, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
 	case "bind-drain":
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
-	case "drain-space":
-		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
-	case "push-space-drain":
+	case "drain-space", "push-space-drain":
 		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
 	}
 }
@@ -77,11 +73,10 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "drain [options] <app | service> <syslog-drain-url>",
 					Options: map[string]string{
-						"type":         "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
-						"adapter-type": "Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`",
-						"drain-name":   "The name of the app that will be created to forward messages to your drain. Default is `cf-drain-UUID`",
-						"username":     "The username to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.",
-						"password":     "The password to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.",
+						"-type":         "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
+						"-adapter-type": "Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`",
+						"-drain-name":   "The name of the app that will be created to forward messages to your drain. Default is `cf-drain-UUID`",
+						"-username":     "The username to use for authentication when the `adapter-type` is `application`. If `adapter-type` is `application` and no username is provided, a user will be created.",
 					},
 				},
 			},
@@ -119,13 +114,13 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "drain-space [OPTIONS]",
 					Options: map[string]string{
-						"path":                "Path to the space drain app to push. If omitted the latest release will be downloaded",
-						"drain-name":          "Name for the space drain. Required",
-						"drain-url":           "Syslog endpoint for the space drain. Required",
-						"type":                "Which log type to filter on (logs, metrics, all). Default is all",
-						"username":            "Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)",
-						"skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
-						"force":               "Skip warning prompt. Default is false",
+						"-path":                "Path to the space drain app to push. If omitted the latest release will be downloaded",
+						"-drain-name":          "Name for the space drain. Required",
+						"-drain-url":           "Syslog endpoint for the space drain. Required",
+						"-type":                "Which log type to filter on (logs, metrics, all). Default is all",
+						"-username":            "Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)",
+						"-skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
+						"-force":               "Skip warning prompt. Default is false",
 					},
 				},
 			},

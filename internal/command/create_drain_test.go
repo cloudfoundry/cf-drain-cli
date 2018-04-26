@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"errors"
+	"fmt"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
 	. "github.com/onsi/ginkgo"
@@ -23,7 +24,7 @@ var _ = Describe("CreateDrain", func() {
 		It("creates and binds to a user provided service", func() {
 			args := []string{"app-name", "syslog://a.com?a=b"}
 
-			command.CreateDrain(cli, args, nil, logger)
+			command.CreateDrain(cli, args, nil, nil, logger)
 
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
 			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -44,7 +45,7 @@ var _ = Describe("CreateDrain", func() {
 			It("creates and binds to a user provided service with the given name", func() {
 				args := []string{"--drain-name", "my-drain", "app-name", "syslog://a.com?a=b"}
 
-				command.CreateDrain(cli, args, nil, logger)
+				command.CreateDrain(cli, args, nil, nil, logger)
 
 				Expect(cli.cliCommandArgs).To(HaveLen(2))
 				Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -65,7 +66,7 @@ var _ = Describe("CreateDrain", func() {
 			It("adds the drain type to the syslog URL for metrics", func() {
 				args := []string{"--type", "metrics", "app-name", "syslog://a.com"}
 
-				command.CreateDrain(cli, args, nil, logger)
+				command.CreateDrain(cli, args, nil, nil, logger)
 
 				Expect(cli.cliCommandArgs).To(HaveLen(2))
 				Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -78,7 +79,7 @@ var _ = Describe("CreateDrain", func() {
 			It("adds the drain type to the syslog URL for logs", func() {
 				args := []string{"--type", "logs", "app-name", "syslog://a.com"}
 
-				command.CreateDrain(cli, args, nil, logger)
+				command.CreateDrain(cli, args, nil, nil, logger)
 
 				Expect(cli.cliCommandArgs).To(HaveLen(2))
 				Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -91,7 +92,7 @@ var _ = Describe("CreateDrain", func() {
 			It("adds the drain type to the syslog URL for all", func() {
 				args := []string{"--type", "all", "app-name", "syslog://a.com"}
 
-				command.CreateDrain(cli, args, nil, logger)
+				command.CreateDrain(cli, args, nil, nil, logger)
 
 				Expect(cli.cliCommandArgs).To(HaveLen(2))
 				Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -105,7 +106,7 @@ var _ = Describe("CreateDrain", func() {
 				args := []string{"--type", "garbage", "app-name", "syslog://a.com"}
 
 				Expect(func() {
-					command.CreateDrain(cli, args, nil, logger)
+					command.CreateDrain(cli, args, nil, nil, logger)
 				}).To(Panic())
 				Expect(logger.fatalfMessage).To(Equal("Invalid type: garbage"))
 			})
@@ -115,20 +116,20 @@ var _ = Describe("CreateDrain", func() {
 			args := []string{"app-name", "://://blablabla"}
 
 			Expect(func() {
-				command.CreateDrain(cli, args, nil, logger)
+				command.CreateDrain(cli, args, nil, nil, logger)
 			}).To(Panic())
 			Expect(logger.fatalfMessage).To(Equal("Invalid syslog drain URL: parse ://://blablabla: missing protocol scheme"))
 		})
 
 		It("fatally logs if the incorrect number of arguments are given", func() {
 			Expect(func() {
-				command.CreateDrain(nil, []string{}, nil, logger)
+				command.CreateDrain(nil, []string{}, nil, nil, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 2, got 0."))
 
 			Expect(func() {
-				command.CreateDrain(nil, []string{"one", "two", "three", "four"}, nil, logger)
+				command.CreateDrain(nil, []string{"one", "two", "three", "four"}, nil, nil, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 2, got 4."))
@@ -138,7 +139,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.getAppError = errors.New("not an app")
 
 			Expect(func() {
-				command.CreateDrain(cli, []string{"not-an-app", "syslog://a.com"}, nil, logger)
+				command.CreateDrain(cli, []string{"not-an-app", "syslog://a.com"}, nil, nil, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("not an app"))
@@ -149,7 +150,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.createServiceError = errors.New("failed to create")
 
 			Expect(func() {
-				command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, logger)
+				command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, nil, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("failed to create"))
@@ -159,7 +160,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.bindServiceError = errors.New("failed to bind")
 
 			Expect(func() {
-				command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, logger)
+				command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, nil, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("failed to bind"))
@@ -168,8 +169,9 @@ var _ = Describe("CreateDrain", func() {
 
 	Context("with application adapter type", func() {
 		var (
-			downloader *stubDownloader
-			args       []string
+			downloader     *stubDownloader
+			args           []string
+			passwordReader func(int) ([]byte, error)
 		)
 
 		BeforeEach(func() {
@@ -181,18 +183,21 @@ var _ = Describe("CreateDrain", func() {
 			downloader = newStubDownloader()
 			downloader.path = "/downloaded/temp/dir/syslog_forwarder"
 
+			passwordReader = func(int) ([]byte, error) {
+				return []byte("some-password"), nil
+			}
+
 			args = []string{
 				"--adapter-type", "application",
 				"--drain-name", "my-drain",
-				"--username", "user",
-				"--password", "pass",
+				"--username", "my-user",
 				"app-name",
 				"syslog://a.com?a=b",
 			}
 		})
 
 		It("push a syslog forwarder app", func() {
-			command.CreateDrain(cli, args, downloader, logger)
+			command.CreateDrain(cli, args, downloader, passwordReader, logger)
 
 			Expect(downloader.assetName).To(Equal("syslog_forwarder"))
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
@@ -214,8 +219,8 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "UAA_URL", "uaa.example.com"},
 				[]string{"set-env", "my-drain", "CLIENT_ID", "cf"},
 
-				[]string{"set-env", "my-drain", "USERNAME", "user"},
-				[]string{"set-env", "my-drain", "PASSWORD", "pass"},
+				[]string{"set-env", "my-drain", "USERNAME", "my-user"},
+				[]string{"set-env", "my-drain", "PASSWORD", "some-password"},
 
 				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
@@ -237,7 +242,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.getAppError = errors.New("unknown app")
 			cli.getServiceGuid = "service-instance-guid"
 
-			command.CreateDrain(cli, args, downloader, logger)
+			command.CreateDrain(cli, args, downloader, passwordReader, logger)
 
 			Expect(downloader.assetName).To(Equal("syslog_forwarder"))
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
@@ -259,8 +264,8 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "UAA_URL", "uaa.example.com"},
 				[]string{"set-env", "my-drain", "CLIENT_ID", "cf"},
 
-				[]string{"set-env", "my-drain", "USERNAME", "user"},
-				[]string{"set-env", "my-drain", "PASSWORD", "pass"},
+				[]string{"set-env", "my-drain", "USERNAME", "my-user"},
+				[]string{"set-env", "my-drain", "PASSWORD", "some-password"},
 
 				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
@@ -278,11 +283,92 @@ var _ = Describe("CreateDrain", func() {
 			))
 		})
 
+		It("creates a user if username is not provided", func() {
+			args = []string{
+				"--adapter-type", "application",
+				"--drain-name", "my-drain",
+				"app-name",
+				"syslog://a.com?a=b",
+			}
+			guid := "application-guid"
+			username := fmt.Sprintf("drain-%s", guid)
+			command.CreateDrain(cli, args, downloader, passwordReader, logger)
+
+			Expect(downloader.assetName).To(Equal("syslog_forwarder"))
+
+			Expect(cli.cliCommandArgs).To(HaveLen(4))
+
+			Expect(cli.cliCommandArgs[0]).To(HaveLen(3))
+			Expect(cli.cliCommandArgs[0][0]).To(Equal("create-user"))
+			Expect(cli.cliCommandArgs[0][1]).To(Equal(username))
+			Expect(cli.cliCommandArgs[0][2]).ToNot(BeEmpty())
+			generatedPassword := cli.cliCommandArgs[0][2]
+
+			Expect(cli.cliCommandArgs[1]).To(Equal(
+				[]string{
+					"set-space-role", username, cli.currentOrgName, cli.currentSpaceName, "SpaceDeveloper",
+				},
+			))
+
+			Expect(cli.cliCommandArgs[2]).To(Equal(
+				[]string{
+					"push", "my-drain",
+					"-p", "/downloaded/temp/dir",
+					"-b", "binary_buildpack",
+					"-c", "./syslog_forwarder",
+					"--no-start",
+				},
+			))
+
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:8]).To(ConsistOf(
+				[]string{"set-env", "my-drain", "SOURCE_ID", guid},
+				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
+
+				[]string{"set-env", "my-drain", "UAA_URL", "uaa.example.com"},
+				[]string{"set-env", "my-drain", "CLIENT_ID", "cf"},
+
+				[]string{"set-env", "my-drain", "USERNAME", username},
+				[]string{"set-env", "my-drain", "PASSWORD", generatedPassword},
+
+				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
+				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
+			))
+		})
+
+		It("prompts for a password if username is provided", func() {
+			command.CreateDrain(cli, args, downloader, passwordReader, logger)
+
+			Expect(cli.cliCommandArgs).To(HaveLen(2))
+			Expect(cli.cliCommandArgs[0]).To(Equal(
+				[]string{
+					"push", "my-drain",
+					"-p", "/downloaded/temp/dir",
+					"-b", "binary_buildpack",
+					"-c", "./syslog_forwarder",
+					"--no-start",
+				},
+			))
+
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:8]).To(ConsistOf(
+				[]string{"set-env", "my-drain", "SOURCE_ID", "application-guid"},
+				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
+
+				[]string{"set-env", "my-drain", "UAA_URL", "uaa.example.com"},
+				[]string{"set-env", "my-drain", "CLIENT_ID", "cf"},
+
+				[]string{"set-env", "my-drain", "USERNAME", "my-user"},
+				[]string{"set-env", "my-drain", "PASSWORD", "some-password"},
+
+				[]string{"set-env", "my-drain", "LOG_CACHE_HTTP_ADDR", "log-cache.example.com"},
+				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
+			))
+		})
+
 		It("fatally logs when we fail to get current org", func() {
 			cli.currentOrgError = errors.New("an error")
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("an error"))
@@ -292,7 +378,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.currentSpaceError = errors.New("an error")
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("an error"))
@@ -302,49 +388,17 @@ var _ = Describe("CreateDrain", func() {
 			cli.apiEndpointError = errors.New("an error")
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("an error"))
-		})
-
-		It("fatally logs if username is not provided", func() {
-			args = []string{
-				"--adapter-type", "application",
-				"--drain-name", "my-drain",
-				"--password", "pass",
-				"app-name",
-				"syslog://a.com?a=b",
-			}
-
-			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
-			}).To(Panic())
-
-			Expect(logger.fatalfMessage).To(Equal("missing required flag: username"))
-		})
-
-		It("fatally logs if password is not provided", func() {
-			args = []string{
-				"--adapter-type", "application",
-				"--drain-name", "my-drain",
-				"--username", "user",
-				"app-name",
-				"syslog://a.com?a=b",
-			}
-
-			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
-			}).To(Panic())
-
-			Expect(logger.fatalfMessage).To(Equal("missing required flag: password"))
 		})
 
 		It("fatally logs if push fails", func() {
 			cli.pushAppError = errors.New("push error")
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("push error"))
@@ -356,7 +410,7 @@ var _ = Describe("CreateDrain", func() {
 			}
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("set-env error"))
@@ -366,7 +420,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.startAppError = errors.New("start error")
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("start error"))
@@ -377,7 +431,7 @@ var _ = Describe("CreateDrain", func() {
 			cli.getServiceError = errors.New("unknown service")
 
 			Expect(func() {
-				command.CreateDrain(cli, args, downloader, logger)
+				command.CreateDrain(cli, args, downloader, passwordReader, logger)
 			}).To(Panic())
 
 			Expect(logger.fatalfMessage).To(Equal("unknown application or service \"app-name\""))
@@ -392,7 +446,7 @@ var _ = Describe("CreateDrain", func() {
 		}
 
 		Expect(func() {
-			command.CreateDrain(cli, args, nil, logger)
+			command.CreateDrain(cli, args, nil, nil, logger)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("unsupported adapter type, must be 'service' or 'application'"))

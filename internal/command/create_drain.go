@@ -1,6 +1,8 @@
 package command
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"log"
 	"net/url"
@@ -20,13 +22,13 @@ type Logger interface {
 }
 
 type createDrainOpts struct {
-	AppName     string
-	AdapterType string `long:"adapter-type"`
-	DrainName   string `long:"drain-name"`
-	DrainType   string `long:"type"`
-	DrainURL    string
-	Username    string `long:"username"`
-	Password    string `long:"password"`
+	AppOrServiceName string
+	AdapterType      string `long:"adapter-type"`
+	DrainName        string `long:"drain-name"`
+	DrainType        string `long:"type"`
+	DrainURL         string
+	Username         string `long:"username"`
+	Password         string
 }
 
 func (f *createDrainOpts) serviceName() string {
@@ -46,6 +48,7 @@ func CreateDrain(
 	cli plugin.CliConnection,
 	args []string,
 	d Downloader,
+	p passwordReader,
 	log Logger,
 ) {
 	opts := createDrainOpts{
@@ -58,20 +61,11 @@ func CreateDrain(
 		log.Fatalf("%s", err)
 	}
 
-	if opts.AdapterType == "application" {
-		if opts.Username == "" {
-			log.Fatalf("missing required flag: username")
-		}
-		if opts.Password == "" {
-			log.Fatalf("missing required flag: password")
-		}
-	}
-
 	if len(args) != 2 {
 		log.Fatalf("Invalid arguments, expected 2, got %d.", len(args))
 	}
 
-	opts.AppName = args[0]
+	opts.AppOrServiceName = args[0]
 	opts.DrainURL = args[1]
 
 	u, err := url.Parse(opts.DrainURL)
@@ -91,16 +85,17 @@ func CreateDrain(
 
 	switch opts.AdapterType {
 	case "service":
-		createAndBindService(cli, u, opts.AppName, opts.serviceName(), log)
+		createAndBindService(cli, u, opts.AppOrServiceName, opts.serviceName(), log)
 	case "application":
 		pushSyslogForwarder(
 			cli,
 			u,
-			opts.AppName,
+			opts.AppOrServiceName,
 			opts.serviceName(),
 			opts.Username,
 			opts.Password,
 			d,
+			p,
 			log,
 		)
 	default:
@@ -140,6 +135,7 @@ func pushSyslogForwarder(
 	username string,
 	password string,
 	d Downloader,
+	p passwordReader,
 	log Logger,
 ) {
 	sourceID, err := sourceID(cli, appOrServiceName)
@@ -158,6 +154,23 @@ func pushSyslogForwarder(
 	apiEndpoint, err := cli.ApiEndpoint()
 	if err != nil {
 		log.Fatalf("%s", err)
+	}
+
+	if username == "" {
+		username, password = createUser(cli, sourceID, log)
+	}
+
+	if username != "" && password == "" {
+		log.Printf("Enter a password for %s: ", username)
+		bytePassword, err := p(0)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+
+		if string(bytePassword) == "" {
+			log.Fatalf("Password cannot be blank.")
+		}
+		password = string(bytePassword)
 	}
 
 	path := path.Dir(d.Download("syslog_forwarder"))
@@ -242,4 +255,43 @@ func buildDrainName(drainName string) string {
 	}
 
 	return fmt.Sprint("cf-drain-", guid)
+}
+
+func createUser(cli plugin.CliConnection, sourceID string, log Logger) (username, password string) {
+	username = fmt.Sprintf("drain-%s", sourceID)
+
+	data := make([]byte, 20)
+	_, err := rand.Read(data)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	password = fmt.Sprintf("%x", sha256.Sum256(data))
+
+	_, err = cli.CliCommand("create-user", username, password)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	org, err := cli.GetCurrentOrg()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	space, err := cli.GetCurrentSpace()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	_, err = cli.CliCommand(
+		"set-space-role",
+		username,
+		org.Name,
+		space.Name,
+		"SpaceDeveloper",
+	)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	return username, password
 }

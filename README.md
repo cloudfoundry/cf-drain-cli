@@ -7,7 +7,7 @@ with user provided syslog drains.
 
 ### Installing Plugin
 
-#### From CF-Community 
+#### From CF-Community
 
 ```
 cf install-plugin -r CF-Community "drains"
@@ -44,11 +44,10 @@ USAGE:
    drain [options] <app-name> <syslog-drain-url>
 
 OPTIONS:
-   -password           The password to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.
-   -type               The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`
-   -username           The username to use for authentication when the `adapter-type` is `application`. Required if `adapter-type` is `application`.
-   -adapter-type       Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`
-   -drain-name         The name of the app that will be created to forward messages to your drain. Default is `cf-drain-UUID`
+   --type               The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`
+   --username           The username to use for authentication when the `adapter-type` is `application`. If `adapter-type` is `application` and no username is provided, a user will be created.
+   --adapter-type       Set the type of adapter. The adapter is responsible for forwarding messages to the syslog drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`
+   --drain-name         The name of the app that will be created to forward messages to your drain. Default is `cf-drain-UUID`
 ```
 
 #### Delete Drain

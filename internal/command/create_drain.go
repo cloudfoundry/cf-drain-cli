@@ -1,7 +1,6 @@
 package command
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/url"
@@ -9,6 +8,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
+	flags "github.com/jessevdk/go-flags"
 	uuid "github.com/nu7hatch/gouuid"
 )
 
@@ -19,67 +19,87 @@ type Logger interface {
 	Print(...interface{})
 }
 
+type createDrainFlags struct {
+	AppName     string
+	AdapterType string `long:"adapter-type"`
+	DrainName   string `long:"drain-name"`
+	DrainType   string `long:"type"`
+	DrainURL    string
+	Username    string `long:"username"`
+	Password    string `long:"password"`
+}
+
+func (f *createDrainFlags) serviceName() string {
+	if f.DrainName != "" {
+		return f.DrainName
+	}
+
+	guid, err := uuid.NewV4()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	return fmt.Sprint("cf-drain-", guid)
+}
+
 func CreateDrain(
 	cli plugin.CliConnection,
 	args []string,
 	d Downloader,
 	log Logger,
 ) {
-	f := flag.NewFlagSet("", flag.ContinueOnError)
-	drainType := f.String("type", "", "")
-	drainName := f.String("drain-name", "", "")
-	adapterType := f.String("adapter-type", "service", "")
-	username := f.String("username", "", "")
-	password := f.String("password", "", "")
+	opts := createDrainFlags{
+		AdapterType: "service",
+	}
 
-	err := f.Parse(args)
+	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
+	args, err := parser.ParseArgs(args)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	if *adapterType == "application" {
-		if *username == "" {
+	if opts.AdapterType == "application" {
+		if opts.Username == "" {
 			log.Fatalf("missing required flag: username")
 		}
-		if *password == "" {
+		if opts.Password == "" {
 			log.Fatalf("missing required flag: password")
 		}
 	}
 
-	if len(f.Args()) != 2 {
-		log.Fatalf("Invalid arguments, expected 2, got %d.", len(f.Args()))
+	if len(args) != 2 {
+		log.Fatalf("Invalid arguments, expected 2, got %d.", len(args))
 	}
 
-	appName := f.Args()[0]
-	drainURL := f.Args()[1]
-	serviceName := buildDrainName(*drainName)
+	opts.AppName = args[0]
+	opts.DrainURL = args[1]
 
-	u, err := url.Parse(drainURL)
+	u, err := url.Parse(opts.DrainURL)
 	if err != nil {
 		log.Fatalf("Invalid syslog drain URL: %s", err)
 	}
 
-	if *drainType != "" {
-		if !validDrainType(*drainType) {
-			log.Fatalf("Invalid type: %s", *drainType)
+	if opts.DrainType != "" {
+		if !validDrainType(opts.DrainType) {
+			log.Fatalf("Invalid type: %s", opts.DrainType)
 		}
 
 		qValues := u.Query()
-		qValues.Set("drain-type", *drainType)
+		qValues.Set("drain-type", opts.DrainType)
 		u.RawQuery = qValues.Encode()
 	}
 
-	switch *adapterType {
+	switch opts.AdapterType {
 	case "service":
-		createAndBindService(cli, u, appName, serviceName, log)
+		createAndBindService(cli, u, opts.AppName, opts.serviceName(), log)
 	case "application":
 		pushSyslogForwarder(
 			cli,
 			u,
-			appName,
-			serviceName,
-			*username,
-			*password,
+			opts.AppName,
+			opts.serviceName(),
+			opts.Username,
+			opts.Password,
 			d,
 			log,
 		)

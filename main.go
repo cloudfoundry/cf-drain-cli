@@ -20,7 +20,7 @@ type CFDrainCLI struct{}
 
 func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	if len(args) == 0 {
-		log.Fatalf("Expected atleast 1 argument, but got 0.")
+		log.Fatalf("Expected at least 1 argument, but got 0.")
 	}
 
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
@@ -32,7 +32,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	downloader := command.NewGithubReleaseDownloader(httpClient, logger)
 
 	switch args[0] {
-	case "drain", "create-drain":
+	case "drain":
 		command.CreateDrain(conn, args[1:], downloader, terminal.ReadPassword, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
@@ -40,7 +40,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		command.BindDrain(conn, dClient, args[1:], logger)
 	case "drains":
 		command.Drains(conn, dClient, nil, logger, os.Stdout)
-	case "drain-space", "push-space-drain":
+	case "drain-space":
 		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
 	}
 }
@@ -81,13 +81,6 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				},
 			},
 			{
-				Name:     "create-drain",
-				HelpText: "Deprecated. See the drain command for details.",
-				UsageDetails: plugin.Usage{
-					Usage: "drain [options] <app | service> <syslog-drain-url>",
-				},
-			},
-			{
 				Name:     "bind-drain",
 				HelpText: "Binds an application to an existing syslog drain.",
 				UsageDetails: plugin.Usage{
@@ -99,13 +92,6 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				HelpText: "Unbinds the service from applications and deletes the service.",
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain <drain-name>",
-				},
-			},
-			{
-				Name:     "push-space-drain",
-				HelpText: "Deprecated. See the drain-space command for details.",
-				UsageDetails: plugin.Usage{
-					Usage: "push-space-drain [OPTIONS]",
 				},
 			},
 			{

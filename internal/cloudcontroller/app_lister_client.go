@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+type Curler interface {
+	Curl(URL, method, body string) ([]byte, error)
+}
+
 type AppListerClient struct {
 	c Curler
 }

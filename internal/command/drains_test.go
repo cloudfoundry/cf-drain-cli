@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
+	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -95,7 +95,7 @@ var _ = Describe("Drains", func() {
 })
 
 type stubDrainFetcher struct {
-	drains []cloudcontroller.Drain
+	drains []drain.Drain
 	err    error
 }
 
@@ -103,6 +103,6 @@ func newStubDrainFetcher() *stubDrainFetcher {
 	return &stubDrainFetcher{}
 }
 
-func (f *stubDrainFetcher) Drains(spaceGuid string) ([]cloudcontroller.Drain, error) {
+func (f *stubDrainFetcher) Drains(spaceGuid string) ([]drain.Drain, error) {
 	return f.drains, f.err
 }

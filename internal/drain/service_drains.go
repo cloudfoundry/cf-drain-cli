@@ -1,36 +1,35 @@
-package cloudcontroller
+package drain
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 )
 
-type ListDrainsClient struct {
-	c Curler
+type ServiceDrainLister struct {
+	c cloudcontroller.Curler
 }
 
-type Curler interface {
-	Curl(URL, method, body string) ([]byte, error)
-}
-
-func NewListDrainsClient(c Curler) *ListDrainsClient {
-	return &ListDrainsClient{
+func NewServiceDrainLister(c cloudcontroller.Curler) *ServiceDrainLister {
+	return &ServiceDrainLister{
 		c: c,
 	}
 }
 
 type Drain struct {
-	Name     string
-	Guid     string
-	Apps     []string
-	AppGuids []string
-	Type     string
-	DrainURL string
+	Name        string
+	Guid        string
+	Apps        []string
+	AppGuids    []string
+	Type        string
+	DrainURL    string
+	AdapterType string
 }
 
-func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
+func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 	var url string
 	url = fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid)
 	instances, err := c.fetchServiceInstances(url)
@@ -91,7 +90,7 @@ func (c *ListDrainsClient) Drains(spaceGuid string) ([]Drain, error) {
 	return namedDrains, nil
 }
 
-func (c *ListDrainsClient) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
+func (c *ServiceDrainLister) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
 	instances := []userProvidedServiceInstance{}
 	for url != "" {
 		resp, err := c.c.Curl(url, "GET", "")
@@ -112,7 +111,7 @@ func (c *ListDrainsClient) fetchServiceInstances(url string) ([]userProvidedServ
 	return instances, nil
 }
 
-func (c *ListDrainsClient) fetchApps(url string) ([]string, error) {
+func (c *ServiceDrainLister) fetchApps(url string) ([]string, error) {
 	var apps []string
 	for url != "" {
 		resp, err := c.c.Curl(url, "GET", "")
@@ -136,7 +135,7 @@ func (c *ListDrainsClient) fetchApps(url string) ([]string, error) {
 	return apps, nil
 }
 
-func (c *ListDrainsClient) fetchAppNames(guids []string) (map[string]string, error) {
+func (c *ServiceDrainLister) fetchAppNames(guids []string) (map[string]string, error) {
 	if len(guids) == 0 {
 		return nil, nil
 	}
@@ -166,7 +165,7 @@ func (c *ListDrainsClient) fetchAppNames(guids []string) (map[string]string, err
 	return apps, nil
 }
 
-func (c *ListDrainsClient) TypeFromDrainURL(URL string) (string, error) {
+func (c *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
 	uri, err := url.Parse(URL)
 	if err != nil {
 		return "", err
@@ -180,13 +179,14 @@ func (c *ListDrainsClient) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *ListDrainsClient) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
+func (c *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
 	return Drain{
-		Name:     name,
-		Guid:     guid,
-		Apps:     apps,
-		Type:     drainType,
-		DrainURL: drainURL,
+		Name:        name,
+		Guid:        guid,
+		Apps:        apps,
+		Type:        drainType,
+		DrainURL:    drainURL,
+		AdapterType: "service",
 	}, nil
 }
 

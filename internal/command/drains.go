@@ -7,12 +7,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 	"code.cloudfoundry.org/cli/plugin"
 )
 
 type DrainFetcher interface {
-	Drains(spaceGUID string) ([]cloudcontroller.Drain, error)
+	Drains(spaceGUID string) ([]drain.Drain, error)
 }
 
 func Drains(

@@ -3,8 +3,8 @@ package command_test
 import (
 	"errors"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
+	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,7 +22,7 @@ var _ = Describe("BindDrain", func() {
 		cli = newStubCliConnection()
 		cli.currentSpaceGuid = "space-guid"
 		drainFetcher = newStubDrainFetcher()
-		drainFetcher.drains = []cloudcontroller.Drain{
+		drainFetcher.drains = []drain.Drain{
 			{Name: "drain-name"},
 		}
 	})

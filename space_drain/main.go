@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 )
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 
 	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)
 
-	drainLister := cloudcontroller.NewListDrainsClient(curler)
+	drainLister := drain.NewServiceDrainLister(curler)
 	drainCreator := cloudcontroller.NewCreateDrainClient(curler)
 	drainBinder := cloudcontroller.NewBindDrainClient(curler)
 	appLister := cloudcontroller.NewAppListerClient(curler)
@@ -96,12 +97,12 @@ func containsApp(appGuid string, guids []string) bool {
 	return false
 }
 
-func hasDrain(name string, drains []cloudcontroller.Drain) (cloudcontroller.Drain, bool) {
+func hasDrain(name string, drains []drain.Drain) (drain.Drain, bool) {
 	for _, drain := range drains {
 		if drain.Name == name {
 			return drain, true
 		}
 	}
 
-	return cloudcontroller.Drain{}, false
+	return drain.Drain{}, false
 }

@@ -1,7 +1,7 @@
 package command
 
 import (
-	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 	"code.cloudfoundry.org/cli/plugin"
 )
 
@@ -33,7 +33,7 @@ func BindDrain(cli plugin.CliConnection, df DrainFetcher, args []string, log Log
 	}
 }
 
-func containsDrain(drains []cloudcontroller.Drain, drainName string) bool {
+func containsDrain(drains []drain.Drain, drainName string) bool {
 	for _, d := range drains {
 		if d.Name == drainName {
 			return true

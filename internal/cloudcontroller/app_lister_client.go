@@ -5,6 +5,11 @@ import (
 	"fmt"
 )
 
+type App struct {
+	Name string
+	Guid string
+}
+
 type Curler interface {
 	Curl(URL, method, body string) ([]byte, error)
 }
@@ -19,7 +24,7 @@ func NewAppListerClient(c Curler) *AppListerClient {
 	}
 }
 
-func (c *AppListerClient) ListApps(spaceGuid string) ([]string, error) {
+func (c *AppListerClient) ListApps(spaceGuid string) ([]App, error) {
 	resp, err := c.c.Curl(
 		fmt.Sprintf("/v2/apps?q=space_guid:%s", spaceGuid),
 		"GET",
@@ -35,6 +40,9 @@ func (c *AppListerClient) ListApps(spaceGuid string) ([]string, error) {
 			Metadata struct {
 				Guid string
 			}
+			Entity struct {
+				Name string
+			}
 		}
 	}
 	err = json.Unmarshal(resp, &apps)
@@ -42,10 +50,10 @@ func (c *AppListerClient) ListApps(spaceGuid string) ([]string, error) {
 		return nil, err
 	}
 
-	var guids []string
+	var a []App
 	for _, r := range apps.Resources {
-		guids = append(guids, r.Metadata.Guid)
+		a = append(a, App{r.Entity.Name, r.Metadata.Guid})
 	}
 
-	return guids, nil
+	return a, nil
 }

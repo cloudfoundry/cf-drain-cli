@@ -25,10 +25,12 @@ var _ = Describe("AppListerClient", func() {
 		{
 			"resources": [
 			{
-				"metadata":{"guid":"a"}
+				"metadata":{"guid":"a"},
+				"entity": {"name":"app-1"}
 			},
 			{
-				"metadata":{"guid":"b"}
+				"metadata":{"guid":"b"},
+				"entity": {"name":"app-2"}
 			}
 			]
 		}
@@ -37,7 +39,15 @@ var _ = Describe("AppListerClient", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(curler.methods).To(ConsistOf("GET"))
 		Expect(curler.URLs).To(ConsistOf("/v2/apps?q=space_guid:some-space"))
-		Expect(apps).To(ConsistOf("a", "b"))
+		Expect(apps).To(ConsistOf(
+			cloudcontroller.App{
+				Name: "app-1",
+				Guid: "a",
+			},
+			cloudcontroller.App{
+				Name: "app-2",
+				Guid: "b",
+			}))
 	})
 
 	It("returns an error if the GET fails", func() {

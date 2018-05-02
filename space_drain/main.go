@@ -72,16 +72,16 @@ func main() {
 		}
 
 		log.Printf("binding %d apps to drain...", len(apps))
-		for _, appGuid := range apps {
-			if containsApp(appGuid, drain.AppGuids) {
+		for _, app := range apps {
+			if containsApp(app.Guid, drain.AppGuids) {
 				continue
 			}
 
-			if err := drainBinder.BindDrain(appGuid, drain.Guid); err != nil {
-				log.Printf("failed to bind %s to drain: %s", appGuid, err)
+			if err := drainBinder.BindDrain(app.Guid, drain.Guid); err != nil {
+				log.Printf("failed to bind %s to drain: %s", app.Guid, err)
 				continue
 			}
-			drain.AppGuids = append(drain.AppGuids, appGuid)
+			drain.AppGuids = append(drain.AppGuids, app.Guid)
 		}
 		log.Printf("done binding apps to drain.")
 	}

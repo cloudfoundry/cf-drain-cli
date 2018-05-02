@@ -2,17 +2,18 @@ package command
 
 import (
 	"bufio"
-	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 	"io"
+	"log"
 	"path"
 	"strconv"
 	"strings"
 
 	flags "github.com/jessevdk/go-flags"
+	uuid "github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/cli/plugin"
+	"code.cloudfoundry.org/cli/plugin/models"
 )
 
 type Downloader interface {
@@ -20,6 +21,7 @@ type Downloader interface {
 }
 
 type pushSpaceDrainOpts struct {
+	AdapterType    string `long:"adapter-type"`
 	DrainName      string `long:"drain-name" required:"true"`
 	DrainURL       string `long:"drain-url" required:"true"`
 	Username       string `long:"username"`
@@ -41,6 +43,7 @@ func PushSpaceDrain(
 	log Logger,
 ) {
 	opts := pushSpaceDrainOpts{
+		AdapterType:    "service",
 		DrainType:      "all",
 		SkipCertVerify: false,
 		Force:          false,
@@ -86,17 +89,46 @@ func PushSpaceDrain(
 		}
 	}
 
+	switch opts.AdapterType {
+	case "application":
+		pushApplicationSpaceDrain(opts, cli, d, log)
+	case "service":
+		pushServiceSpaceDrain(opts, cli, d, log)
+	default:
+		log.Fatalf("Invalid value for flag `--adapter-type`: %s", opts.AdapterType)
+	}
+}
+
+func pushApplicationSpaceDrain(opts pushSpaceDrainOpts, cli plugin.CliConnection, d Downloader, log Logger) {
+	org := currentOrg(cli, log)
+	space := currentSpace(cli, log)
+	api := apiEndpoint(cli, log)
+
+	envs := [][]string{
+		{"LOG_CACHE_HTTP_ADDR", strings.Replace(api, "api", "log-cache", 1)},
+		{"SOURCE_HOST_NAME", fmt.Sprintf("%s.%s", org.Name, space.Name)},
+		{"GROUP_NAME", guid()},
+	}
+
+	pushDrain(cli, fmt.Sprint("space-forwarder-", guid()), "space_syslog", envs, opts, d, log)
+}
+
+func pushServiceSpaceDrain(opts pushSpaceDrainOpts, cli plugin.CliConnection, d Downloader, log Logger) {
+	pushDrain(cli, "space-drain", "space_drain", nil, opts, d, log)
+}
+
+func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]string, opts pushSpaceDrainOpts, d Downloader, log Logger) {
 	if opts.Path == "" {
 		log.Printf("Downloading latest space drain from github...")
-		opts.Path = path.Dir(d.Download("space_drain"))
+		opts.Path = path.Dir(d.Download(command))
 		log.Printf("Done downloading space drain from github.")
 	}
 
-	_, err = cli.CliCommand(
-		"push", "space-drain",
+	_, err := cli.CliCommand(
+		"push", appName,
 		"-p", opts.Path,
 		"-b", "binary_buildpack",
-		"-c", "./space_drain",
+		"-c", fmt.Sprint("./", command),
 		"--health-check-type", "process",
 		"--no-start",
 		"--no-route",
@@ -105,71 +137,70 @@ func PushSpaceDrain(
 		log.Fatalf("%s", err)
 	}
 
-	space, err := cli.GetCurrentSpace()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	api, err := cli.ApiEndpoint()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	space := currentSpace(cli, log)
+	api := apiEndpoint(cli, log)
 
 	if opts.Username == "" {
-		app, err := cli.GetApp("space-drain")
+		app, err := cli.GetApp(appName)
 		if err != nil {
 			log.Fatalf("%s", err)
 		}
 		opts.Username = fmt.Sprintf("space-drain-%s", app.Guid)
-		data := make([]byte, 20)
-		_, err = rand.Read(data)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-		opts.Password = fmt.Sprintf("%x", sha256.Sum256(data))
-
-		_, err = cli.CliCommand(
-			"create-user",
-			opts.Username,
-			opts.Password,
-		)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-		org, err := cli.GetCurrentOrg()
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-		_, err = cli.CliCommand(
-			"set-space-role",
-			opts.Username,
-			org.Name,
-			space.Name,
-			"SpaceDeveloper",
-		)
+		opts.Password = createUser(cli, opts.Username, log)
 	}
 
-	envs := map[string]string{
-		"SPACE_ID":         space.Guid,
-		"DRAIN_NAME":       opts.DrainName,
-		"DRAIN_URL":        opts.DrainURL,
-		"DRAIN_TYPE":       opts.DrainType,
-		"API_ADDR":         api,
-		"UAA_ADDR":         strings.Replace(api, "api", "uaa", 1),
-		"CLIENT_ID":        "cf",
-		"USERNAME":         opts.Username,
-		"PASSWORD":         opts.Password,
-		"SKIP_CERT_VERIFY": strconv.FormatBool(opts.SkipCertVerify),
+	sharedEnvs := [][]string{
+		{"SPACE_ID", space.Guid},
+		{"DRAIN_NAME", opts.DrainName},
+		{"DRAIN_URL", opts.DrainURL},
+		{"DRAIN_TYPE", opts.DrainType},
+		{"API_ADDR", api},
+		{"UAA_ADDR", strings.Replace(api, "api", "uaa", 1)},
+		{"CLIENT_ID", "cf"},
+		{"USERNAME", opts.Username},
+		{"PASSWORD", opts.Password},
+		{"SKIP_CERT_VERIFY", strconv.FormatBool(opts.SkipCertVerify)},
 	}
 
-	for name, value := range envs {
-		_, err := cli.CliCommandWithoutTerminalOutput(
-			"set-env", "space-drain", name, value,
-		)
+	envs := append(sharedEnvs, extraEnvs...)
+	for _, env := range envs {
+		_, err := cli.CliCommandWithoutTerminalOutput("set-env", appName, env[0], env[1])
 		if err != nil {
 			log.Fatalf("%s", err)
 		}
 	}
 
-	cli.CliCommand("start", "space-drain")
+	cli.CliCommand("start", appName)
+}
+
+func guid() string {
+	u, err := uuid.NewV4()
+	if err != nil {
+		log.Fatalf("failed to generate unique identifier: %s", err)
+	}
+	return u.String()
+}
+
+func currentOrg(cli plugin.CliConnection, log Logger) plugin_models.Organization {
+	org, err := cli.GetCurrentOrg()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	return org
+}
+
+func currentSpace(cli plugin.CliConnection, log Logger) plugin_models.Space {
+	space, err := cli.GetCurrentSpace()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	return space
+}
+
+func apiEndpoint(cli plugin.CliConnection, log Logger) string {
+	api, err := cli.ApiEndpoint()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	return api
 }

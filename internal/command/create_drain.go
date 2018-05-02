@@ -157,7 +157,8 @@ func pushSyslogForwarder(
 	}
 
 	if username == "" {
-		username, password = createUser(cli, sourceID, log)
+		username = fmt.Sprintf("drain-%s", sourceID)
+		password = createUser(cli, username, log)
 	}
 
 	if username != "" && password == "" {
@@ -257,15 +258,13 @@ func buildDrainName(drainName string) string {
 	return fmt.Sprint("cf-drain-", guid)
 }
 
-func createUser(cli plugin.CliConnection, sourceID string, log Logger) (username, password string) {
-	username = fmt.Sprintf("drain-%s", sourceID)
-
+func createUser(cli plugin.CliConnection, username string, log Logger) string {
 	data := make([]byte, 20)
 	_, err := rand.Read(data)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
-	password = fmt.Sprintf("%x", sha256.Sum256(data))
+	password := fmt.Sprintf("%x", sha256.Sum256(data))
 
 	_, err = cli.CliCommand("create-user", username, password)
 	if err != nil {
@@ -293,5 +292,5 @@ func createUser(cli plugin.CliConnection, sourceID string, log Logger) (username
 		log.Fatalf("%s", err)
 	}
 
-	return username, password
+	return password
 }

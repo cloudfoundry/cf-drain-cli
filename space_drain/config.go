@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	SpaceID string `env:"SPACE_ID, required"`
-	// DrainType string `env:"DRAIN_TYPE, required"`
+	
 	DrainName string `env:"DRAIN_NAME, required"`
 	DrainURL  string `env:"DRAIN_URL, required"`
 	DrainType string `env: "DRAIN_TYPE"`

@@ -104,6 +104,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 						"-drain-name":          "Name for the space drain. Required",
 						"-drain-url":           "Syslog endpoint for the space drain. Required",
 						"-type":                "Which log type to filter on (logs, metrics, all). Default is all",
+						"-adapter-type":        "Set the type of adapter. The adapter is responsible for forwarding messages to the space drain. Available options: `service` or `application`. Service will use a cf user provided service that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`",
 						"-username":            "Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)",
 						"-skip-ssl-validation": "Whether to ignore certificate errors. Default is false",
 						"-force":               "Skip warning prompt. Default is false",

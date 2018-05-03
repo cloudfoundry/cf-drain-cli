@@ -46,7 +46,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -81,7 +80,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
-				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -101,7 +100,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -135,7 +133,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -170,7 +167,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
-				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -191,7 +188,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 					"--force",
 				},
 				downloader,
@@ -223,7 +219,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
-				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -243,7 +239,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -273,7 +268,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
-				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -292,7 +287,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -317,7 +311,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
-					"--skip-ssl-validation",
 					"--force",
 				},
 				downloader,
@@ -362,7 +355,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
 				[]string{"set-env", "space-drain", "USERNAME", fmt.Sprintf("space-drain-%s", guid)},
 				[]string{"set-env", "space-drain", "PASSWORD", generatedPassword},
-				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
 			))
 
 			Expect(cli.cliCommandArgs[3]).To(Equal(
@@ -383,7 +376,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -403,7 +395,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -425,7 +416,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -457,7 +447,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -478,7 +467,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--path", "some-temp-dir",
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -498,7 +486,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--path", "some-temp-dir",
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -519,7 +506,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -539,7 +525,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--path", "some-temp-dir",
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -560,7 +545,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -581,7 +565,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-name", "some-drain",
 						"--drain-url", "https://some-drain",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger,
@@ -659,7 +642,6 @@ var _ = Describe("PushSpaceDrain", func() {
 						"--drain-url", "https://some-drain",
 						"--type", "metrics",
 						"--username", "some-user",
-						"--skip-ssl-validation",
 					},
 					downloader,
 					logger)
@@ -704,7 +686,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -745,7 +726,7 @@ var _ = Describe("PushSpaceDrain", func() {
 
 				[]string{"set-env", appName, "LOG_CACHE_HTTP_ADDR", "https://log-cache.something.com"},
 				[]string{"set-env", appName, "API_ADDR", "https://api.something.com"},
-				[]string{"set-env", appName, "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", appName, "SKIP_CERT_VERIFY", "false"},
 			))
 
 			Expect(cli.cliCommandWithoutTerminalOutputArgs[12]).To(ConsistOf(
@@ -769,7 +750,6 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
-					"--skip-ssl-validation",
 				},
 				downloader,
 				logger,
@@ -789,6 +769,45 @@ var _ = Describe("PushSpaceDrain", func() {
 					"--no-start",
 					"--no-route",
 				},
+			))
+		})
+
+		It("sets the SKIP_CERT_VERIFY flag on the pushed application if the user logged in that way", func() {
+			cli.sslDisabled = true
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				pr,
+				[]string{
+					"--adapter-type", "application",
+					"--path", "some-temp-dir",
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+					"--type", "metrics",
+					"--username", "some-user",
+				},
+				downloader,
+				logger,
+			)
+
+			appName := cli.cliCommandArgs[0][1]
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(13))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:12]).To(ConsistOf(
+				[]string{"set-env", appName, "SPACE_ID", "space-guid"},
+				[]string{"set-env", appName, "SOURCE_HOST_NAME", "org-name.space-name"},
+
+				[]string{"set-env", appName, "DRAIN_NAME", "some-drain"},
+				[]string{"set-env", appName, "DRAIN_TYPE", "metrics"},
+				[]string{"set-env", appName, "DRAIN_URL", "https://some-drain"},
+
+				[]string{"set-env", appName, "UAA_ADDR", "https://uaa.something.com"},
+				[]string{"set-env", appName, "CLIENT_ID", "cf"},
+				[]string{"set-env", appName, "USERNAME", "some-user"},
+				[]string{"set-env", appName, "PASSWORD", "some-password"},
+
+				[]string{"set-env", appName, "LOG_CACHE_HTTP_ADDR", "https://log-cache.something.com"},
+				[]string{"set-env", appName, "API_ADDR", "https://api.something.com"},
+				[]string{"set-env", appName, "SKIP_CERT_VERIFY", "true"},
 			))
 		})
 	})

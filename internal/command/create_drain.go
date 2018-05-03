@@ -189,6 +189,11 @@ func pushSyslogForwarder(
 		log.Fatalf("%s", err)
 	}
 
+	skipCertVerify, err := cli.IsSSLDisabled()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
 	hostName := fmt.Sprintf("%s.%s.%s", org.Name, space.Name, appOrServiceName)
 	uaaAddr := strings.Replace(apiEndpoint, "api.", "uaa.", 1)
 	logCacheAddr := strings.Replace(apiEndpoint, "api.", "log-cache.", 1)
@@ -205,6 +210,7 @@ func pushSyslogForwarder(
 		{"set-env", serviceName, "PASSWORD", password},
 		{"set-env", serviceName, "LOG_CACHE_HTTP_ADDR", logCacheAddr},
 		{"set-env", serviceName, "SYSLOG_URL", u.String()},
+		{"set-env", serviceName, "SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
 		{"set-env", serviceName, "GROUP_NAME", groupName.String()},
 	}
 

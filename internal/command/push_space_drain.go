@@ -21,15 +21,14 @@ type Downloader interface {
 }
 
 type pushSpaceDrainOpts struct {
-	AdapterType    string `long:"adapter-type"`
-	DrainName      string `long:"drain-name" required:"true"`
-	DrainURL       string `long:"drain-url" required:"true"`
-	Username       string `long:"username"`
-	Path           string `long:"path"`
-	DrainType      string `long:"type"`
-	SkipCertVerify bool   `long:"skip-ssl-validation"`
-	Force          bool   `long:"force"`
-	Password       string
+	AdapterType string `long:"adapter-type"`
+	DrainName   string `long:"drain-name" required:"true"`
+	DrainURL    string `long:"drain-url" required:"true"`
+	Username    string `long:"username"`
+	Path        string `long:"path"`
+	DrainType   string `long:"type"`
+	Force       bool   `long:"force"`
+	Password    string
 }
 
 type passwordReader func(int) ([]byte, error)
@@ -43,10 +42,9 @@ func PushSpaceDrain(
 	log Logger,
 ) {
 	opts := pushSpaceDrainOpts{
-		AdapterType:    "service",
-		DrainType:      "all",
-		SkipCertVerify: false,
-		Force:          false,
+		AdapterType: "service",
+		DrainType:   "all",
+		Force:       false,
 	}
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
@@ -149,6 +147,11 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 		opts.Password = createUser(cli, opts.Username, log)
 	}
 
+	skipCertVerify, err := cli.IsSSLDisabled()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
 	sharedEnvs := [][]string{
 		{"SPACE_ID", space.Guid},
 		{"DRAIN_NAME", opts.DrainName},
@@ -159,7 +162,7 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 		{"CLIENT_ID", "cf"},
 		{"USERNAME", opts.Username},
 		{"PASSWORD", opts.Password},
-		{"SKIP_CERT_VERIFY", strconv.FormatBool(opts.SkipCertVerify)},
+		{"SKIP_CERT_VERIFY", strconv.FormatBool(skipCertVerify)},
 	}
 
 	envs := append(sharedEnvs, extraEnvs...)

@@ -101,7 +101,6 @@ OPTIONS:
    --drain-url                Syslog endpoint for the space drain. Required
    --force                    Skip warning prompt. Default is false
    --path                     Path to the space drain app to push. If omitted the latest release will be downloaded
-   --skip-ssl-validation      Whether to ignore certificate errors. Default is false
    --type                     Which log type to filter on (logs, metrics, all). Default is all
    --username                 Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)
    --adapter-type             Set the type of adapter. The adapter is responsible for forwarding messages from all apps in the space to the syslog drain. Available options: `service` or `application`. Service will bind a cf user provided service to each app that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`

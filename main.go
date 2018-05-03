@@ -25,7 +25,10 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	}
 
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
-	dClient := drain.NewServiceDrainLister(ccCurler)
+	sdClient := drain.NewServiceDrainLister(ccCurler)
+	envProvider := cloudcontroller.NewClient(ccCurler)
+	appLister := cloudcontroller.NewAppListerClient(ccCurler)
+	adClient := drain.NewApplicationDrainLister(appLister, envProvider)
 	logger := newLogger(os.Stdout)
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
@@ -38,9 +41,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin)
 	case "bind-drain":
-		command.BindDrain(conn, dClient, args[1:], logger)
+		command.BindDrain(conn, sdClient, args[1:], logger)
 	case "drains":
-		command.Drains(conn, dClient, nil, logger, os.Stdout)
+		command.Drains(conn, nil, logger, os.Stdout, sdClient, adClient)
 	case "drain-space":
 		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
 	}

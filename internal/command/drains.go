@@ -17,10 +17,10 @@ type DrainFetcher interface {
 
 func Drains(
 	cli plugin.CliConnection,
-	fetcher DrainFetcher,
 	args []string,
 	log Logger,
 	tableWriter io.Writer,
+	fetchers ...DrainFetcher,
 ) {
 	if len(args) != 0 {
 		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
@@ -31,15 +31,23 @@ func Drains(
 		log.Fatalf("%s", err)
 	}
 
-	drains, err := fetcher.Drains(space.Guid)
+	var drains []drain.Drain
+
+	for _, f := range fetchers {
+		d, err := f.Drains(space.Guid)
+		if err != nil {
+			log.Fatalf("Failed to fetch drains: %s", err)
+		}
+		drains = append(drains, d...)
+	}
+
 	if err != nil {
 		log.Fatalf("Failed to fetch drains: %s", err)
 	}
-
 	tw := tabwriter.NewWriter(tableWriter, 10, 2, 2, ' ', 0)
 
 	// Header
-	fmt.Fprintln(tw, "App\tDrain\tType\tURL")
+	fmt.Fprintln(tw, "App\tDrain\tType\tURL\tAdapterType")
 	for _, d := range drains {
 		for _, app := range d.Apps {
 			drain := []string{
@@ -47,6 +55,7 @@ func Drains(
 				d.Name,
 				strings.Title(d.Type),
 				sanitizeDrainURL(d.DrainURL),
+				d.AdapterType,
 			}
 			fmt.Fprintln(tw, strings.Join(drain, "\t"))
 		}

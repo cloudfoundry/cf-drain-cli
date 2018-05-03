@@ -14,63 +14,82 @@ import (
 
 var _ = Describe("Drains", func() {
 	var (
-		logger       *stubLogger
-		cli          *stubCliConnection
-		drainFetcher *stubDrainFetcher
-		tableWriter  *bytes.Buffer
+		logger                               *stubLogger
+		cli                                  *stubCliConnection
+		drainFetchers                        []command.DrainFetcher
+		appDrainFetcher, serviceDrainFetcher *stubDrainFetcher
+		tableWriter                          *bytes.Buffer
 	)
+
+	var _ command.DrainFetcher = newStubDrainFetcher()
 
 	BeforeEach(func() {
 		logger = &stubLogger{}
-		drainFetcher = newStubDrainFetcher()
+		serviceDrainFetcher = newStubDrainFetcher()
+		appDrainFetcher = newStubDrainFetcher()
+		drainFetchers = []command.DrainFetcher{serviceDrainFetcher, appDrainFetcher}
 		cli = newStubCliConnection()
 		cli.currentSpaceGuid = "my-space-guid"
 		tableWriter = bytes.NewBuffer(nil)
 	})
 
-	It("writes the drain type in the third column", func() {
-		drainFetcher.drains = []cloudcontroller.Drain{
+	It("reports the drain type and adapter type", func() {
+		serviceDrainFetcher.drains = []drain.Drain{
 			{
-				Name:     "drain-1",
-				Apps:     []string{"app-1", "app-2"},
-				Type:     "metrics",
-				DrainURL: "syslog://my-drain:1233",
+				Name:        "drain-1",
+				Apps:        []string{"app-1", "app-2"},
+				Type:        "metrics",
+				DrainURL:    "syslog://my-drain:1233",
+				AdapterType: "service",
 			},
 			{
-				Name:     "drain-2",
-				Apps:     []string{"app-1"},
-				Type:     "logs",
-				DrainURL: "syslog-tls://my-drain:1234",
+				Name:        "drain-2",
+				Apps:        []string{"app-1"},
+				Type:        "logs",
+				DrainURL:    "syslog-tls://my-drain:1234",
+				AdapterType: "service",
 			},
 		}
-		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
+		appDrainFetcher.drains = []drain.Drain{
+			{
+				Name:        "drain-3",
+				Apps:        []string{"app-1"},
+				Type:        "all",
+				DrainURL:    "https://my-drain:1235",
+				AdapterType: "application",
+			},
+		}
 
-		// Header + 2 drains
+		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
+
+		// Header + 3 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"App       Drain     Type      URL",
-			"app-1     drain-1   Metrics   syslog://my-drain:1233",
-			"app-2     drain-1   Metrics   syslog://my-drain:1233",
-			"app-1     drain-2   Logs      syslog-tls://my-drain:1234",
+			"App       Drain     Type      URL                         AdapterType",
+			"app-1     drain-1   Metrics   syslog://my-drain:1233      service",
+			"app-2     drain-1   Metrics   syslog://my-drain:1233      service",
+			"app-1     drain-2   Logs      syslog-tls://my-drain:1234  service",
+			"app-1     drain-3   All       https://my-drain:1235       application",
 			"",
 		}))
 	})
 
 	It("sanitizes drain urls", func() {
-		drainFetcher.drains = []cloudcontroller.Drain{
+		serviceDrainFetcher.drains = []drain.Drain{
 			{
-				Name:     "drain-1",
-				Apps:     []string{"app-1", "app-2"},
-				Type:     "metrics",
-				DrainURL: "syslog://username:password@my-drain:1233?some-query=secret&drain-type=metrics",
+				Name:        "drain-1",
+				Apps:        []string{"app-1", "app-2"},
+				Type:        "metrics",
+				DrainURL:    "syslog://username:password@my-drain:1233?some-query=secret&drain-type=metrics",
+				AdapterType: "service",
 			},
 		}
-		command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
+		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 
 		// Header + 2 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"App       Drain     Type      URL",
-			"app-1     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
-			"app-2     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
+			"App       Drain     Type      URL                                                                 AdapterType",
+			"app-1     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>  service",
+			"app-2     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>  service",
 			"",
 		}))
 	})
@@ -79,16 +98,16 @@ var _ = Describe("Drains", func() {
 		cli.currentSpaceError = errors.New("no space error")
 
 		Expect(func() {
-			command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
+			command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("no space error"))
 	})
 
 	It("fatally logs when failing to fetch drains", func() {
-		drainFetcher.err = errors.New("omg error")
+		serviceDrainFetcher.err = errors.New("omg error")
 
 		Expect(func() {
-			command.Drains(cli, drainFetcher, []string{}, logger, tableWriter)
+			command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("Failed to fetch drains: omg error"))
 	})

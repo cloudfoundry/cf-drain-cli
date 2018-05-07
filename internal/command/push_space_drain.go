@@ -101,14 +101,15 @@ func pushApplicationSpaceDrain(opts pushSpaceDrainOpts, cli plugin.CliConnection
 	org := currentOrg(cli, log)
 	space := currentSpace(cli, log)
 	api := apiEndpoint(cli, log)
+	appName := fmt.Sprintf("space-forwarder-", guid())
 
 	envs := [][]string{
 		{"LOG_CACHE_HTTP_ADDR", strings.Replace(api, "api", "log-cache", 1)},
-		{"SOURCE_HOST_NAME", fmt.Sprintf("%s.%s", org.Name, space.Name)},
+		{"SOURCE_HOST_NAME", fmt.Sprintf("%s.%s.%s", org.Name, space.Name, appName)},
 		{"GROUP_NAME", guid()},
 	}
 
-	pushDrain(cli, fmt.Sprint("space-forwarder-", guid()), "space_syslog", envs, opts, d, log)
+	pushDrain(cli, appName, "space_syslog", envs, opts, d, log)
 }
 
 func pushServiceSpaceDrain(opts pushSpaceDrainOpts, cli plugin.CliConnection, d Downloader, log Logger) {

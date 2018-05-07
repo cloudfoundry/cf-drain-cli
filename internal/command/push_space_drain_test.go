@@ -697,9 +697,11 @@ var _ = Describe("PushSpaceDrain", func() {
 					"Do you wish to proceed? [y/N] ",
 			))
 
+			appName := cli.cliCommandArgs[0][1]
+
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
 			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
-				"push", MatchRegexp("space-forwarder-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
+				"push", appName,
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_syslog",
@@ -708,12 +710,10 @@ var _ = Describe("PushSpaceDrain", func() {
 				"--no-route",
 			))
 
-			appName := cli.cliCommandArgs[0][1]
-
 			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(13))
 			Expect(cli.cliCommandWithoutTerminalOutputArgs[:12]).To(ConsistOf(
 				[]string{"set-env", appName, "SPACE_ID", "space-guid"},
-				[]string{"set-env", appName, "SOURCE_HOST_NAME", "org-name.space-name"},
+				[]string{"set-env", appName, "SOURCE_HOST_NAME", fmt.Sprintf("org-name.space-name.%s", appName)},
 
 				[]string{"set-env", appName, "DRAIN_NAME", "some-drain"},
 				[]string{"set-env", appName, "DRAIN_TYPE", "metrics"},
@@ -794,7 +794,7 @@ var _ = Describe("PushSpaceDrain", func() {
 			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(13))
 			Expect(cli.cliCommandWithoutTerminalOutputArgs[:12]).To(ConsistOf(
 				[]string{"set-env", appName, "SPACE_ID", "space-guid"},
-				[]string{"set-env", appName, "SOURCE_HOST_NAME", "org-name.space-name"},
+				[]string{"set-env", appName, "SOURCE_HOST_NAME", fmt.Sprintf("org-name.space-name.%s", appName)},
 
 				[]string{"set-env", appName, "DRAIN_NAME", "some-drain"},
 				[]string{"set-env", appName, "DRAIN_TYPE", "metrics"},

@@ -211,8 +211,8 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(10))
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:9]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(11))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:11]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", "application-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -226,6 +226,8 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
 
 				[]string{"set-env", "my-drain", "SKIP_CERT_VERIFY", "false"},
+				ConsistOf("set-env", "my-drain", "GROUP_NAME", MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+				[]string{"set-env", "my-drain", "DRAIN_SCOPE", "single"},
 			))
 
 			Expect(cli.cliCommandWithoutTerminalOutputArgs[9]).To(ConsistOf(
@@ -258,8 +260,8 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(10))
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:9]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(11))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:11]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", "service-instance-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -273,6 +275,9 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
 
 				[]string{"set-env", "my-drain", "SKIP_CERT_VERIFY", "false"},
+
+				ConsistOf("set-env", "my-drain", "GROUP_NAME", MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+				[]string{"set-env", "my-drain", "DRAIN_SCOPE", "single"},
 			))
 
 			Expect(cli.cliCommandWithoutTerminalOutputArgs[9]).To(ConsistOf(
@@ -324,7 +329,7 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:9]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:11]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", guid},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -338,6 +343,8 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
 
 				[]string{"set-env", "my-drain", "SKIP_CERT_VERIFY", "false"},
+				ConsistOf("set-env", "my-drain", "GROUP_NAME", MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+				[]string{"set-env", "my-drain", "DRAIN_SCOPE", "single"},
 			))
 		})
 
@@ -354,7 +361,7 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:9]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:11]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", "application-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -368,6 +375,8 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
 
 				[]string{"set-env", "my-drain", "SKIP_CERT_VERIFY", "false"},
+				ConsistOf("set-env", "my-drain", "GROUP_NAME", MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+				[]string{"set-env", "my-drain", "DRAIN_SCOPE", "single"},
 			))
 		})
 
@@ -387,7 +396,7 @@ var _ = Describe("CreateDrain", func() {
 				},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:9]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:11]).To(ConsistOf(
 				[]string{"set-env", "my-drain", "SOURCE_ID", "application-guid"},
 				[]string{"set-env", "my-drain", "SOURCE_HOST_NAME", "org-name.space-name.app-name"},
 
@@ -401,6 +410,8 @@ var _ = Describe("CreateDrain", func() {
 				[]string{"set-env", "my-drain", "SYSLOG_URL", "syslog://a.com?a=b"},
 
 				[]string{"set-env", "my-drain", "SKIP_CERT_VERIFY", "true"},
+				ConsistOf("set-env", "my-drain", "GROUP_NAME", MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+				[]string{"set-env", "my-drain", "DRAIN_SCOPE", "single"},
 			))
 		})
 

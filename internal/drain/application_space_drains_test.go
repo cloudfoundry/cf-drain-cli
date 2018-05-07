@@ -28,11 +28,11 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 	It("returns all application drains", func() {
 		appLister.apps = []cloudcontroller.App{
 			cloudcontroller.App{
-				Name: "cf-drain-00000000-0000-0000-0000-000000000000",
+				Name: "xxxxxxxx-00000000-0000-0000-0000-000000000000",
 				Guid: "00000000-0000-0000-0000-000000000000",
 			},
 			cloudcontroller.App{
-				Name: "space-forwarder-11111111-1111-1111-1111-111111111111",
+				Name: "yyyyyyyyyyyyyyy-11111111-1111-1111-1111-111111111111",
 				Guid: "11111111-1111-1111-1111-111111111111",
 			},
 			cloudcontroller.App{
@@ -47,13 +47,15 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 
 		envProvider.envs = map[string]map[string]string{
 			"00000000-0000-0000-0000-000000000000": {
-				"SOURCE_ID":  "22222222-2222-2222-2222-222222222222",
-				"DRAIN_TYPE": "logs",
-				"SYSLOG_URL": "syslog://the-syslog-drain.com",
+				"DRAIN_SCOPE": "single",
+				"SOURCE_ID":   "22222222-2222-2222-2222-222222222222",
+				"DRAIN_TYPE":  "logs",
+				"SYSLOG_URL":  "syslog://the-syslog-drain.com",
 			},
 			"11111111-1111-1111-1111-111111111111": {
-				"DRAIN_TYPE": "all",
-				"DRAIN_URL":  "https://the-syslog-drain.com",
+				"DRAIN_SCOPE": "space",
+				"DRAIN_TYPE":  "all",
+				"DRAIN_URL":   "https://the-syslog-drain.com",
 			},
 		}
 
@@ -65,7 +67,7 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 		Expect(drains).To(ConsistOf(
 			[]drain.Drain{
 				drain.Drain{
-					Name: "cf-drain-00000000-0000-0000-0000-000000000000",
+					Name: "xxxxxxxx-00000000-0000-0000-0000-000000000000",
 					Guid: "00000000-0000-0000-0000-000000000000",
 					Apps: []string{
 						"app-1",
@@ -78,11 +80,11 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 					AdapterType: "application",
 				},
 				drain.Drain{
-					Name: "space-forwarder-11111111-1111-1111-1111-111111111111",
+					Name: "yyyyyyyyyyyyyyy-11111111-1111-1111-1111-111111111111",
 					Guid: "11111111-1111-1111-1111-111111111111",
 					Apps: []string{
-						"cf-drain-00000000-0000-0000-0000-000000000000",
-						"space-forwarder-11111111-1111-1111-1111-111111111111",
+						"xxxxxxxx-00000000-0000-0000-0000-000000000000",
+						"yyyyyyyyyyyyyyy-11111111-1111-1111-1111-111111111111",
 						"app-1",
 						"app-2",
 					},
@@ -123,8 +125,9 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 					"SYSLOG_URL": "syslog://the-syslog-drain.com",
 				},
 				"11111111-1111-1111-1111-111111111111": {
-					"DRAIN_TYPE": "all",
-					"DRAIN_URL":  "https://the-syslog-drain.com",
+					"DRAIN_SCOPE": "space",
+					"DRAIN_TYPE":  "all",
+					"DRAIN_URL":   "https://the-syslog-drain.com",
 				},
 			}
 

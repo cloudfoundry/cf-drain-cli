@@ -81,6 +81,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
 				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
+				[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -168,6 +169,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
 				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
+				[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -220,6 +222,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
 				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
+				[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -269,6 +272,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
 				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
 				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
+				[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
 			))
 
 			Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -356,6 +360,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "USERNAME", fmt.Sprintf("space-drain-%s", guid)},
 				[]string{"set-env", "space-drain", "PASSWORD", generatedPassword},
 				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
+				[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
 			))
 
 			Expect(cli.cliCommandArgs[3]).To(Equal(
@@ -432,6 +437,7 @@ var _ = Describe("PushSpaceDrain", func() {
 			Entry("USERNAME", "USERNAME"),
 			Entry("PASSWORD", "PASSWORD"),
 			Entry("SKIP_CERT_VERIFY", "SKIP_CERT_VERIFY"),
+			Entry("DRAIN_SCOPE", "DRAIN_SCOPE"),
 		)
 
 		It("fatally logs if confirmation is given anything other than y", func() {
@@ -710,8 +716,8 @@ var _ = Describe("PushSpaceDrain", func() {
 				"--no-route",
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(13))
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:12]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(14))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:13]).To(ConsistOf(
 				[]string{"set-env", appName, "SPACE_ID", "space-guid"},
 				[]string{"set-env", appName, "SOURCE_HOST_NAME", fmt.Sprintf("org-name.space-name.%s", appName)},
 
@@ -727,9 +733,10 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", appName, "LOG_CACHE_HTTP_ADDR", "https://log-cache.something.com"},
 				[]string{"set-env", appName, "API_ADDR", "https://api.something.com"},
 				[]string{"set-env", appName, "SKIP_CERT_VERIFY", "false"},
+				[]string{"set-env", appName, "DRAIN_SCOPE", "space"},
 			))
 
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[12]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[13]).To(ConsistOf(
 				"set-env", appName, "GROUP_NAME",
 				MatchRegexp("[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
 			))
@@ -791,8 +798,8 @@ var _ = Describe("PushSpaceDrain", func() {
 			)
 
 			appName := cli.cliCommandArgs[0][1]
-			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(13))
-			Expect(cli.cliCommandWithoutTerminalOutputArgs[:12]).To(ConsistOf(
+			Expect(cli.cliCommandWithoutTerminalOutputArgs).To(HaveLen(14))
+			Expect(cli.cliCommandWithoutTerminalOutputArgs[:13]).To(ConsistOf(
 				[]string{"set-env", appName, "SPACE_ID", "space-guid"},
 				[]string{"set-env", appName, "SOURCE_HOST_NAME", fmt.Sprintf("org-name.space-name.%s", appName)},
 
@@ -808,6 +815,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", appName, "LOG_CACHE_HTTP_ADDR", "https://log-cache.something.com"},
 				[]string{"set-env", appName, "API_ADDR", "https://api.something.com"},
 				[]string{"set-env", appName, "SKIP_CERT_VERIFY", "true"},
+				[]string{"set-env", appName, "DRAIN_SCOPE", "space"},
 			))
 		})
 	})

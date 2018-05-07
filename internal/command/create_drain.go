@@ -212,6 +212,7 @@ func pushSyslogForwarder(
 		{"set-env", serviceName, "SYSLOG_URL", u.String()},
 		{"set-env", serviceName, "SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
 		{"set-env", serviceName, "GROUP_NAME", groupName.String()},
+		{"set-env", serviceName, "DRAIN_SCOPE", "single"},
 	}
 
 	for _, cmd := range envCommands {

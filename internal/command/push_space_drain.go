@@ -164,6 +164,7 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 		{"USERNAME", opts.Username},
 		{"PASSWORD", opts.Password},
 		{"SKIP_CERT_VERIFY", strconv.FormatBool(skipCertVerify)},
+		{"DRAIN_SCOPE", "space"},
 	}
 
 	envs := append(sharedEnvs, extraEnvs...)

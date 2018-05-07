@@ -61,6 +61,12 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 			log.Fatalf("%s", err)
 		}
 
+		command = []string{"delete", "space-drain", "-f"}
+		_, err := cli.CliCommand(command...)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+
 		return
 	}
 

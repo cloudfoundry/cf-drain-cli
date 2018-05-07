@@ -26,7 +26,7 @@ var _ = Describe("DeleteDrain", func() {
 		reader = bytes.NewBuffer(nil)
 	})
 
-	It("unbinds and deletes the service", func() {
+	It("unbinds and deletes the service and deletes space-drain app", func() {
 		reader.WriteString("y\n")
 
 		command.DeleteDrain(cli, []string{"my-drain"}, logger, reader)
@@ -35,7 +35,7 @@ var _ = Describe("DeleteDrain", func() {
 			"Are you sure you want to unbind my-drain from app-1, app-2 and delete my-drain? [y/N] ",
 		))
 
-		Expect(cli.cliCommandArgs).To(HaveLen(3))
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
 		Expect(cli.cliCommandArgs[0]).To(Equal([]string{
 			"unbind-service", "app-1", "my-drain",
 		}))
@@ -44,6 +44,9 @@ var _ = Describe("DeleteDrain", func() {
 		}))
 		Expect(cli.cliCommandArgs[2]).To(Equal([]string{
 			"delete-service", "my-drain", "-f",
+		}))
+		Expect(cli.cliCommandArgs[3]).To(Equal([]string{
+			"delete", "space-drain", "-f",
 		}))
 	})
 
@@ -71,7 +74,7 @@ var _ = Describe("DeleteDrain", func() {
 			"Are you sure you want to unbind my-drain from app-1, app-2 and delete my-drain? [y/N] ",
 		))
 
-		Expect(cli.cliCommandArgs).To(HaveLen(3))
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
 		Expect(cli.cliCommandArgs[0]).To(Equal([]string{
 			"unbind-service", "app-1", "my-drain",
 		}))
@@ -80,6 +83,9 @@ var _ = Describe("DeleteDrain", func() {
 		}))
 		Expect(cli.cliCommandArgs[2]).To(Equal([]string{
 			"delete-service", "my-drain", "-f",
+		}))
+		Expect(cli.cliCommandArgs[3]).To(Equal([]string{
+			"delete", "space-drain", "-f",
 		}))
 	})
 

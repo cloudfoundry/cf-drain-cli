@@ -4,15 +4,39 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
+	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 	"code.cloudfoundry.org/cli/plugin"
 	"code.cloudfoundry.org/cli/plugin/models"
 )
 
-func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Reader) {
+func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Reader, fetcher DrainFetcher) {
 	if len(args) != 1 {
 		log.Fatalf("Invalid arguments, expected 1, got %d.", len(args))
+	}
+
+	space, err := cli.GetCurrentSpace()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	var appDrains []drain.Drain
+	drains, err := fetcher.Drains(space.Guid)
+	if err != nil {
+		log.Fatalf("Failed to fetch drains: %s", err)
+	}
+
+	for _, drain := range drains {
+		if drain.AdapterType == "application" {
+			appDrains = append(appDrains, drain)
+		}
+	}
+
+	if len(appDrains) > 0 {
+		deleteDrains(cli, appDrains)
+		return
 	}
 
 	serviceName := args[0]
@@ -46,29 +70,34 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 		log.Fatalf("Failed to read user input: %s", err)
 	}
 
-	if strings.ToLower(strings.TrimSpace(confirm)) == "y" {
-		for _, app := range namedService.ApplicationNames {
-			command := []string{"unbind-service", app, serviceName}
-			_, err := cli.CliCommand(command...)
-			if err != nil {
-				log.Fatalf("%s", err)
-			}
-		}
+	if strings.ToLower(strings.TrimSpace(confirm)) != "y" {
+		log.Printf("Delete cancelled")
+		return
+	}
 
-		command := []string{"delete-service", serviceName, "-f"}
-		_, err = cli.CliCommand(command...)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-
-		command = []string{"delete", "space-drain", "-f"}
+	for _, app := range namedService.ApplicationNames {
+		command := []string{"unbind-service", app, serviceName}
 		_, err := cli.CliCommand(command...)
 		if err != nil {
 			log.Fatalf("%s", err)
 		}
-
-		return
 	}
 
-	log.Printf("Delete cancelled")
+	command := []string{"delete-service", serviceName, "-f"}
+	_, err = cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	deleteDrains(cli, drains)
+}
+
+func deleteDrains(cli plugin.CliConnection, drains []drain.Drain) {
+	for _, drain := range drains {
+		command := []string{"delete", drain.Name, "-f"}
+		_, err := cli.CliCommand(command...)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
 }

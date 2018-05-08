@@ -12,34 +12,39 @@ import (
 	"code.cloudfoundry.org/cli/plugin/models"
 )
 
-func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Reader, fetcher DrainFetcher) {
+func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Reader, serviceDrainFetcher DrainFetcher, appDrainFetcher DrainFetcher) {
 	if len(args) != 1 {
 		log.Fatalf("Invalid arguments, expected 1, got %d.", len(args))
 	}
+
+	serviceName := args[0]
 
 	space, err := cli.GetCurrentSpace()
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	var appDrains []drain.Drain
-	drains, err := fetcher.Drains(space.Guid)
+	serviceDrains, err := serviceDrainFetcher.Drains(space.Guid)
 	if err != nil {
 		log.Fatalf("Failed to fetch drains: %s", err)
 	}
 
-	for _, drain := range drains {
-		if drain.AdapterType == "application" {
-			appDrains = append(appDrains, drain)
-		}
-	}
-
-	if len(appDrains) > 0 {
-		deleteDrains(cli, appDrains, "application")
+	svcDrain, ok := findDrain(serviceDrains, serviceName)
+	if ok && svcDrain.Scope == "space" {
+		deleteDrain(cli, svcDrain)
 		return
 	}
 
-	serviceName := args[0]
+	appDrains, err := appDrainFetcher.Drains(space.Guid)
+	if err != nil {
+		log.Fatalf("Failed to fetch drains: %s", err)
+	}
+
+	appDrain, ok := findDrain(appDrains, serviceName)
+	if ok {
+		deleteDrain(cli, appDrain)
+		return
+	}
 
 	services, err := cli.GetServices()
 	if err != nil {
@@ -88,18 +93,33 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
-
-	deleteDrains(cli, drains, "application")
 }
 
-func deleteDrains(cli plugin.CliConnection, drains []drain.Drain, adapterType string) {
-	for _, drain := range drains {
-		if drain.AdapterType == adapterType {
-			command := []string{"delete", drain.Name, "-f"}
-			_, err := cli.CliCommand(command...)
-			if err != nil {
-				log.Fatalf("%s", err)
-			}
+func findDrain(ds []drain.Drain, drainName string) (drain.Drain, bool) {
+	var drains []drain.Drain
+	for _, drain := range ds {
+		if drain.Name == drainName {
+			drains = append(drains, drain)
 		}
+	}
+
+	if len(drains) == 0 {
+		return drain.Drain{}, false
+	}
+
+	if len(drains) > 1 {
+		// can this ever happen?
+		log.Printf("more than one drain found with name: %s", drainName)
+		return drains[0], true
+	}
+
+	return drains[0], true
+}
+
+func deleteDrain(cli plugin.CliConnection, drain drain.Drain) {
+	command := []string{"delete", drain.Name, "-f"}
+	_, err := cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 }

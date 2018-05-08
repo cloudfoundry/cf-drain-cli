@@ -39,7 +39,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drain":
 		command.CreateDrain(conn, args[1:], downloader, terminal.ReadPassword, logger)
 	case "delete-drain":
-		command.DeleteDrain(conn, args[1:], logger, os.Stdin, adClient)
+		command.DeleteDrain(conn, args[1:], logger, os.Stdin, sdClient, adClient)
 	case "bind-drain":
 		command.BindDrain(conn, sdClient, args[1:], logger)
 	case "drains":

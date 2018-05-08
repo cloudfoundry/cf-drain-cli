@@ -17,32 +17,20 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 		log.Fatalf("Invalid arguments, expected 1, got %d.", len(args))
 	}
 
-	serviceName := args[0]
+	drainName := args[0]
 
 	space, err := cli.GetCurrentSpace()
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	serviceDrains, err := serviceDrainFetcher.Drains(space.Guid)
-	if err != nil {
-		log.Fatalf("Failed to fetch drains: %s", err)
-	}
-
-	svcDrain, ok := findDrain(serviceDrains, serviceName)
-	if ok && svcDrain.Scope == "space" {
-		deleteDrain(cli, svcDrain)
+	ok := deleteDrainAndUser(cli, serviceDrainFetcher, true, space.Guid, drainName)
+	if ok {
 		return
 	}
 
-	appDrains, err := appDrainFetcher.Drains(space.Guid)
-	if err != nil {
-		log.Fatalf("Failed to fetch drains: %s", err)
-	}
-
-	appDrain, ok := findDrain(appDrains, serviceName)
+	ok = deleteDrainAndUser(cli, appDrainFetcher, false, space.Guid, drainName)
 	if ok {
-		deleteDrain(cli, appDrain)
 		return
 	}
 
@@ -53,20 +41,20 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 
 	var namedService *plugin_models.GetServices_Model
 	for _, s := range services {
-		if s.Name == serviceName {
+		if s.Name == drainName {
 			namedService = &s
 			break
 		}
 	}
 
 	if namedService == nil {
-		log.Fatalf("Unable to find service %s.", serviceName)
+		log.Fatalf("Unable to find service %s.", drainName)
 	}
 
 	log.Print(fmt.Sprintf("Are you sure you want to unbind %s from %s and delete %s? [y/N] ",
-		serviceName,
+		drainName,
 		strings.Join(namedService.ApplicationNames, ", "),
-		serviceName,
+		drainName,
 	))
 
 	reader := bufio.NewReader(in)
@@ -81,18 +69,42 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 	}
 
 	for _, app := range namedService.ApplicationNames {
-		command := []string{"unbind-service", app, serviceName}
+		command := []string{"unbind-service", app, drainName}
 		_, err := cli.CliCommand(command...)
 		if err != nil {
 			log.Fatalf("%s", err)
 		}
 	}
 
-	command := []string{"delete-service", serviceName, "-f"}
+	command := []string{"delete-service", drainName, "-f"}
 	_, err = cli.CliCommand(command...)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
+
+}
+
+func deleteDrainAndUser(cli plugin.CliConnection, df DrainFetcher, isService bool, spaceGuid, drainName string) bool {
+	drains, err := df.Drains(spaceGuid)
+	if err != nil {
+		log.Fatalf("Failed to fetch drains: %s", err)
+	}
+
+	d, ok := findDrain(drains, drainName)
+	if ok {
+		if isService && d.Scope == "space" {
+			deleteDrain(cli, d)
+			deleteUser(cli, fmt.Sprintf("space-drain-%s", d.Guid))
+			return true
+		}
+		if !isService {
+			deleteDrain(cli, d)
+			deleteUser(cli, fmt.Sprintf("drain-%s", d.AppGuids[0]))
+			return true
+		}
+	}
+
+	return false
 }
 
 func findDrain(ds []drain.Drain, drainName string) (drain.Drain, bool) {
@@ -118,6 +130,14 @@ func findDrain(ds []drain.Drain, drainName string) (drain.Drain, bool) {
 
 func deleteDrain(cli plugin.CliConnection, drain drain.Drain) {
 	command := []string{"delete", drain.Name, "-f"}
+	_, err := cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+}
+
+func deleteUser(cli plugin.CliConnection, username string) {
+	command := []string{"delete-user", username, "-f"}
 	_, err := cli.CliCommand(command...)
 	if err != nil {
 		log.Fatalf("%s", err)

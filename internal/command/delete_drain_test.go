@@ -31,6 +31,9 @@ var _ = Describe("DeleteDrain", func() {
 	})
 
 	Describe("single drain", func() {
+		BeforeEach(func() {
+			cli.getServicesApps = []string{"app-1"}
+		})
 		Context("adapter-type is service", func() {
 			It("unbinds and deletes the service and deletes drain", func() {
 				reader.WriteString("y\n")
@@ -38,8 +41,8 @@ var _ = Describe("DeleteDrain", func() {
 				drainFetcher.drains = append(drainFetcher.drains, drain.Drain{
 					Name:        "my-drain",
 					Guid:        "my-drain-guid",
-					Apps:        []string{"app-1", "app-2"},
-					AppGuids:    []string{"app-1-guid", "app-2-guid"},
+					Apps:        []string{"app-1"},
+					AppGuids:    []string{"app-1-guid"},
 					Type:        "all",
 					DrainURL:    "syslog://drain.url.com",
 					AdapterType: "service",
@@ -48,21 +51,15 @@ var _ = Describe("DeleteDrain", func() {
 				command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, drainFetcher)
 
 				Expect(logger.printMessages).To(ConsistOf(
-					"Are you sure you want to unbind my-drain from app-1, app-2 and delete my-drain? [y/N] ",
+					"Are you sure you want to unbind my-drain from app-1 and delete my-drain? [y/N] ",
 				))
 
-				Expect(cli.cliCommandArgs).To(HaveLen(4))
+				Expect(cli.cliCommandArgs).To(HaveLen(2))
 				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
 					"unbind-service", "app-1", "my-drain",
 				}))
 				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"unbind-service", "app-2", "my-drain",
-				}))
-				Expect(cli.cliCommandArgs[2]).To(Equal([]string{
 					"delete-service", "my-drain", "-f",
-				}))
-				Expect(cli.cliCommandArgs[3]).To(Equal([]string{
-					"delete", drainFetcher.drains[0].Name, "-f",
 				}))
 			})
 		})
@@ -74,8 +71,8 @@ var _ = Describe("DeleteDrain", func() {
 				drainFetcher.drains = append(drainFetcher.drains, drain.Drain{
 					Name:        "my-drain",
 					Guid:        "my-drain-guid",
-					Apps:        []string{"app-1", "app-2"},
-					AppGuids:    []string{"app-1-guid", "app-2-guid"},
+					Apps:        []string{"app-1"},
+					AppGuids:    []string{"app-1-guid"},
 					Type:        "logs",
 					DrainURL:    "https://drain.url.com",
 					AdapterType: "application",
@@ -127,7 +124,7 @@ var _ = Describe("DeleteDrain", func() {
 			"Are you sure you want to unbind my-drain from app-1, app-2 and delete my-drain? [y/N] ",
 		))
 
-		Expect(cli.cliCommandArgs).To(HaveLen(4))
+		Expect(cli.cliCommandArgs).To(HaveLen(3))
 		Expect(cli.cliCommandArgs[0]).To(Equal([]string{
 			"unbind-service", "app-1", "my-drain",
 		}))
@@ -136,9 +133,6 @@ var _ = Describe("DeleteDrain", func() {
 		}))
 		Expect(cli.cliCommandArgs[2]).To(Equal([]string{
 			"delete-service", "my-drain", "-f",
-		}))
-		Expect(cli.cliCommandArgs[3]).To(Equal([]string{
-			"delete", "my-drain", "-f",
 		}))
 	})
 

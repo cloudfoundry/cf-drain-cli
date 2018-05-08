@@ -35,7 +35,7 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 	}
 
 	if len(appDrains) > 0 {
-		deleteDrains(cli, appDrains)
+		deleteDrains(cli, appDrains, "application")
 		return
 	}
 
@@ -89,15 +89,17 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 		log.Fatalf("%s", err)
 	}
 
-	deleteDrains(cli, drains)
+	deleteDrains(cli, drains, "application")
 }
 
-func deleteDrains(cli plugin.CliConnection, drains []drain.Drain) {
+func deleteDrains(cli plugin.CliConnection, drains []drain.Drain, adapterType string) {
 	for _, drain := range drains {
-		command := []string{"delete", drain.Name, "-f"}
-		_, err := cli.CliCommand(command...)
-		if err != nil {
-			log.Fatalf("%s", err)
+		if drain.AdapterType == adapterType {
+			command := []string{"delete", drain.Name, "-f"}
+			_, err := cli.CliCommand(command...)
+			if err != nil {
+				log.Fatalf("%s", err)
+			}
 		}
 	}
 }

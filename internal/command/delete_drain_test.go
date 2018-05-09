@@ -64,6 +64,8 @@ var _ = Describe("DeleteDrain", func() {
 				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
 					"delete-service", "my-drain", "-f",
 				}))
+				Expect(appDrainFetcher.deletedDrains["my-drain"]).To(BeFalse())
+				Expect(serviceDrainFetcher.deletedDrains["my-drain"]).To(BeFalse())
 			})
 		})
 
@@ -82,16 +84,19 @@ var _ = Describe("DeleteDrain", func() {
 					Scope:       "single",
 				})
 
+				appDrainFetcher.deletedDrains["my-drain"] = true
 				command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
 
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
+				Expect(cli.cliCommandArgs).To(HaveLen(0))
 
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"delete", appDrainFetcher.drains[0].Name, "-f",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-user", "drain-app-1-guid", "-f",
-				}))
+				Expect(appDrainFetcher.deletedDrains["my-drain"]).To(BeTrue())
+				Expect(serviceDrainFetcher.deletedDrains["my-drain"]).To(BeFalse())
+				// Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				// 	"delete", appDrainFetcher.drains[0].Name, "-f",
+				// }))
+				// Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				// 	"delete-user", "drain-app-1-guid", "-f",
+				// }))
 			})
 		})
 	})
@@ -115,17 +120,20 @@ var _ = Describe("DeleteDrain", func() {
 					AdapterType: "service",
 					Scope:       "space",
 				})
+				serviceDrainFetcher.deletedDrains["my-space-drain"] = true
 
 				command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
 
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
+				Expect(cli.cliCommandArgs).To(HaveLen(0))
 
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"delete", "my-space-drain", "-f",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-user", "space-drain-my-space-drain-guid", "-f",
-				}))
+				// Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				// 	"delete", "my-space-drain", "-f",
+				// }))
+				// Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				// 	"delete-user", "space-drain-my-space-drain-guid", "-f",
+				// }))
+				Expect(appDrainFetcher.deletedDrains["my-space-drain"]).To(BeFalse())
+				Expect(serviceDrainFetcher.deletedDrains["my-space-drain"]).To(BeTrue())
 			})
 		})
 		Context("adapter-type is application", func() {
@@ -140,17 +148,20 @@ var _ = Describe("DeleteDrain", func() {
 					AdapterType: "application",
 					Scope:       "space",
 				})
+				appDrainFetcher.deletedDrains["my-space-drain"] = true
 
 				command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
 
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
+				Expect(cli.cliCommandArgs).To(HaveLen(0))
 
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"delete", "my-space-drain", "-f",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-user", "drain-app-1-guid", "-f",
-				}))
+				// Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				// 	"delete", "my-space-drain", "-f",
+				// }))
+				// Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				// 	"delete-user", "drain-app-1-guid", "-f",
+				// }))
+				Expect(appDrainFetcher.deletedDrains["my-space-drain"]).To(BeTrue())
+				Expect(serviceDrainFetcher.deletedDrains["my-space-drain"]).To(BeFalse())
 			})
 		})
 	})

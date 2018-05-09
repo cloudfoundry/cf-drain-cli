@@ -3,6 +3,7 @@ package drain
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 
@@ -28,6 +29,24 @@ type Drain struct {
 	DrainURL    string
 	AdapterType string
 	Scope       string
+}
+
+func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) bool {
+	drains, err := c.Drains(spaceGuid)
+	if err != nil {
+		log.Fatalf("Failed to fetch drains: %s", err)
+	}
+
+	d, ok := c.findDrain(drains, drainName)
+	if ok {
+		if d.Scope == "space" {
+			c.deleteDrain(d)
+			c.deleteUser(fmt.Sprintf("space-drain-%s", d.Guid))
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
@@ -189,6 +208,43 @@ func (c *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, dr
 		DrainURL:    drainURL,
 		AdapterType: "service",
 	}, nil
+}
+
+func (c *ServiceDrainLister) findDrain(ds []Drain, drainName string) (Drain, bool) {
+	var drains []Drain
+	for _, drain := range ds {
+		if drain.Name == drainName {
+			drains = append(drains, drain)
+		}
+	}
+
+	if len(drains) == 0 {
+		return Drain{}, false
+	}
+
+	if len(drains) > 1 {
+		// can this ever happen?
+		log.Printf("more than one drain found with name: %s", drainName)
+		return drains[0], true
+	}
+
+	return drains[0], true
+}
+
+func (c *ServiceDrainLister) deleteDrain(drain Drain) {
+	// command := []string{"delete", drain.Name, "-f"}
+	// _, err := cli.CliCommand(command...)
+	// if err != nil {
+	// 	log.Fatalf("%s", err)
+	// }
+}
+
+func (c *ServiceDrainLister) deleteUser(username string) {
+	// command := []string{"delete-user", username, "-f"}
+	// _, err := cli.CliCommand(command...)
+	// if err != nil {
+	// 	log.Fatalf("%s", err)
+	// }
 }
 
 type userProvidedServiceInstancesResponse struct {

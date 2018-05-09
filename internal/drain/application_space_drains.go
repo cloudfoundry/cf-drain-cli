@@ -1,6 +1,7 @@
 package drain
 
 import (
+	"fmt"
 	"log"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
@@ -24,6 +25,22 @@ func NewApplicationDrainLister(appLister AppLister, envProvider EnvProvider) App
 		appLister:   appLister,
 		envProvider: envProvider,
 	}
+}
+
+func (c ApplicationDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) bool {
+	drains, err := c.Drains(spaceGuid)
+	if err != nil {
+		log.Fatalf("Failed to fetch drains: %s", err)
+	}
+
+	d, ok := c.findDrain(drains, drainName)
+	if ok {
+		c.deleteDrain(d)
+		c.deleteUser(fmt.Sprintf("drain-%s", d.AppGuids[0]))
+		return true
+	}
+
+	return false
 }
 
 func (dl ApplicationDrainLister) Drains(spaceGUID string) ([]Drain, error) {
@@ -77,6 +94,43 @@ func (dl ApplicationDrainLister) Drains(spaceGUID string) ([]Drain, error) {
 		}
 	}
 	return drains, nil
+}
+
+func (c ApplicationDrainLister) findDrain(ds []Drain, drainName string) (Drain, bool) {
+	var drains []Drain
+	for _, drain := range ds {
+		if drain.Name == drainName {
+			drains = append(drains, drain)
+		}
+	}
+
+	if len(drains) == 0 {
+		return Drain{}, false
+	}
+
+	if len(drains) > 1 {
+		// can this ever happen?
+		log.Printf("more than one drain found with name: %s", drainName)
+		return drains[0], true
+	}
+
+	return drains[0], true
+}
+
+func (c ApplicationDrainLister) deleteDrain(drain Drain) {
+	// command := []string{"delete", drain.Name, "-f"}
+	// _, err := cli.CliCommand(command...)
+	// if err != nil {
+	// 	log.Fatalf("%s", err)
+	// }
+}
+
+func (c ApplicationDrainLister) deleteUser(username string) {
+	// command := []string{"delete-user", username, "-f"}
+	// _, err := cli.CliCommand(command...)
+	// if err != nil {
+	// 	log.Fatalf("%s", err)
+	// }
 }
 
 func (dl ApplicationDrainLister) appMetadata(apps []cloudcontroller.App) (guids []string, names []string, spaceApps map[string]string) {

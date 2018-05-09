@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ListDrainsClient", func() {
+var _ = Describe("ServiceDrainLister", func() {
 	var (
 		curler *stubCurler
 		c      *drain.ServiceDrainLister
@@ -172,6 +172,20 @@ var _ = Describe("ListDrainsClient", func() {
 		It("returns default type if url is invalid", func() {
 			drainType, _ := c.TypeFromDrainURL("!!!so invalid")
 			Expect(drainType).To(Equal("logs"))
+		})
+	})
+
+	Describe("DeleteDrainAndUser", func() {
+
+		BeforeEach(func() {
+			key = "/v2/user_provided_service_instances?q=space_guid:space-guid"
+			curler.resps[key] = serviceInstancesJSONpage1
+			key = "/v2/user_provided_service_instances?q=space_guid:space-guid&page:2"
+			curler.resps[key] = serviceInstancesJSONpage2
+		})
+
+		It("deletes space drain app if scope is space", func() {
+			c.DeleteDrainAndUser("space-guid", "drain-name")
 		})
 	})
 })

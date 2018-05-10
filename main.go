@@ -25,9 +25,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	}
 
 	ccCurler := cloudcontroller.NewCLICurlClient(conn)
-	sdClient := drain.NewServiceDrainLister(ccCurler)
 	envProvider := cloudcontroller.NewClient(ccCurler)
 	appLister := cloudcontroller.NewAppListerClient(ccCurler)
+	sdClient := drain.NewServiceDrainLister(ccCurler, appLister, envProvider)
 	adClient := drain.NewApplicationDrainLister(appLister, envProvider)
 	logger := newLogger(os.Stdout)
 	httpClient := &http.Client{

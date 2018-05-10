@@ -11,12 +11,16 @@ import (
 )
 
 type ServiceDrainLister struct {
-	c cloudcontroller.Curler
+	c           cloudcontroller.Curler
+	appLister   AppLister
+	envProvider EnvProvider
 }
 
-func NewServiceDrainLister(c cloudcontroller.Curler) *ServiceDrainLister {
+func NewServiceDrainLister(c cloudcontroller.Curler, appLister AppLister, envProvider EnvProvider) *ServiceDrainLister {
 	return &ServiceDrainLister{
-		c: c,
+		c:           c,
+		appLister:   appLister,
+		envProvider: envProvider,
 	}
 }
 
@@ -32,7 +36,16 @@ type Drain struct {
 }
 
 func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) (bool, error) {
-	drains, err := c.Drains(spaceGuid)
+	drains, err := c.fetchSpaceDrains(spaceGuid)
+	if err != nil {
+		return false, err
+	}
+	sdrains, err := c.fetchServiceDrains(spaceGuid)
+	if err != nil {
+		return false, err
+	}
+	drains = append(drains, sdrains...)
+
 	if err != nil {
 		return false, fmt.Errorf("Failed to fetch drains: %s", err)
 	}
@@ -53,6 +66,10 @@ func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) (bo
 }
 
 func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
+	return c.fetchServiceDrains(spaceGuid)
+}
+
+func (c *ServiceDrainLister) fetchServiceDrains(spaceGuid string) ([]Drain, error) {
 	var url string
 	url = fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid)
 	instances, err := c.fetchServiceInstances(url)
@@ -110,6 +127,37 @@ func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 	}
 
 	return namedDrains, nil
+}
+
+func (c *ServiceDrainLister) fetchSpaceDrains(spaceGuid string) ([]Drain, error) {
+	spaceApps, _ := c.appLister.ListApps(spaceGuid)
+	guids, names, _ := c.appMetadata(spaceApps)
+
+	var drains []Drain
+	for _, app := range spaceApps {
+		envs, err := c.envProvider.EnvVars(app.Guid)
+		if err != nil {
+			return nil, err
+		}
+
+		drainScope, ok := envs["DRAIN_SCOPE"]
+		if !ok {
+			continue
+		}
+
+		switch drainScope {
+		case "space":
+			drains = append(drains, Drain{
+				Name:     app.Name,
+				Guid:     app.Guid,
+				Apps:     names,
+				AppGuids: guids,
+				Type:     envs["DRAIN_TYPE"],
+				DrainURL: envs["DRAIN_URL"],
+			})
+		}
+	}
+	return drains, nil
 }
 
 func (c *ServiceDrainLister) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
@@ -272,6 +320,16 @@ func (c *ServiceDrainLister) deleteService(drain Drain) {
 	// if err != nil {
 	// 	log.Fatalf("%s", err)
 	// }
+}
+
+func (c *ServiceDrainLister) appMetadata(apps []cloudcontroller.App) (guids []string, names []string, spaceApps map[string]string) {
+	spaceApps = make(map[string]string)
+	for _, app := range apps {
+		spaceApps[app.Guid] = app.Name
+		guids = append(guids, app.Guid)
+		names = append(names, app.Name)
+	}
+	return guids, names, spaceApps
 }
 
 type userProvidedServiceInstancesResponse struct {

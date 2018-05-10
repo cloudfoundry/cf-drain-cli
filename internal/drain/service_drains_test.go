@@ -10,14 +10,19 @@ import (
 
 var _ = Describe("ServiceDrainLister", func() {
 	var (
-		curler *stubCurler
-		c      *drain.ServiceDrainLister
-		key    string
+		curler      *stubCurler
+		appLister   *spyAppLister
+		envProvider *spyEnvProvider
+		c           *drain.ServiceDrainLister
+		key         string
 	)
 
 	BeforeEach(func() {
 		curler = newStubCurler()
-		c = drain.NewServiceDrainLister(curler)
+		appLister = newSpyAppLister()
+		envProvider = newSpyEnvProvider()
+
+		c = drain.NewServiceDrainLister(curler, appLister, envProvider)
 	})
 
 	It("only displays syslog services", func() {

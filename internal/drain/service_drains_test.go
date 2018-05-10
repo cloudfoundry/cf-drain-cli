@@ -176,16 +176,60 @@ var _ = Describe("ServiceDrainLister", func() {
 	})
 
 	Describe("DeleteDrainAndUser", func() {
-
 		BeforeEach(func() {
 			key = "/v2/user_provided_service_instances?q=space_guid:space-guid"
 			curler.resps[key] = serviceInstancesJSONpage1
 			key = "/v2/user_provided_service_instances?q=space_guid:space-guid&page:2"
 			curler.resps[key] = serviceInstancesJSONpage2
+
+			key = "/v2/user_provided_service_instances/drain-1/service_bindings"
+			curler.resps[key] = serviceBindingsJSON1page1
+			key = "/v2/user_provided_service_instances/drain-1/service_bindings&page:2"
+			curler.resps[key] = serviceBindingsJSON1page2
+			key = "/v2/user_provided_service_instances/drain-2/service_bindings"
+			curler.resps[key] = serviceBindingsJSON2
+
+			key = "/v3/apps?guids=app-1,app-2,app-1"
+			curler.resps[key] = appJSONpage1
+			key = "/v3/apps?guids=app-1,app-2,app-1&page=2"
+			curler.resps[key] = appJSONpage2
+
+			key = "/v3/apps/app-1"
+			curler.resps[key] = ""
+			key = "/v3/service_bindings/drain-1"
+			curler.resps[key] = ""
+			key = "/v2/service_instances/drain-1"
+			curler.resps[key] = ""
+		})
+
+		It("unbinds and deletes the service and deletes drain", func() {
+			ok, err := c.DeleteDrainAndUser("space-guid", "drain-1")
+			Expect(ok).To(BeTrue())
+			Expect(err).ShouldNot(HaveOccurred())
+			// unbind and delete service instance
+			Expect(curler.methods).To(ConsistOf("DELETE", "DELETE"))
+			Expect(curler.bodies).To(ConsistOf("", ""))
 		})
 
 		It("deletes space drain app if scope is space", func() {
-			c.DeleteDrainAndUser("space-guid", "drain-name")
+			ok, err := c.DeleteDrainAndUser("space-guid", "drain-1")
+			Expect(ok).To(BeTrue())
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(curler.methods).To(ConsistOf("DELETE"))
+			Expect(curler.bodies).To(ConsistOf(""))
+		})
+
+		It("returns error when drains cannot be fetched", func() {
+			ok, err := c.DeleteDrainAndUser("bad-space-guid", "drain-2")
+			Expect(ok).To(BeFalse())
+			Expect(err).Should(HaveOccurred())
+		})
+
+		It("returns error when drain is not found", func() {
+			ok, err := c.DeleteDrainAndUser("space-guid", "drain-3")
+			Expect(ok).To(BeFalse())
+			Expect(err).Should(HaveOccurred())
 		})
 	})
 })

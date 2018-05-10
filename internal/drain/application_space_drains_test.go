@@ -173,6 +173,62 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
+	Describe("DeleteDrainAndUser", func() {
+
+		BeforeEach(func() {
+			appLister.apps = []cloudcontroller.App{
+				cloudcontroller.App{
+					Name: "drain-1",
+					Guid: "00000000-0000-0000-0000-000000000000",
+				},
+				cloudcontroller.App{
+					Name: "drain-2",
+					Guid: "11111111-1111-1111-1111-111111111111",
+				},
+				cloudcontroller.App{
+					Name: "app-1",
+					Guid: "22222222-2222-2222-2222-222222222222",
+				},
+				cloudcontroller.App{
+					Name: "app-2",
+					Guid: "33333333-3333-3333-3333-333333333333",
+				},
+			}
+
+			envProvider.envs = map[string]map[string]string{
+				"00000000-0000-0000-0000-000000000000": {
+					"DRAIN_SCOPE": "single",
+					"SOURCE_ID":   "22222222-2222-2222-2222-222222222222",
+					"DRAIN_TYPE":  "logs",
+					"SYSLOG_URL":  "syslog://the-syslog-drain.com",
+				},
+				"11111111-1111-1111-1111-111111111111": {
+					"DRAIN_SCOPE": "space",
+					"DRAIN_TYPE":  "all",
+					"DRAIN_URL":   "https://the-syslog-drain.com",
+				},
+			}
+		})
+
+		It("deletes syslog-forwarder app if scope is single", func() {
+			ok, err := drainLister.DeleteDrainAndUser("space-guid", "drain-1")
+			Expect(ok).To(BeTrue())
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+
+		It("deletes space_syslog app if scope is space", func() {
+			ok, err := drainLister.DeleteDrainAndUser("space-guid", "drain-1")
+			Expect(ok).To(BeTrue())
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+
+		It("returns error when drains cannot be fetched", func() {
+			appLister.apps = []cloudcontroller.App{}
+			ok, err := drainLister.DeleteDrainAndUser("bad-space-guid", "drain-2")
+			Expect(ok).To(BeFalse())
+			Expect(err).Should(HaveOccurred())
+		})
+	})
 })
 
 func newSpyAppLister() *spyAppLister {

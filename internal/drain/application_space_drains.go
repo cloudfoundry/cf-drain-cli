@@ -27,20 +27,20 @@ func NewApplicationDrainLister(appLister AppLister, envProvider EnvProvider) App
 	}
 }
 
-func (c ApplicationDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) bool {
+func (c ApplicationDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) (bool, error) {
 	drains, err := c.Drains(spaceGuid)
 	if err != nil {
-		log.Fatalf("Failed to fetch drains: %s", err)
+		return false, fmt.Errorf("Failed to fetch drains: %s", err)
 	}
 
 	d, ok := c.findDrain(drains, drainName)
 	if ok {
 		c.deleteDrain(d)
 		c.deleteUser(fmt.Sprintf("drain-%s", d.AppGuids[0]))
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, fmt.Errorf("Failed to find drain %s in space %s", drainName, spaceGuid)
 }
 
 func (dl ApplicationDrainLister) Drains(spaceGUID string) ([]Drain, error) {

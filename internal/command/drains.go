@@ -13,7 +13,10 @@ import (
 
 type DrainFetcher interface {
 	Drains(spaceGUID string) ([]drain.Drain, error)
-	DeleteDrainAndUser(spaceGuid, drainName string) bool
+}
+
+type DrainRemover interface {
+	DeleteDrainAndUser(spaceGuid, drainName string) (bool, error)
 }
 
 func Drains(

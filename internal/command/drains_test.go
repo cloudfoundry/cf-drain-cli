@@ -114,19 +114,14 @@ var _ = Describe("Drains", func() {
 })
 
 type stubDrainFetcher struct {
-	drains        []drain.Drain
-	deletedDrains map[string]bool
-	err           error
+	drains []drain.Drain
+	err    error
 }
 
 func newStubDrainFetcher() *stubDrainFetcher {
-	return &stubDrainFetcher{deletedDrains: make(map[string]bool)}
+	return &stubDrainFetcher{}
 }
 
 func (f *stubDrainFetcher) Drains(spaceGuid string) ([]drain.Drain, error) {
 	return f.drains, f.err
-}
-
-func (f *stubDrainFetcher) DeleteDrainAndUser(spaceGuid, drainName string) bool {
-	return f.deletedDrains[drainName]
 }

@@ -31,10 +31,10 @@ type Drain struct {
 	Scope       string
 }
 
-func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) bool {
+func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) (bool, error) {
 	drains, err := c.Drains(spaceGuid)
 	if err != nil {
-		log.Fatalf("Failed to fetch drains: %s", err)
+		return false, fmt.Errorf("Failed to fetch drains: %s", err)
 	}
 
 	d, ok := c.findDrain(drains, drainName)
@@ -42,11 +42,14 @@ func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) boo
 		if d.Scope == "space" {
 			c.deleteDrain(d)
 			c.deleteUser(fmt.Sprintf("space-drain-%s", d.Guid))
-			return true
+			return true, nil
 		}
+		c.unbindService(d)
+		c.deleteService(d)
+		return true, nil
 	}
 
-	return false
+	return false, fmt.Errorf("Failed to find drain %s in space %s", drainName, spaceGuid)
 }
 
 func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
@@ -75,15 +78,14 @@ func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 			return nil, err
 		}
 
-		drain, err := c.buildDrain(
-			apps,
-			s.Entity.Name,
-			s.MetaData.Guid,
-			drainType,
-			s.Entity.SyslogDrainURL,
-		)
-		if err != nil {
-			return nil, err
+		drain := Drain{
+			Name:        s.Entity.Name,
+			Guid:        s.MetaData.Guid,
+			Apps:        apps,
+			Type:        drainType,
+			DrainURL:    s.Entity.SyslogDrainURL,
+			AdapterType: "service",
+			Scope:       "single",
 		}
 
 		drains = append(drains, drain)
@@ -199,17 +201,6 @@ func (c *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
-	return Drain{
-		Name:        name,
-		Guid:        guid,
-		Apps:        apps,
-		Type:        drainType,
-		DrainURL:    drainURL,
-		AdapterType: "service",
-	}, nil
-}
-
 func (c *ServiceDrainLister) findDrain(ds []Drain, drainName string) (Drain, bool) {
 	var drains []Drain
 	for _, drain := range ds {
@@ -242,6 +233,42 @@ func (c *ServiceDrainLister) deleteDrain(drain Drain) {
 func (c *ServiceDrainLister) deleteUser(username string) {
 	// command := []string{"delete-user", username, "-f"}
 	// _, err := cli.CliCommand(command...)
+	// if err != nil {
+	// 	log.Fatalf("%s", err)
+	// }
+}
+
+func (c *ServiceDrainLister) unbindService(drain Drain) {
+	// services, err := cli.GetServices()
+	// if err != nil {
+	// 	log.Fatalf("%s", err)
+	// }
+	//
+	// var namedService *plugin_models.GetServices_Model
+	// for _, s := range services {
+	// 	if s.Name == drainName {
+	// 		namedService = &s
+	// 		break
+	// 	}
+	// }
+	//
+	// if namedService == nil {
+	// 	log.Fatalf("Unable to find service %s.", drainName)
+	// }
+	//
+	// for _, app := range namedService.ApplicationNames {
+	// 	command := []string{"unbind-service", app, drainName}
+	// 	_, err := cli.CliCommand(command...)
+	// 	if err != nil {
+	// 		log.Fatalf("%s", err)
+	// 	}
+	// }
+
+}
+
+func (c *ServiceDrainLister) deleteService(drain Drain) {
+	// command := []string{"delete-service", drainName, "-f"}
+	// _, err = cli.CliCommand(command...)
 	// if err != nil {
 	// 	log.Fatalf("%s", err)
 	// }

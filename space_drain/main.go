@@ -36,7 +36,7 @@ func main() {
 
 	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)
 
-	drainLister := drain.NewServiceDrainLister(curler, nil, nil)
+	drainLister := drain.NewServiceDrainLister(nil, curler, nil, nil)
 	drainCreator := cloudcontroller.NewCreateDrainClient(curler)
 	drainBinder := cloudcontroller.NewBindDrainClient(curler)
 	appLister := cloudcontroller.NewAppListerClient(curler)

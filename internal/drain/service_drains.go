@@ -8,19 +8,23 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
+	"code.cloudfoundry.org/cli/plugin"
+	"code.cloudfoundry.org/cli/plugin/models"
 )
 
 type ServiceDrainLister struct {
 	c           cloudcontroller.Curler
+	cli         plugin.CliConnection
 	appLister   AppLister
 	envProvider EnvProvider
 }
 
-func NewServiceDrainLister(c cloudcontroller.Curler, appLister AppLister, envProvider EnvProvider) *ServiceDrainLister {
+func NewServiceDrainLister(cli plugin.CliConnection, c cloudcontroller.Curler, appLister AppLister, envProvider EnvProvider) *ServiceDrainLister {
 	return &ServiceDrainLister{
 		c:           c,
 		appLister:   appLister,
 		envProvider: envProvider,
+		cli:         cli,
 	}
 }
 
@@ -36,15 +40,11 @@ type Drain struct {
 }
 
 func (c *ServiceDrainLister) DeleteDrainAndUser(spaceGuid, drainName string) (bool, error) {
-	drains, err := c.fetchSpaceDrains(spaceGuid)
-	if err != nil {
-		return false, err
+	drains, err := c.fetchServiceDrains(spaceGuid)
+
+	if len(drains) == 0 {
+		drains, err = c.fetchSpaceDrains(spaceGuid)
 	}
-	sdrains, err := c.fetchServiceDrains(spaceGuid)
-	if err != nil {
-		return false, err
-	}
-	drains = append(drains, sdrains...)
 
 	if err != nil {
 		return false, fmt.Errorf("Failed to fetch drains: %s", err)
@@ -154,6 +154,7 @@ func (c *ServiceDrainLister) fetchSpaceDrains(spaceGuid string) ([]Drain, error)
 				AppGuids: guids,
 				Type:     envs["DRAIN_TYPE"],
 				DrainURL: envs["DRAIN_URL"],
+				Scope:    drainScope,
 			})
 		}
 	}
@@ -271,55 +272,55 @@ func (c *ServiceDrainLister) findDrain(ds []Drain, drainName string) (Drain, boo
 }
 
 func (c *ServiceDrainLister) deleteDrain(drain Drain) {
-	// command := []string{"delete", drain.Name, "-f"}
-	// _, err := cli.CliCommand(command...)
-	// if err != nil {
-	// 	log.Fatalf("%s", err)
-	// }
+	command := []string{"delete", drain.Name, "-f"}
+	_, err := c.cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 }
 
 func (c *ServiceDrainLister) deleteUser(username string) {
-	// command := []string{"delete-user", username, "-f"}
-	// _, err := cli.CliCommand(command...)
-	// if err != nil {
-	// 	log.Fatalf("%s", err)
-	// }
+	command := []string{"delete-user", username, "-f"}
+	_, err := c.cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 }
 
 func (c *ServiceDrainLister) unbindService(drain Drain) {
-	// services, err := cli.GetServices()
-	// if err != nil {
-	// 	log.Fatalf("%s", err)
-	// }
-	//
-	// var namedService *plugin_models.GetServices_Model
-	// for _, s := range services {
-	// 	if s.Name == drainName {
-	// 		namedService = &s
-	// 		break
-	// 	}
-	// }
-	//
-	// if namedService == nil {
-	// 	log.Fatalf("Unable to find service %s.", drainName)
-	// }
-	//
-	// for _, app := range namedService.ApplicationNames {
-	// 	command := []string{"unbind-service", app, drainName}
-	// 	_, err := cli.CliCommand(command...)
-	// 	if err != nil {
-	// 		log.Fatalf("%s", err)
-	// 	}
-	// }
+	services, err := c.cli.GetServices()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 
+	var namedService *plugin_models.GetServices_Model
+	for _, s := range services {
+		fmt.Printf("service name is %s and drain name is %s\n", s.Name, drain.Name)
+		if s.Name == drain.Name {
+			namedService = &s
+			break
+		}
+	}
+
+	if namedService == nil {
+		log.Fatalf("Unable to find service %s.", drain.Name)
+	}
+
+	for _, app := range namedService.ApplicationNames {
+		command := []string{"unbind-service", app, drain.Name}
+		_, err := c.cli.CliCommand(command...)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
 }
 
 func (c *ServiceDrainLister) deleteService(drain Drain) {
-	// command := []string{"delete-service", drainName, "-f"}
-	// _, err = cli.CliCommand(command...)
-	// if err != nil {
-	// 	log.Fatalf("%s", err)
-	// }
+	command := []string{"delete-service", drain.Name, "-f"}
+	_, err := c.cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 }
 
 func (c *ServiceDrainLister) appMetadata(apps []cloudcontroller.App) (guids []string, names []string, spaceApps map[string]string) {

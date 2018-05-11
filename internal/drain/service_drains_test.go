@@ -2,14 +2,19 @@ package drain_test
 
 import (
 	"errors"
+	"strings"
 
+	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
+	"code.cloudfoundry.org/cli/plugin"
+	"code.cloudfoundry.org/cli/plugin/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ServiceDrainLister", func() {
 	var (
+		cli         *stubCliConnection
 		curler      *stubCurler
 		appLister   *spyAppLister
 		envProvider *spyEnvProvider
@@ -18,11 +23,12 @@ var _ = Describe("ServiceDrainLister", func() {
 	)
 
 	BeforeEach(func() {
+		cli = newStubCliConnection()
 		curler = newStubCurler()
 		appLister = newSpyAppLister()
 		envProvider = newSpyEnvProvider()
 
-		c = drain.NewServiceDrainLister(curler, appLister, envProvider)
+		c = drain.NewServiceDrainLister(cli, curler, appLister, envProvider)
 	})
 
 	It("only displays syslog services", func() {
@@ -181,7 +187,8 @@ var _ = Describe("ServiceDrainLister", func() {
 	})
 
 	Describe("DeleteDrainAndUser", func() {
-		BeforeEach(func() {
+
+		It("unbinds and deletes the service and deletes drain", func() {
 			key = "/v2/user_provided_service_instances?q=space_guid:space-guid"
 			curler.resps[key] = serviceInstancesJSONpage1
 			key = "/v2/user_provided_service_instances?q=space_guid:space-guid&page:2"
@@ -199,30 +206,92 @@ var _ = Describe("ServiceDrainLister", func() {
 			key = "/v3/apps?guids=app-1,app-2,app-1&page=2"
 			curler.resps[key] = appJSONpage2
 
-			key = "/v3/apps/app-1"
-			curler.resps[key] = ""
-			key = "/v3/service_bindings/drain-1"
-			curler.resps[key] = ""
-			key = "/v2/service_instances/drain-1"
-			curler.resps[key] = ""
-		})
+			appLister.apps = []cloudcontroller.App{
+				cloudcontroller.App{
+					Name: "drain-1",
+					Guid: "00000000-0000-0000-0000-000000000000",
+				},
+				cloudcontroller.App{
+					Name: "app-1",
+					Guid: "22222222-2222-2222-2222-222222222222",
+				},
+				cloudcontroller.App{
+					Name: "app-2",
+					Guid: "33333333-3333-3333-3333-333333333333",
+				},
+			}
 
-		It("unbinds and deletes the service and deletes drain", func() {
+			envProvider.envs = map[string]map[string]string{
+				"00000000-0000-0000-0000-000000000000": {
+					"DRAIN_SCOPE": "single",
+					"SOURCE_ID":   "22222222-2222-2222-2222-222222222222",
+					"DRAIN_TYPE":  "logs",
+					"SYSLOG_URL":  "syslog://the-syslog-drain.com",
+				},
+				"11111111-1111-1111-1111-111111111111": {
+					"DRAIN_SCOPE": "space",
+					"DRAIN_TYPE":  "all",
+					"DRAIN_URL":   "https://the-syslog-drain.com",
+				},
+			}
+
+			cli.getServicesName = "drain-1"
+			cli.getServicesApps = []string{"app-1", "app-2"}
+
 			ok, err := c.DeleteDrainAndUser("space-guid", "drain-1")
+
 			Expect(ok).To(BeTrue())
 			Expect(err).ShouldNot(HaveOccurred())
+
 			// unbind and delete service instance
-			Expect(curler.methods).To(ConsistOf("DELETE", "DELETE"))
-			Expect(curler.bodies).To(ConsistOf("", ""))
+			Expect(cli.cliCommandArgs).To(HaveLen(3))
+			Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				"unbind-service", "app-1", "drain-1",
+			}))
+			Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				"unbind-service", "app-2", "drain-1",
+			}))
+			Expect(cli.cliCommandArgs[2]).To(Equal([]string{
+				"delete-service", "drain-1", "-f",
+			}))
 		})
 
 		It("deletes space drain app if scope is space", func() {
-			ok, err := c.DeleteDrainAndUser("space-guid", "drain-1")
+			appLister.apps = []cloudcontroller.App{
+				cloudcontroller.App{
+					Name: "space-drain-1",
+					Guid: "space-guid",
+				},
+				cloudcontroller.App{
+					Name: "app-1",
+					Guid: "22222222-2222-2222-2222-222222222222",
+				},
+				cloudcontroller.App{
+					Name: "app-2",
+					Guid: "33333333-3333-3333-3333-333333333333",
+				},
+			}
+
+			envProvider.envs = map[string]map[string]string{
+				"space-guid": {
+					"DRAIN_SCOPE": "space",
+					"DRAIN_TYPE":  "logs",
+					"SYSLOG_URL":  "syslog://the-syslog-drain.com",
+				},
+			}
+			cli.getServicesName = "space-drain-1"
+			cli.getServicesApps = []string{"app-1", "app-2"}
+
+			ok, err := c.DeleteDrainAndUser("space-guid", "space-drain-1")
 			Expect(ok).To(BeTrue())
 			Expect(err).ShouldNot(HaveOccurred())
 
-			Expect(curler.methods).To(ConsistOf("DELETE"))
-			Expect(curler.bodies).To(ConsistOf(""))
+			Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				"delete", "space-drain-1", "-f",
+			}))
+			Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				"delete-user", "space-drain-space-guid", "-f",
+			}))
 		})
 
 		It("returns error when drains cannot be fetched", func() {
@@ -239,6 +308,84 @@ var _ = Describe("ServiceDrainLister", func() {
 	})
 })
 
+type stubCliConnection struct {
+	plugin.CliConnection
+
+	getServicesName string
+	getServicesApps []string
+
+	getServiceError  error
+	getServicesError error
+
+	cliCommandWithoutTerminalOutputArgs     [][]string
+	cliCommandWithoutTerminalOutputResponse map[string]string
+
+	cliCommandArgs     [][]string
+	unbindServiceError error
+	deleteServiceError error
+
+	setEnvErrors map[string]error
+}
+
+func newStubCliConnection() *stubCliConnection {
+	return &stubCliConnection{
+		cliCommandWithoutTerminalOutputResponse: make(map[string]string),
+		setEnvErrors:                            make(map[string]error),
+	}
+}
+
+func (s *stubCliConnection) GetServices() ([]plugin_models.GetServices_Model, error) {
+	resp := []plugin_models.GetServices_Model{
+		{
+			Name:             "garbage-1",
+			ApplicationNames: []string{"garbage-app-1", "garbage-app-2"},
+		},
+		{
+			Name:             s.getServicesName,
+			ApplicationNames: s.getServicesApps,
+		},
+		{
+			Name:             "garbage-2",
+			ApplicationNames: []string{"garbage-app-3", "garbage-app-4"},
+		},
+	}
+
+	return resp, s.getServicesError
+}
+
+func (s *stubCliConnection) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {
+	s.cliCommandWithoutTerminalOutputArgs = append(
+		s.cliCommandWithoutTerminalOutputArgs,
+		args,
+	)
+
+	output, ok := s.cliCommandWithoutTerminalOutputResponse[strings.Join(args, " ")]
+	if !ok {
+		output = "{}"
+	}
+
+	var err error
+	switch args[0] {
+	case "set-env":
+		err = s.setEnvErrors[args[2]]
+	}
+
+	return strings.Split(output, "\n"), err
+}
+
+func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
+	var err error
+	switch args[0] {
+	case "unbind-service":
+		err = s.unbindServiceError
+	case "delete-service":
+		err = s.deleteServiceError
+	}
+
+	s.cliCommandArgs = append(s.cliCommandArgs, args)
+	return nil, err
+}
+
 type stubCurler struct {
 	URLs    []string
 	methods []string
@@ -254,11 +401,11 @@ func newStubCurler() *stubCurler {
 	}
 }
 
-func (s *stubCurler) Curl(URL, method, body string) ([]byte, error) {
-	s.URLs = append(s.URLs, URL)
+func (s *stubCurler) Curl(url, method, body string) ([]byte, error) {
+	s.URLs = append(s.URLs, url)
 	s.methods = append(s.methods, method)
 	s.bodies = append(s.bodies, body)
-	return []byte(s.resps[URL]), s.errs[URL]
+	return []byte(s.resps[url]), s.errs[url]
 }
 
 var serviceInstancesJSONpage1 = `{

@@ -59,13 +59,6 @@ var _ = Describe("DeleteDrain", func() {
 				// 	"Are you sure you want to unbind my-drain from app-1 and delete my-drain? [y/N] ",
 				// ))
 
-				// Expect(cli.cliCommandArgs).To(HaveLen(2))
-				// Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-				// 	"unbind-service", "app-1", "my-drain",
-				// }))
-				// Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-				// 	"delete-service", "my-drain", "-f",
-				// }))
 				Expect(appDrainRemover.deletedDrains["my-drain"]).To(BeFalse())
 				Expect(serviceDrainRemover.deletedDrains["my-drain"]).To(BeFalse())
 			})
@@ -130,12 +123,6 @@ var _ = Describe("DeleteDrain", func() {
 
 				Expect(cli.cliCommandArgs).To(HaveLen(0))
 
-				// Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-				// 	"delete", "my-space-drain", "-f",
-				// }))
-				// Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-				// 	"delete-user", "space-drain-my-space-drain-guid", "-f",
-				// }))
 				Expect(appDrainRemover.deletedDrains["my-space-drain"]).To(BeFalse())
 				Expect(serviceDrainRemover.deletedDrains["my-space-drain"]).To(BeTrue())
 			})

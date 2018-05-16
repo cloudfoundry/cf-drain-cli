@@ -89,7 +89,7 @@ LOG-EMITTER-1--[0-9a-f]{16}  cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12} 
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, acceptance.Config().DefaultTimeout+1*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
 		Consistently(logs, 10).ShouldNot(Say(randomMessage2))
 	})
 
@@ -118,8 +118,8 @@ LOG-EMITTER-1--[0-9a-f]{16}  cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12} 
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, acceptance.Config().DefaultTimeout+1*time.Minute).Should(Say(randomMessage1))
-		Eventually(logs, acceptance.Config().DefaultTimeout+1*time.Minute).Should(Say(randomMessage2))
+		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
 	})
 
 	It("drains all apps in space to a syslog endpoint", func() {
@@ -146,8 +146,8 @@ LOG-EMITTER-1--[0-9a-f]{16}  cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12} 
 		go WriteToLogsApp(interrupt, randomMessage1, logWriterAppName1)
 		go WriteToLogsApp(interrupt, randomMessage2, logWriterAppName2)
 
-		Eventually(logs, acceptance.Config().DefaultTimeout+1*time.Minute).Should(Say(randomMessage1))
-		Eventually(logs, acceptance.Config().DefaultTimeout+1*time.Minute).Should(Say(randomMessage2))
+		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
+		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
 	})
 
 	It("lists the all the drains", func() {

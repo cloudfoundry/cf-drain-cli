@@ -38,8 +38,6 @@ var _ = Describe("DeleteDrain", func() {
 		})
 		Context("adapter-type is service", func() {
 			It("unbinds and deletes the service and deletes drain", func() {
-				reader.WriteString("y\n")
-
 				serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
 					Name:        "my-drain",
 					Guid:        "my-drain-guid",
@@ -51,11 +49,7 @@ var _ = Describe("DeleteDrain", func() {
 					Scope:       "single",
 				})
 
-				command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
-
-				Expect(logger.printMessages).To(ConsistOf(
-					"Are you sure you want to unbind my-drain from app-1 and delete my-drain? [y/N] ",
-				))
+				command.DeleteDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
 
 				Expect(cli.cliCommandArgs).To(HaveLen(2))
 				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
@@ -215,6 +209,14 @@ var _ = Describe("DeleteDrain", func() {
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 2."))
+	})
+
+	It("fatally logs for invalid flags", func() {
+		Expect(func() {
+			command.DeleteDrain(cli, []string{"some-drain", "--invalid"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+		}).To(Panic())
+
+		Expect(logger.fatalfMessage).To(Equal("unknown flag `invalid'"))
 	})
 
 	It("fatally logs when the service does not exist", func() {

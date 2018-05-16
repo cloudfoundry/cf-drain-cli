@@ -25,10 +25,10 @@ type pushSpaceDrainOpts struct {
 	DrainName   string `long:"drain-name" required:"true"`
 	DrainURL    string `long:"drain-url" required:"true"`
 	Username    string `long:"username"`
+	Password    string `long:"password"`
 	Path        string `long:"path"`
 	DrainType   string `long:"type"`
 	Force       bool   `long:"force"`
-	Password    string
 }
 
 type PasswordReader func(int) ([]byte, error)
@@ -57,7 +57,7 @@ func PushSpaceDrain(
 		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
 	}
 
-	if opts.Username != "" {
+	if opts.Username != "" && opts.Password == "" {
 		log.Printf("Enter a password for %s: ", opts.Username)
 		bytePassword, err := pw(0)
 		if err != nil {

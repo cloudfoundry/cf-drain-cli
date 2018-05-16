@@ -39,13 +39,14 @@ var _ = Describe("PushSpaceDrain", func() {
 			command.PushSpaceDrain(
 				cli,
 				reader,
-				pr,
+				nil,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
 					"--drain-url", "https://some-drain",
 					"--type", "metrics",
 					"--username", "some-user",
+					"--password", "some-given-password",
 				},
 				downloader,
 				logger,
@@ -79,7 +80,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
 				[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
 				[]string{"set-env", "space-drain", "USERNAME", "some-user"},
-				[]string{"set-env", "space-drain", "PASSWORD", "some-password"},
+				[]string{"set-env", "space-drain", "PASSWORD", "some-given-password"},
 				[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
 				[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
 			))

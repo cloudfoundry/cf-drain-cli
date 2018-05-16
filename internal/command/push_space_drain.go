@@ -31,12 +31,12 @@ type pushSpaceDrainOpts struct {
 	Password    string
 }
 
-type passwordReader func(int) ([]byte, error)
+type PasswordReader func(int) ([]byte, error)
 
 func PushSpaceDrain(
 	cli plugin.CliConnection,
 	reader io.Reader,
-	pw passwordReader,
+	pw PasswordReader,
 	args []string,
 	d Downloader,
 	log Logger,

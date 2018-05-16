@@ -48,7 +48,7 @@ func CreateDrain(
 	cli plugin.CliConnection,
 	args []string,
 	d Downloader,
-	p passwordReader,
+	p PasswordReader,
 	log Logger,
 ) {
 	opts := createDrainOpts{
@@ -135,7 +135,7 @@ func pushSyslogForwarder(
 	username string,
 	password string,
 	d Downloader,
-	p passwordReader,
+	p PasswordReader,
 	log Logger,
 ) {
 	sourceID, err := sourceID(cli, appOrServiceName)

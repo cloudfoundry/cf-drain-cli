@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"time"
@@ -19,12 +20,31 @@ var (
 	syslogDrain   = "apps/syslog-drain-listener"
 )
 
+func SilienceGinkgoWriter(f func()) {
+	oldWriter := GinkgoWriter
+	defer func() {
+		GinkgoWriter = oldWriter
+	}()
+	GinkgoWriter = ioutil.Discard
+	f()
+}
+
 func LogsTail(appName string) *Session {
-	return cf.Cf("tail", appName, "--lines", "125")
+	var s *Session
+	SilienceGinkgoWriter(func() {
+		s = cf.Cf("tail", appName, "--lines", "125")
+	})
+
+	return s
 }
 
 func LogsFollow(appName string) *Session {
-	return cf.Cf("tail", "--follow", appName)
+	var s *Session
+	SilienceGinkgoWriter(func() {
+		s = cf.Cf("tail", "--follow", appName)
+	})
+
+	return s
 }
 
 func PushLogWriter() string {

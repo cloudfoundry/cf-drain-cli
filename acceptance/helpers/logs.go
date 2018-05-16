@@ -78,7 +78,7 @@ func PushSyslogServer() string {
 
 func WriteToLogsApp(doneChan chan struct{}, message, logWriterAppName string) {
 	cfg := acceptance.Config()
-	logUrl := fmt.Sprintf("https://%s.%s/log/%s", logWriterAppName, cfg.CFDomain, message)
+	logUrl := fmt.Sprintf("http://%s.%s/log/%s", logWriterAppName, cfg.CFDomain, message)
 
 	defer GinkgoRecover()
 	for {
@@ -86,7 +86,9 @@ func WriteToLogsApp(doneChan chan struct{}, message, logWriterAppName string) {
 		case <-doneChan:
 			return
 		default:
-			http.Get(logUrl)
+			resp, err := http.Get(logUrl)
+			ExpectWithOffset(1, err).ToNot(HaveOccurred())
+			ExpectWithOffset(1, resp.StatusCode).To(Equal(http.StatusOK))
 			time.Sleep(3 * time.Second)
 		}
 	}

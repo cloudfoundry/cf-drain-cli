@@ -31,7 +31,7 @@ func Config() *TestConfig {
 	}
 	err := envstruct.Load(config)
 	if err != nil {
-		log.Fatalf("failed to load drain test config", err)
+		log.Fatalf("failed to load drain test config: %s", err)
 	}
 	return config
 }

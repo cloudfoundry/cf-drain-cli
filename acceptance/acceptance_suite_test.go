@@ -15,6 +15,12 @@ import (
 )
 
 func TestAcceptance(t *testing.T) {
+	_, err := acceptance.LoadConfig()
+	if err != nil {
+		// skipping tests from acceptance package
+		t.Skip()
+	}
+
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Acceptance Suite")
 }

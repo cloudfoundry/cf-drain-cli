@@ -20,18 +20,27 @@ type TestConfig struct {
 
 var config *TestConfig
 
-func Config() *TestConfig {
-	if config != nil {
-		return config
-	}
-
+func LoadConfig() (*TestConfig, error) {
 	config := &TestConfig{
 		DefaultTimeout: 10 * time.Second,
 		AppPushTimeout: 45 * time.Second,
 	}
 	err := envstruct.Load(config)
 	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func Config() *TestConfig {
+	if config != nil {
+		return config
+	}
+
+	cfg, err := LoadConfig()
+	if err != nil {
 		log.Fatalf("failed to load drain test config: %s", err)
 	}
+	config = cfg
 	return config
 }

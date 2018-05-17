@@ -51,7 +51,7 @@ func PushLogWriter() string {
 	cfg := acceptance.Config()
 	appName := generator.PrefixedRandomName("LOG-EMITTER", "")
 
-	Eventually(cf.Cf(
+	EventuallyWithOffset(1, cf.Cf(
 		"push",
 		appName,
 		"-p", logEmitterApp,
@@ -64,7 +64,7 @@ func PushSyslogServer() string {
 	cfg := acceptance.Config()
 	appName := generator.PrefixedRandomName("SYSLOG-SERVER", "")
 
-	Eventually(cf.Cf(
+	EventuallyWithOffset(1, cf.Cf(
 		"push",
 		appName,
 		"--health-check-type", "port",
@@ -98,9 +98,9 @@ func SyslogDrainAddress(appName string) string {
 	cfg := acceptance.Config()
 
 	var address []byte
-	Eventually(func() []byte {
+	EventuallyWithOffset(1, func() []byte {
 		re, err := regexp.Compile("ADDRESS: \\|(.*)\\|")
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 		logs := LogsTail(appName).Wait(cfg.DefaultTimeout)
 		matched := re.FindSubmatch(logs.Out.Contents())

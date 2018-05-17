@@ -81,7 +81,6 @@ var _ = Describe("ListDrainsClient", func() {
 					Expect(d[0].AppGuids).To(Equal([]string{"app-1", "app-2"}))
 					Expect(d[0].Type).To(Equal("logs"))
 					Expect(d[0].DrainURL).To(Equal("syslog://your-app.cf-app.com"))
-					Expect(d[0].AdapterType).To(Equal("service"))
 
 					Expect(d[1].Name).To(Equal("drain-2"))
 					Expect(d[1].Guid).To(Equal("guid-2"))
@@ -89,7 +88,6 @@ var _ = Describe("ListDrainsClient", func() {
 					Expect(d[1].AppGuids).To(Equal([]string{"app-1"}))
 					Expect(d[1].Type).To(Equal("metrics"))
 					Expect(d[1].DrainURL).To(Equal("https://your-app2.cf-app.com?drain-type=metrics"))
-					Expect(d[1].AdapterType).To(Equal("service"))
 
 					// 7 => 2 service fetch + (2 app fetches) +  (3 app name fetches)
 					Expect(curler.methods).To(ConsistOf("GET", "GET", "GET", "GET", "GET", "GET", "GET"))

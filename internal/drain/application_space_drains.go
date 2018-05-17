@@ -45,13 +45,12 @@ func (dl ApplicationDrainLister) Drains(spaceGUID string) ([]Drain, error) {
 		switch drainScope {
 		case "space":
 			drains = append(drains, Drain{
-				Name:        app.Name,
-				Guid:        app.Guid,
-				Apps:        names,
-				AppGuids:    guids,
-				Type:        envs["DRAIN_TYPE"],
-				DrainURL:    envs["DRAIN_URL"],
-				AdapterType: "application",
+				Name:     app.Name,
+				Guid:     app.Guid,
+				Apps:     names,
+				AppGuids: guids,
+				Type:     envs["DRAIN_TYPE"],
+				DrainURL: envs["DRAIN_URL"],
 			})
 		case "single":
 			sourceID, ok := envs["SOURCE_ID"]
@@ -66,13 +65,12 @@ func (dl ApplicationDrainLister) Drains(spaceGUID string) ([]Drain, error) {
 			}
 
 			drains = append(drains, Drain{
-				Name:        app.Name,
-				Guid:        app.Guid,
-				Apps:        []string{name},
-				AppGuids:    []string{sourceID},
-				Type:        envs["DRAIN_TYPE"],
-				DrainURL:    envs["SYSLOG_URL"],
-				AdapterType: "application",
+				Name:     app.Name,
+				Guid:     app.Guid,
+				Apps:     []string{name},
+				AppGuids: []string{sourceID},
+				Type:     envs["DRAIN_TYPE"],
+				DrainURL: envs["SYSLOG_URL"],
 			})
 		}
 	}

@@ -18,13 +18,13 @@ type Logger interface {
 }
 
 type createDrainOpts struct {
-	AppOrServiceName string
-	DrainName        string `long:"drain-name"`
-	DrainType        string `long:"type"`
-	DrainURL         string
+	AppName   string
+	DrainName string `long:"drain-name"`
+	DrainType string `long:"type"`
+	DrainURL  string
 }
 
-func (f *createDrainOpts) serviceName() string {
+func (f *createDrainOpts) drainName() string {
 	if f.DrainName != "" {
 		return f.DrainName
 	}
@@ -56,7 +56,7 @@ func CreateDrain(
 		log.Fatalf("Invalid arguments, expected 2, got %d.", len(args))
 	}
 
-	opts.AppOrServiceName = args[0]
+	opts.AppName = args[0]
 	opts.DrainURL = args[1]
 
 	u, err := url.Parse(opts.DrainURL)
@@ -74,7 +74,7 @@ func CreateDrain(
 		u.RawQuery = qValues.Encode()
 	}
 
-	createAndBindService(cli, u, opts.AppOrServiceName, opts.serviceName(), log)
+	createAndBindService(cli, u, opts.AppName, opts.drainName(), log)
 }
 
 func createAndBindService(

@@ -20,14 +20,13 @@ func NewServiceDrainLister(c cloudcontroller.Curler) *ServiceDrainLister {
 }
 
 type Drain struct {
-	Name        string
-	Guid        string
-	Apps        []string
-	AppGuids    []string
-	Type        string
-	DrainURL    string
-	AdapterType string
-	Scope       string
+	Name     string
+	Guid     string
+	Apps     []string
+	AppGuids []string
+	Type     string
+	DrainURL string
+	Scope    string
 }
 
 func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
@@ -182,12 +181,11 @@ func (c *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
 
 func (c *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
 	return Drain{
-		Name:        name,
-		Guid:        guid,
-		Apps:        apps,
-		Type:        drainType,
-		DrainURL:    drainURL,
-		AdapterType: "service",
+		Name:     name,
+		Guid:     guid,
+		Apps:     apps,
+		Type:     drainType,
+		DrainURL: drainURL,
 	}, nil
 }
 

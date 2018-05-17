@@ -75,9 +75,8 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 					AppGuids: []string{
 						"22222222-2222-2222-2222-222222222222",
 					},
-					Type:        "logs",
-					DrainURL:    "syslog://the-syslog-drain.com",
-					AdapterType: "application",
+					Type:     "logs",
+					DrainURL: "syslog://the-syslog-drain.com",
 				},
 				drain.Drain{
 					Name: "yyyyyyyyyyyyyyy-11111111-1111-1111-1111-111111111111",
@@ -94,9 +93,8 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 						"22222222-2222-2222-2222-222222222222",
 						"33333333-3333-3333-3333-333333333333",
 					},
-					Type:        "all",
-					DrainURL:    "https://the-syslog-drain.com",
-					AdapterType: "application",
+					Type:     "all",
+					DrainURL: "https://the-syslog-drain.com",
 				},
 			},
 		))
@@ -150,9 +148,8 @@ var _ = Describe("ApplicationSpaceDrains", func() {
 						"11111111-1111-1111-1111-111111111111",
 						"22222222-2222-2222-2222-222222222222",
 					},
-					Type:        "all",
-					DrainURL:    "https://the-syslog-drain.com",
-					AdapterType: "application",
+					Type:     "all",
+					DrainURL: "https://the-syslog-drain.com",
 				},
 			))
 		})

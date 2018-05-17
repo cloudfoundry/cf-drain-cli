@@ -39,14 +39,13 @@ var _ = Describe("DeleteDrain", func() {
 		Context("adapter-type is service", func() {
 			It("unbinds and deletes the service and deletes drain", func() {
 				serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
-					Name:        "my-drain",
-					Guid:        "my-drain-guid",
-					Apps:        []string{"app-1"},
-					AppGuids:    []string{"app-1-guid"},
-					Type:        "all",
-					DrainURL:    "syslog://drain.url.com",
-					AdapterType: "service",
-					Scope:       "single",
+					Name:     "my-drain",
+					Guid:     "my-drain-guid",
+					Apps:     []string{"app-1"},
+					AppGuids: []string{"app-1-guid"},
+					Type:     "all",
+					DrainURL: "syslog://drain.url.com",
+					Scope:    "single",
 				})
 
 				command.DeleteDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
@@ -66,14 +65,13 @@ var _ = Describe("DeleteDrain", func() {
 				reader.WriteString("y\n")
 
 				appDrainFetcher.drains = append(appDrainFetcher.drains, drain.Drain{
-					Name:        "my-drain",
-					Guid:        "my-drain-guid",
-					Apps:        []string{"app-1"},
-					AppGuids:    []string{"app-1-guid"},
-					Type:        "logs",
-					DrainURL:    "https://drain.url.com",
-					AdapterType: "application",
-					Scope:       "single",
+					Name:     "my-drain",
+					Guid:     "my-drain-guid",
+					Apps:     []string{"app-1"},
+					AppGuids: []string{"app-1-guid"},
+					Type:     "logs",
+					DrainURL: "https://drain.url.com",
+					Scope:    "single",
 				})
 
 				command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
@@ -100,14 +98,13 @@ var _ = Describe("DeleteDrain", func() {
 				reader.WriteString("y\n")
 
 				serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
-					Name:        "my-space-drain",
-					Guid:        "my-space-drain-guid",
-					Apps:        []string{"app-1", "app-2"},
-					AppGuids:    []string{"app-1-guid", "app-2-guid"},
-					Type:        "all",
-					DrainURL:    "syslog://drain.url.com",
-					AdapterType: "service",
-					Scope:       "space",
+					Name:     "my-space-drain",
+					Guid:     "my-space-drain-guid",
+					Apps:     []string{"app-1", "app-2"},
+					AppGuids: []string{"app-1-guid", "app-2-guid"},
+					Type:     "all",
+					DrainURL: "syslog://drain.url.com",
+					Scope:    "space",
 				})
 
 				command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
@@ -125,14 +122,13 @@ var _ = Describe("DeleteDrain", func() {
 		Context("adapter-type is application", func() {
 			It("deletes the space drain app", func() {
 				appDrainFetcher.drains = append(appDrainFetcher.drains, drain.Drain{
-					Name:        "my-space-drain",
-					Guid:        "my-space-drain-guid",
-					Apps:        []string{"app-1", "app-2"},
-					AppGuids:    []string{"app-1-guid", "app-2-guid"},
-					Type:        "all",
-					DrainURL:    "syslog://drain.url.com",
-					AdapterType: "application",
-					Scope:       "space",
+					Name:     "my-space-drain",
+					Guid:     "my-space-drain-guid",
+					Apps:     []string{"app-1", "app-2"},
+					AppGuids: []string{"app-1-guid", "app-2-guid"},
+					Type:     "all",
+					DrainURL: "syslog://drain.url.com",
+					Scope:    "space",
 				})
 
 				command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
@@ -168,13 +164,12 @@ var _ = Describe("DeleteDrain", func() {
 		reader.WriteString("Y\n")
 
 		serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
-			Name:        "my-drain",
-			Guid:        "my-drain-guid",
-			Apps:        []string{"app-1", "app-2"},
-			AppGuids:    []string{"app-1-guid", "app-2-guid"},
-			Type:        "all",
-			DrainURL:    "syslog://drain.url.com",
-			AdapterType: "service",
+			Name:     "my-drain",
+			Guid:     "my-drain-guid",
+			Apps:     []string{"app-1", "app-2"},
+			AppGuids: []string{"app-1-guid", "app-2-guid"},
+			Type:     "all",
+			DrainURL: "syslog://drain.url.com",
 		})
 
 		command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)

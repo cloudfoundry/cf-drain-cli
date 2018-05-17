@@ -1,8 +1,6 @@
 package command
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 	"log"
 	"net/url"
@@ -137,41 +135,4 @@ func buildDrainName(drainName string) string {
 	}
 
 	return fmt.Sprint("cf-drain-", guid)
-}
-
-func createUser(cli plugin.CliConnection, username string, log Logger) string {
-	data := make([]byte, 20)
-	_, err := rand.Read(data)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	password := fmt.Sprintf("%x", sha256.Sum256(data))
-
-	_, err = cli.CliCommand("create-user", username, password)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	org, err := cli.GetCurrentOrg()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	space, err := cli.GetCurrentSpace()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	_, err = cli.CliCommand(
-		"set-space-role",
-		username,
-		org.Name,
-		space.Name,
-		"SpaceDeveloper",
-	)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	return password
 }

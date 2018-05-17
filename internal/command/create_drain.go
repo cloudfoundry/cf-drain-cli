@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"path"
-	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
 	flags "github.com/jessevdk/go-flags"
@@ -23,12 +21,9 @@ type Logger interface {
 
 type createDrainOpts struct {
 	AppOrServiceName string
-	AdapterType      string `long:"adapter-type"`
 	DrainName        string `long:"drain-name"`
 	DrainType        string `long:"type"`
 	DrainURL         string
-	Username         string `long:"username"`
-	Password         string
 }
 
 func (f *createDrainOpts) serviceName() string {
@@ -51,9 +46,7 @@ func CreateDrain(
 	p PasswordReader,
 	log Logger,
 ) {
-	opts := createDrainOpts{
-		AdapterType: "service",
-	}
+	opts := createDrainOpts{}
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
 	args, err := parser.ParseArgs(args)
@@ -83,24 +76,7 @@ func CreateDrain(
 		u.RawQuery = qValues.Encode()
 	}
 
-	switch opts.AdapterType {
-	case "service":
-		createAndBindService(cli, u, opts.AppOrServiceName, opts.serviceName(), log)
-	case "application":
-		pushSyslogForwarder(
-			cli,
-			u,
-			opts.AppOrServiceName,
-			opts.serviceName(),
-			opts.Username,
-			opts.Password,
-			d,
-			p,
-			log,
-		)
-	default:
-		log.Fatalf("unsupported adapter type, must be 'service' or 'application'")
-	}
+	createAndBindService(cli, u, opts.AppOrServiceName, opts.serviceName(), log)
 }
 
 func createAndBindService(
@@ -127,112 +103,10 @@ func createAndBindService(
 	}
 }
 
-func pushSyslogForwarder(
-	cli plugin.CliConnection,
-	u *url.URL,
-	appOrServiceName string,
-	serviceName string,
-	username string,
-	password string,
-	d Downloader,
-	p PasswordReader,
-	log Logger,
-) {
-	sourceID, err := sourceID(cli, appOrServiceName)
+func sourceID(cli plugin.CliConnection, appName string) (string, error) {
+	app, err := cli.GetApp(appName)
 	if err != nil {
-		log.Fatalf("unknown application or service %q", appOrServiceName)
-	}
-
-	org, err := cli.GetCurrentOrg()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	space, err := cli.GetCurrentSpace()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	apiEndpoint, err := cli.ApiEndpoint()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	if username == "" {
-		username = fmt.Sprintf("drain-%s", sourceID)
-		password = createUser(cli, username, log)
-	}
-
-	if username != "" && password == "" {
-		log.Printf("Enter a password for %s: ", username)
-		bytePassword, err := p(0)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-
-		if string(bytePassword) == "" {
-			log.Fatalf("Password cannot be blank.")
-		}
-		password = string(bytePassword)
-	}
-
-	path := path.Dir(d.Download("syslog_forwarder"))
-
-	command := []string{
-		"push",
-		serviceName,
-		"-p", path,
-		"-b", "binary_buildpack",
-		"-c", "./syslog_forwarder",
-		"--no-start",
-	}
-	_, err = cli.CliCommand(command...)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	skipCertVerify, err := cli.IsSSLDisabled()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	hostName := fmt.Sprintf("%s.%s.%s", org.Name, space.Name, appOrServiceName)
-	uaaAddr := strings.Replace(apiEndpoint, "api.", "uaa.", 1)
-	logCacheAddr := strings.Replace(apiEndpoint, "api.", "log-cache.", 1)
-	groupName, err := uuid.NewV4()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	envCommands := [][]string{
-		{"set-env", serviceName, "SOURCE_ID", sourceID},
-		{"set-env", serviceName, "SOURCE_HOST_NAME", hostName},
-		{"set-env", serviceName, "UAA_URL", uaaAddr},
-		{"set-env", serviceName, "CLIENT_ID", "cf"},
-		{"set-env", serviceName, "USERNAME", username},
-		{"set-env", serviceName, "PASSWORD", password},
-		{"set-env", serviceName, "LOG_CACHE_HTTP_ADDR", logCacheAddr},
-		{"set-env", serviceName, "SYSLOG_URL", u.String()},
-		{"set-env", serviceName, "SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
-		{"set-env", serviceName, "GROUP_NAME", groupName.String()},
-		{"set-env", serviceName, "DRAIN_SCOPE", "single"},
-	}
-
-	for _, cmd := range envCommands {
-		_, err = cli.CliCommandWithoutTerminalOutput(cmd...)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-	}
-
-	command = []string{"start", serviceName}
-	_, err = cli.CliCommand(command...)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-}
-
-func sourceID(cli plugin.CliConnection, appOrServiceName string) (string, error) {
-	app, err := cli.GetApp(appOrServiceName)
-	if err != nil {
-		svc, err := cli.GetService(appOrServiceName)
+		svc, err := cli.GetService(appName)
 		if err != nil {
 			return "", err
 		}

@@ -82,10 +82,9 @@ USAGE:
 #### Space Drain (Experimental)
 
 **Note:**
-The space drain functionality is an experimental feature. If the adapter-type
-`service` is selected, it can create additional load in large deployments
-because it binds every app in the space to a drain. Be sure to consider your
-deployment size when deciding whether to use a full space drain.
+The space drain functionality is an experimental feature. It can create additional
+load in large deployments because it binds every app in the space to a drain. Be 
+sure to consider your deployment size when deciding whether to use a full space drain.
 
 ```
 NAME:
@@ -101,7 +100,6 @@ OPTIONS:
    --path                     Path to the space drain app to push. If omitted the latest release will be downloaded
    --type                     Which log type to filter on (logs, metrics, all). Default is all
    --username                 Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)
-   --adapter-type             Set the type of adapter. The adapter is responsible for forwarding messages from all apps in the space to the syslog drain. Available options: `service` or `application`. Service will bind a cf user provided service to each app that reads from loggregator and forwards to the drain. Application will deploy a cf application that reads from log-cache and forwards to the drain. Default is `service`
 ```
 
 [cf-cli]: https://code.cloudfoundry.org/cli

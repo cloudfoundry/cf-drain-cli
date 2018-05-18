@@ -6,13 +6,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log"
 	"path"
 	"strconv"
 	"strings"
 
 	flags "github.com/jessevdk/go-flags"
-	uuid "github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"code.cloudfoundry.org/cli/plugin/models"
@@ -23,14 +21,13 @@ type Downloader interface {
 }
 
 type pushSpaceDrainOpts struct {
-	AdapterType string `long:"adapter-type"`
-	DrainName   string `long:"drain-name" required:"true"`
-	DrainURL    string `long:"drain-url" required:"true"`
-	Username    string `long:"username"`
-	Password    string `long:"password"`
-	Path        string `long:"path"`
-	DrainType   string `long:"type"`
-	Force       bool   `long:"force"`
+	DrainName string `long:"drain-name" required:"true"`
+	DrainURL  string `long:"drain-url" required:"true"`
+	Username  string `long:"username"`
+	Password  string `long:"password"`
+	Path      string `long:"path"`
+	DrainType string `long:"type"`
+	Force     bool   `long:"force"`
 }
 
 type PasswordReader func(int) ([]byte, error)
@@ -44,9 +41,8 @@ func PushSpaceDrain(
 	log Logger,
 ) {
 	opts := pushSpaceDrainOpts{
-		AdapterType: "service",
-		DrainType:   "all",
-		Force:       false,
+		DrainType: "all",
+		Force:     false,
 	}
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
@@ -89,32 +85,6 @@ func PushSpaceDrain(
 		}
 	}
 
-	switch opts.AdapterType {
-	case "application":
-		pushApplicationSpaceDrain(opts, cli, d, log)
-	case "service":
-		pushServiceSpaceDrain(opts, cli, d, log)
-	default:
-		log.Fatalf("Invalid value for flag `--adapter-type`: %s", opts.AdapterType)
-	}
-}
-
-func pushApplicationSpaceDrain(opts pushSpaceDrainOpts, cli plugin.CliConnection, d Downloader, log Logger) {
-	org := currentOrg(cli, log)
-	space := currentSpace(cli, log)
-	api := apiEndpoint(cli, log)
-	appName := fmt.Sprintf("space-forwarder-%s", guid())
-
-	envs := [][]string{
-		{"LOG_CACHE_HTTP_ADDR", strings.Replace(api, "api", "log-cache", 1)},
-		{"SOURCE_HOST_NAME", fmt.Sprintf("%s.%s.%s", org.Name, space.Name, appName)},
-		{"GROUP_NAME", guid()},
-	}
-
-	pushDrain(cli, appName, "space_syslog", envs, opts, d, log)
-}
-
-func pushServiceSpaceDrain(opts pushSpaceDrainOpts, cli plugin.CliConnection, d Downloader, log Logger) {
 	pushDrain(cli, "space-drain", "space_drain", nil, opts, d, log)
 }
 
@@ -178,22 +148,6 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 	}
 
 	cli.CliCommand("start", appName)
-}
-
-func guid() string {
-	u, err := uuid.NewV4()
-	if err != nil {
-		log.Fatalf("failed to generate unique identifier: %s", err)
-	}
-	return u.String()
-}
-
-func currentOrg(cli plugin.CliConnection, log Logger) plugin_models.Organization {
-	org, err := cli.GetCurrentOrg()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	return org
 }
 
 func currentSpace(cli plugin.CliConnection, log Logger) plugin_models.Space {

@@ -2,6 +2,7 @@ package drain
 
 import (
 	"fmt"
+	"path"
 	"sync"
 	"time"
 
@@ -126,13 +127,17 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		Expect(err).ToNot(HaveOccurred())
+
+		defer CleanupBuildArtifacts()
+
 		CFWithTimeout(
 			1*time.Minute,
 			"drain-space",
 			"--drain-url", syslogDrainURL,
 			"--drain-name", drainName,
-			"--username", acceptance.Config().CFAdminUser,
-			"--password", acceptance.Config().CFAdminPassword,
+			"--path", path.Dir(execPath),
 			"--force",
 		)
 

@@ -12,7 +12,11 @@ import (
 
 func CF(args ...string) {
 	defer GinkgoRecover()
-	EventuallyWithOffset(1, cf.Cf(args...), acceptance.Config().DefaultTimeout).Should(Exit(0))
+	EventuallyWithOffset(
+		1, 
+		cf.Cf(args...), 
+		acceptance.Config().DefaultTimeout,
+	).Should(Exit(0))
 }
 
 func CFWithTimeout(timeout time.Duration, args ...string) {

@@ -71,10 +71,35 @@ var _ = Describe("HttpCurlClient", func() {
 		Expect(err).To(MatchError("some-error"))
 	})
 
+	It("attaches the header 'Content-Type' for non-GET requests", func() {
+		c.Curl("some-url", "GET", "")
+		Expect(doer.headers).ToNot(
+			ContainElement(HaveKeyWithValue("Content-Type", []string{"application/json"})),
+		)
+
+		c.Curl("some-url", "PUT", "some-body")
+		Expect(doer.headers).To(
+			ContainElement(HaveKeyWithValue("Content-Type", []string{"application/json"})),
+		)
+	})
+
 	It("panics if method is GET and has a body", func() {
 		Expect(func() {
 			c.Curl("some-url", "GET", "some-body")
 		}).To(Panic())
+	})
+
+	It("hits the correct URL and populates the Authorization header", func() {
+		doer.respBody = "resp-body"
+		body, err := c.AuthCurl("/v2/some-url", "PUT", "some-body", "some-token")
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(doer.URLs).To(ConsistOf("https://api.system-domain.com/v2/some-url"))
+		Expect(doer.methods).To(ConsistOf("PUT"))
+		Expect(string(body)).To(Equal("resp-body"))
+		Expect(doer.bodies).To(ConsistOf("some-body"))
+
+		Expect(doer.headers).To(ConsistOf(HaveKeyWithValue("Authorization", []string{"some-token"})))
 	})
 })
 
@@ -128,13 +153,13 @@ func newStubTokenFetcher() *stubTokenFetcher {
 	return &stubTokenFetcher{}
 }
 
-func (s *stubTokenFetcher) Token() (string, error) {
+func (s *stubTokenFetcher) Token() (string, string, error) {
 	if len(s.tokens) != len(s.errs) {
 		panic("tokens and errs are out of sync")
 	}
 
 	if len(s.tokens) == 0 {
-		return "", nil
+		return "", "", nil
 	}
 
 	t := s.tokens[0]
@@ -143,5 +168,5 @@ func (s *stubTokenFetcher) Token() (string, error) {
 	e := s.errs[0]
 	s.errs = s.errs[1:]
 
-	return t, e
+	return t, "", e
 }

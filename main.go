@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/user"
+	"path"
 	"time"
-
-	"golang.org/x/crypto/ssh/terminal"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
@@ -20,6 +20,7 @@ import (
 type CFDrainCLI struct{}
 
 func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
+	log := log.New(os.Stderr, "", 0)
 	if len(args) == 0 {
 		log.Fatalf("Expected at least 1 argument, but got 0.")
 	}
@@ -37,7 +38,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 
 	switch args[0] {
 	case "drain":
-		command.CreateDrain(conn, args[1:], downloader, terminal.ReadPassword, logger)
+		command.CreateDrain(conn, args[1:], downloader, logger)
 	case "delete-drain":
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin, sdClient, adClient)
 	case "bind-drain":
@@ -45,7 +46,8 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drains":
 		command.Drains(conn, nil, logger, os.Stdout, sdClient, adClient)
 	case "drain-space":
-		command.PushSpaceDrain(conn, os.Stdin, terminal.ReadPassword, args[1:], downloader, logger)
+		tokenFetcher := command.NewTokenFetcher(configPath(log))
+		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, tokenFetcher, logger)
 	}
 }
 
@@ -135,4 +137,16 @@ func newLogger(w io.Writer) *logger {
 
 func (l *logger) Print(a ...interface{}) {
 	fmt.Fprint(os.Stdout, a...)
+}
+
+func configPath(log *log.Logger) string {
+	if cfHome := os.Getenv("CF_HOME"); cfHome != "" {
+		return path.Join(cfHome, ".cf", "config.json")
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return path.Join(usr.HomeDir, ".cf", "config.json")
 }

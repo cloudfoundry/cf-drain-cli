@@ -41,7 +41,6 @@ func CreateDrain(
 	cli plugin.CliConnection,
 	args []string,
 	d Downloader,
-	p PasswordReader,
 	log Logger,
 ) {
 	opts := createDrainOpts{}

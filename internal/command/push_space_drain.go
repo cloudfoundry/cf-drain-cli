@@ -2,8 +2,6 @@ package command
 
 import (
 	"bufio"
-	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"path"
@@ -20,24 +18,24 @@ type Downloader interface {
 	Download(assetName string) string
 }
 
+type RefreshTokenFetcher interface {
+	RefreshToken() (string, error)
+}
+
 type pushSpaceDrainOpts struct {
 	DrainName string `long:"drain-name" required:"true"`
 	DrainURL  string `long:"drain-url" required:"true"`
-	Username  string `long:"username"`
-	Password  string `long:"password"`
 	Path      string `long:"path"`
 	DrainType string `long:"type"`
 	Force     bool   `long:"force"`
 }
 
-type PasswordReader func(int) ([]byte, error)
-
 func PushSpaceDrain(
 	cli plugin.CliConnection,
 	reader io.Reader,
-	pw PasswordReader,
 	args []string,
 	d Downloader,
+	f RefreshTokenFetcher,
 	log Logger,
 ) {
 	opts := pushSpaceDrainOpts{
@@ -53,19 +51,6 @@ func PushSpaceDrain(
 
 	if len(args) > 0 {
 		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
-	}
-
-	if opts.Username != "" && opts.Password == "" {
-		log.Printf("Enter a password for %s: ", opts.Username)
-		bytePassword, err := pw(0)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-
-		if string(bytePassword) == "" {
-			log.Fatalf("Password cannot be blank.")
-		}
-		opts.Password = string(bytePassword)
 	}
 
 	if !opts.Force {
@@ -85,10 +70,10 @@ func PushSpaceDrain(
 		}
 	}
 
-	pushDrain(cli, "space-drain", "space_drain", nil, opts, d, log)
+	pushDrain(cli, "space-drain", "space_drain", nil, opts, d, f, log)
 }
 
-func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]string, opts pushSpaceDrainOpts, d Downloader, log Logger) {
+func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]string, opts pushSpaceDrainOpts, d Downloader, f RefreshTokenFetcher, log Logger) {
 	if opts.Path == "" {
 		log.Printf("Downloading latest space drain from github...")
 		opts.Path = path.Dir(d.Download(command))
@@ -111,16 +96,12 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 	space := currentSpace(cli, log)
 	api := apiEndpoint(cli, log)
 
-	if opts.Username == "" {
-		app, err := cli.GetApp(appName)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
-		opts.Username = fmt.Sprintf("space-drain-%s", app.Guid)
-		opts.Password = createUser(cli, opts.Username, log)
+	skipCertVerify, err := cli.IsSSLDisabled()
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 
-	skipCertVerify, err := cli.IsSSLDisabled()
+	refreshToken, err := f.RefreshToken()
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
@@ -133,8 +114,7 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 		{"API_ADDR", api},
 		{"UAA_ADDR", strings.Replace(api, "api", "uaa", 1)},
 		{"CLIENT_ID", "cf"},
-		{"USERNAME", opts.Username},
-		{"PASSWORD", opts.Password},
+		{"REFRESH_TOKEN", refreshToken},
 		{"SKIP_CERT_VERIFY", strconv.FormatBool(skipCertVerify)},
 		{"DRAIN_SCOPE", "space"},
 	}
@@ -164,41 +144,4 @@ func apiEndpoint(cli plugin.CliConnection, log Logger) string {
 		log.Fatalf("%s", err)
 	}
 	return api
-}
-
-func createUser(cli plugin.CliConnection, username string, log Logger) string {
-	data := make([]byte, 20)
-	_, err := rand.Read(data)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	password := fmt.Sprintf("%x", sha256.Sum256(data))
-
-	_, err = cli.CliCommand("create-user", username, password)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	org, err := cli.GetCurrentOrg()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	space, err := cli.GetCurrentSpace()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	_, err = cli.CliCommand(
-		"set-space-role",
-		username,
-		org.Name,
-		space.Name,
-		"SpaceDeveloper",
-	)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	return password
 }

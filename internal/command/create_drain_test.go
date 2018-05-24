@@ -22,7 +22,7 @@ var _ = Describe("CreateDrain", func() {
 	It("creates and binds to a user provided service", func() {
 		args := []string{"app-name", "syslog://a.com?a=b"}
 
-		command.CreateDrain(cli, args, nil, nil, logger)
+		command.CreateDrain(cli, args, nil, logger)
 
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -47,7 +47,7 @@ var _ = Describe("CreateDrain", func() {
 				"--drain-name", "my-drain",
 			}
 
-			command.CreateDrain(cli, args, nil, nil, logger)
+			command.CreateDrain(cli, args, nil, logger)
 
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
 			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -66,7 +66,7 @@ var _ = Describe("CreateDrain", func() {
 		It("creates random drain name if --drain-name flag is not given", func() {
 			args := []string{"app-name", "syslog://a.com?a=b"}
 
-			command.CreateDrain(cli, args, nil, nil, logger)
+			command.CreateDrain(cli, args, nil, logger)
 
 			drainName := cli.cliCommandArgs[0][1]
 
@@ -89,7 +89,7 @@ var _ = Describe("CreateDrain", func() {
 		It("adds the drain type to the syslog URL for metrics", func() {
 			args := []string{"--type", "metrics", "app-name", "syslog://a.com"}
 
-			command.CreateDrain(cli, args, nil, nil, logger)
+			command.CreateDrain(cli, args, nil, logger)
 
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
 			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -102,7 +102,7 @@ var _ = Describe("CreateDrain", func() {
 		It("adds the drain type to the syslog URL for logs", func() {
 			args := []string{"--type", "logs", "app-name", "syslog://a.com"}
 
-			command.CreateDrain(cli, args, nil, nil, logger)
+			command.CreateDrain(cli, args, nil, logger)
 
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
 			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -115,7 +115,7 @@ var _ = Describe("CreateDrain", func() {
 		It("adds the drain type to the syslog URL for all", func() {
 			args := []string{"--type", "all", "app-name", "syslog://a.com"}
 
-			command.CreateDrain(cli, args, nil, nil, logger)
+			command.CreateDrain(cli, args, nil, logger)
 
 			Expect(cli.cliCommandArgs).To(HaveLen(2))
 			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
@@ -129,7 +129,7 @@ var _ = Describe("CreateDrain", func() {
 			args := []string{"--type", "garbage", "app-name", "syslog://a.com"}
 
 			Expect(func() {
-				command.CreateDrain(cli, args, nil, nil, logger)
+				command.CreateDrain(cli, args, nil, logger)
 			}).To(Panic())
 			Expect(logger.fatalfMessage).To(Equal("Invalid type: garbage"))
 		})
@@ -139,20 +139,20 @@ var _ = Describe("CreateDrain", func() {
 		args := []string{"app-name", "://://blablabla"}
 
 		Expect(func() {
-			command.CreateDrain(cli, args, nil, nil, logger)
+			command.CreateDrain(cli, args, nil, logger)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("Invalid syslog drain URL: parse ://://blablabla: missing protocol scheme"))
 	})
 
 	It("fatally logs if the incorrect number of arguments are given", func() {
 		Expect(func() {
-			command.CreateDrain(nil, []string{}, nil, nil, logger)
+			command.CreateDrain(nil, []string{}, nil, logger)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 2, got 0."))
 
 		Expect(func() {
-			command.CreateDrain(nil, []string{"one", "two", "three", "four"}, nil, nil, logger)
+			command.CreateDrain(nil, []string{"one", "two", "three", "four"}, nil, logger)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 2, got 4."))
@@ -162,7 +162,7 @@ var _ = Describe("CreateDrain", func() {
 		cli.getAppError = errors.New("not an app")
 
 		Expect(func() {
-			command.CreateDrain(cli, []string{"not-an-app", "syslog://a.com"}, nil, nil, logger)
+			command.CreateDrain(cli, []string{"not-an-app", "syslog://a.com"}, nil, logger)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("not an app"))
@@ -173,7 +173,7 @@ var _ = Describe("CreateDrain", func() {
 		cli.createServiceError = errors.New("failed to create")
 
 		Expect(func() {
-			command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, nil, logger)
+			command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, logger)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("failed to create"))
@@ -183,7 +183,7 @@ var _ = Describe("CreateDrain", func() {
 		cli.bindServiceError = errors.New("failed to bind")
 
 		Expect(func() {
-			command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, nil, logger)
+			command.CreateDrain(cli, []string{"app-name", "syslog://a.com"}, nil, logger)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("failed to bind"))

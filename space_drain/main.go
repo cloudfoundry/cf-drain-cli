@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
 	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
+	"github.com/cloudfoundry-incubator/uaago"
 )
 
 func main() {
@@ -25,13 +26,19 @@ func main() {
 		},
 	}
 
-	tokenFetcher := cloudcontroller.NewUAATokenFetcher(
-		cfg.UAAAddr,
+	uaaClient, err := uaago.NewClient(cfg.UAAAddr)
+	if err != nil {
+		log.Fatalf("Failed to create UAA Client: %s", err)
+	}
+
+	authCurler := cloudcontroller.NewHTTPAuthCurlClient(cfg.APIAddr, httpClient)
+	tokenFetcher := cloudcontroller.NewTokenManager(
+		authCurler,
+		uaaClient,
 		cfg.ClientID,
-		cfg.ClientSecret,
-		cfg.Username,
-		cfg.Password,
-		httpClient,
+		cfg.RefreshToken,
+		cfg.VCAPApplication.ID,
+		cfg.SkipCertVerify,
 	)
 
 	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)

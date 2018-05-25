@@ -17,7 +17,7 @@ type deleteDrainOpts struct {
 	Force bool `long:"force" short:"f"`
 }
 
-func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Reader, serviceDrainFetcher DrainFetcher, appDrainFetcher DrainFetcher) {
+func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Reader, serviceDrainFetcher DrainFetcher) {
 	opts := deleteDrainOpts{}
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
@@ -38,11 +38,6 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 	}
 
 	ok := deleteDrainAndUser(cli, serviceDrainFetcher, true, space.Guid, drainName)
-	if ok {
-		return
-	}
-
-	ok = deleteDrainAndUser(cli, appDrainFetcher, false, space.Guid, drainName)
 	if ok {
 		return
 	}

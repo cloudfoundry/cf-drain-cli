@@ -14,11 +14,11 @@ import (
 
 var _ = Describe("Drains", func() {
 	var (
-		logger                               *stubLogger
-		cli                                  *stubCliConnection
-		drainFetchers                        []command.DrainFetcher
-		appDrainFetcher, serviceDrainFetcher *stubDrainFetcher
-		tableWriter                          *bytes.Buffer
+		logger              *stubLogger
+		cli                 *stubCliConnection
+		drainFetchers       []command.DrainFetcher
+		serviceDrainFetcher *stubDrainFetcher
+		tableWriter         *bytes.Buffer
 	)
 
 	var _ command.DrainFetcher = newStubDrainFetcher()
@@ -26,8 +26,7 @@ var _ = Describe("Drains", func() {
 	BeforeEach(func() {
 		logger = &stubLogger{}
 		serviceDrainFetcher = newStubDrainFetcher()
-		appDrainFetcher = newStubDrainFetcher()
-		drainFetchers = []command.DrainFetcher{serviceDrainFetcher, appDrainFetcher}
+		drainFetchers = []command.DrainFetcher{serviceDrainFetcher}
 		cli = newStubCliConnection()
 		cli.currentSpaceGuid = "my-space-guid"
 		tableWriter = bytes.NewBuffer(nil)
@@ -48,24 +47,14 @@ var _ = Describe("Drains", func() {
 				DrainURL: "syslog-tls://my-drain:1234",
 			},
 		}
-		appDrainFetcher.drains = []drain.Drain{
-			{
-				Name:     "drain-3",
-				Apps:     []string{"app-1"},
-				Type:     "all",
-				DrainURL: "https://my-drain:1235",
-			},
-		}
 
 		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 
-		// Header + 3 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
 			"App       Drain     Type      URL",
 			"app-1     drain-1   Metrics   syslog://my-drain:1233",
 			"app-2     drain-1   Metrics   syslog://my-drain:1233",
 			"app-1     drain-2   Logs      syslog-tls://my-drain:1234",
-			"app-1     drain-3   All       https://my-drain:1235",
 			"",
 		}))
 	})
@@ -81,7 +70,6 @@ var _ = Describe("Drains", func() {
 		}
 		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 
-		// Header + 2 drains
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
 			"App       Drain     Type      URL",
 			"app-1     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",

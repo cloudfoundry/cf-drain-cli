@@ -36,55 +36,27 @@ var _ = Describe("DeleteDrain", func() {
 		BeforeEach(func() {
 			cli.getServicesApps = []string{"app-1"}
 		})
-		Context("adapter-type is service", func() {
-			It("unbinds and deletes the service and deletes drain", func() {
-				serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
-					Name:     "my-drain",
-					Guid:     "my-drain-guid",
-					Apps:     []string{"app-1"},
-					AppGuids: []string{"app-1-guid"},
-					Type:     "all",
-					DrainURL: "syslog://drain.url.com",
-					Scope:    "single",
-				})
 
-				command.DeleteDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
-
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"unbind-service", "app-1", "my-drain",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-service", "my-drain", "-f",
-				}))
+		It("unbinds and deletes the service and deletes drain", func() {
+			serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
+				Name:     "my-drain",
+				Guid:     "my-drain-guid",
+				Apps:     []string{"app-1"},
+				AppGuids: []string{"app-1-guid"},
+				Type:     "all",
+				DrainURL: "syslog://drain.url.com",
+				Scope:    "single",
 			})
-		})
 
-		Context("adapter-type is application", func() {
-			It("deletes drain", func() {
-				reader.WriteString("y\n")
+			command.DeleteDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher)
 
-				appDrainFetcher.drains = append(appDrainFetcher.drains, drain.Drain{
-					Name:     "my-drain",
-					Guid:     "my-drain-guid",
-					Apps:     []string{"app-1"},
-					AppGuids: []string{"app-1-guid"},
-					Type:     "logs",
-					DrainURL: "https://drain.url.com",
-					Scope:    "single",
-				})
-
-				command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
-
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
-
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"delete", appDrainFetcher.drains[0].Name, "-f",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-user", "drain-app-1-guid", "-f",
-				}))
-			})
+			Expect(cli.cliCommandArgs).To(HaveLen(2))
+			Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				"unbind-service", "app-1", "my-drain",
+			}))
+			Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				"delete-service", "my-drain", "-f",
+			}))
 		})
 	})
 
@@ -93,62 +65,36 @@ var _ = Describe("DeleteDrain", func() {
 			cli.getServicesApps = []string{"app-1"}
 			cli.getServicesName = "my-space-drain"
 		})
-		Context("adapter-type is service", func() {
-			It("deletes the space drain app", func() {
-				reader.WriteString("y\n")
+		It("deletes the space drain app", func() {
+			reader.WriteString("y\n")
 
-				serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
-					Name:     "my-space-drain",
-					Guid:     "my-space-drain-guid",
-					Apps:     []string{"app-1", "app-2"},
-					AppGuids: []string{"app-1-guid", "app-2-guid"},
-					Type:     "all",
-					DrainURL: "syslog://drain.url.com",
-					Scope:    "space",
-				})
-
-				command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
-
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
-
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"delete", "my-space-drain", "-f",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-user", "space-drain-my-space-drain-guid", "-f",
-				}))
+			serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
+				Name:     "my-space-drain",
+				Guid:     "my-space-drain-guid",
+				Apps:     []string{"app-1", "app-2"},
+				AppGuids: []string{"app-1-guid", "app-2-guid"},
+				Type:     "all",
+				DrainURL: "syslog://drain.url.com",
+				Scope:    "space",
 			})
-		})
-		Context("adapter-type is application", func() {
-			It("deletes the space drain app", func() {
-				appDrainFetcher.drains = append(appDrainFetcher.drains, drain.Drain{
-					Name:     "my-space-drain",
-					Guid:     "my-space-drain-guid",
-					Apps:     []string{"app-1", "app-2"},
-					AppGuids: []string{"app-1-guid", "app-2-guid"},
-					Type:     "all",
-					DrainURL: "syslog://drain.url.com",
-					Scope:    "space",
-				})
 
-				command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher)
 
-				Expect(cli.cliCommandArgs).To(HaveLen(2))
+			Expect(cli.cliCommandArgs).To(HaveLen(2))
 
-				Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-					"delete", "my-space-drain", "-f",
-				}))
-				Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-					"delete-user", "drain-app-1-guid", "-f",
-				}))
-			})
+			Expect(cli.cliCommandArgs[0]).To(Equal([]string{
+				"delete", "my-space-drain", "-f",
+			}))
+			Expect(cli.cliCommandArgs[1]).To(Equal([]string{
+				"delete-user", "space-drain-my-space-drain-guid", "-f",
+			}))
 		})
 	})
 
 	It("aborts if the user cancels the confirmation", func() {
 		reader.WriteString("no\n")
 
-		command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+		command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher)
 
 		Expect(logger.printMessages).To(ConsistOf(
 			"Are you sure you want to unbind my-drain from app-1, app-2 and delete my-drain? [y/N] ",
@@ -172,7 +118,7 @@ var _ = Describe("DeleteDrain", func() {
 			DrainURL: "syslog://drain.url.com",
 		})
 
-		command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+		command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher)
 
 		Expect(logger.printMessages).To(ConsistOf(
 			"Are you sure you want to unbind my-drain from app-1, app-2 and delete my-drain? [y/N] ",
@@ -194,13 +140,13 @@ var _ = Describe("DeleteDrain", func() {
 		reader.WriteString("y\n")
 
 		Expect(func() {
-			command.DeleteDrain(cli, []string{}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 0."))
 
 		Expect(func() {
-			command.DeleteDrain(cli, []string{"one", "two"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"one", "two"}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 2."))
@@ -208,7 +154,7 @@ var _ = Describe("DeleteDrain", func() {
 
 	It("fatally logs for invalid flags", func() {
 		Expect(func() {
-			command.DeleteDrain(cli, []string{"some-drain", "--invalid"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"some-drain", "--invalid"}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("unknown flag `invalid'"))
@@ -218,7 +164,7 @@ var _ = Describe("DeleteDrain", func() {
 		reader.WriteString("y\n")
 
 		Expect(func() {
-			command.DeleteDrain(cli, []string{"not-a-service"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"not-a-service"}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("Unable to find service not-a-service."))
@@ -230,7 +176,7 @@ var _ = Describe("DeleteDrain", func() {
 		cli.getServicesError = errors.New("no get services")
 
 		Expect(func() {
-			command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("no get services"))
@@ -242,7 +188,7 @@ var _ = Describe("DeleteDrain", func() {
 		cli.unbindServiceError = errors.New("unbind failed")
 
 		Expect(func() {
-			command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("unbind failed"))
@@ -254,7 +200,7 @@ var _ = Describe("DeleteDrain", func() {
 		cli.deleteServiceError = errors.New("delete failed")
 
 		Expect(func() {
-			command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, appDrainFetcher)
+			command.DeleteDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher)
 		}).To(Panic())
 
 		Expect(logger.fatalfMessage).To(Equal("delete failed"))

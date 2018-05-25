@@ -38,14 +38,17 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
+			defer GinkgoRecover()
 			listenerAppName = PushSyslogServer()
 		}()
 		go func() {
 			defer wg.Done()
+			defer GinkgoRecover()
 			logWriterAppName1 = PushLogWriter()
 		}()
 		go func() {
 			defer wg.Done()
+			defer GinkgoRecover()
 			logWriterAppName2 = PushLogWriter()
 		}()
 	})
@@ -64,6 +67,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		defer wg.Wait()
 		deleteApp := func(appName string) {
 			defer wg.Done()
+			defer GinkgoRecover()
 			CF("delete", appName, "-f", "-r")
 		}
 

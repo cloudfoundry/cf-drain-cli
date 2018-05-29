@@ -33,9 +33,13 @@ func main() {
 		log.Fatalf("Failed to create UAA Client: %s", err)
 	}
 
-	authCurler := cloudcontroller.NewHTTPAuthCurlClient(cfg.APIAddr, httpClient)
-	tokenFetcher := cloudcontroller.NewTokenManager(
-		authCurler,
+	var restager *cloudcontroller.Restager
+
+	saveAndRestager := cloudcontroller.SaveAndRestagerFunc(func(rt string) {
+		restager.SaveAndRestage(rt)
+	})
+
+	tokenManager := cloudcontroller.NewTokenManager(
 		uaaClient,
 		cfg.ClientID,
 		cfg.RefreshToken,
@@ -44,7 +48,12 @@ func main() {
 		log,
 	)
 
-	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)
+	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenManager, saveAndRestager)
+	restager = cloudcontroller.NewRestager(
+		cfg.VCAPApplication.ID,
+		curler,
+		log,
+	)
 
 	drainLister := drain.NewServiceDrainLister(curler)
 	drainCreator := cloudcontroller.NewCreateDrainClient(curler)

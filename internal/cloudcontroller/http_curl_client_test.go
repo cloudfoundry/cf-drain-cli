@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,15 +16,17 @@ import (
 
 var _ = Describe("HttpCurlClient", func() {
 	var (
-		doer    *spyDoer
-		fetcher *stubTokenFetcher
-		c       *cloudcontroller.HTTPCurlClient
+		doer     *spyDoer
+		fetcher  *spyTokenFetcher
+		restager *spySaveAndRestager
+		c        *cloudcontroller.HTTPCurlClient
 	)
 
 	BeforeEach(func() {
 		doer = newSpyDoer()
-		fetcher = newStubTokenFetcher()
-		c = cloudcontroller.NewHTTPCurlClient("https://api.system-domain.com", doer, fetcher)
+		fetcher = newSpyTokenFetcher()
+		restager = newSpySaveAndRestager()
+		c = cloudcontroller.NewHTTPCurlClient("https://api.system-domain.com", doer, fetcher, restager)
 	})
 
 	It("hits the correct URL", func() {
@@ -39,16 +42,40 @@ var _ = Describe("HttpCurlClient", func() {
 
 	It("populates Authorization header", func() {
 		fetcher.tokens = []string{"some-token"}
+		fetcher.refTokens = []string{"some-token"}
 		fetcher.errs = []error{nil}
 
 		_, err := c.Curl("some-url", "PUT", "some-body")
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(doer.headers).To(ConsistOf(HaveKeyWithValue("Authorization", []string{"some-token"})))
+		Expect(doer.headers).To(ContainElement(HaveKeyWithValue("Authorization", []string{"some-token"})))
+	})
+
+	It("reuses tokens until a 401", func() {
+		fetcher.tokens = []string{"some-token", "some-other-token"}
+		fetcher.refTokens = []string{"some-ref-token", "some-other-ref-token"}
+		fetcher.errs = []error{nil, nil}
+
+		_, err := c.Curl("some-url", "PUT", "some-body")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = c.Curl("some-url", "PUT", "some-body")
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(fetcher.called).To(Equal(1))
+
+		// Now go get a new token
+		doer.statusCode = http.StatusUnauthorized
+		doer.headers = nil
+		c.Curl("some-url", "PUT", "some-body")
+		Expect(fetcher.called).To(Equal(2))
+
+		Expect(restager.refreshToken).To(Equal("some-other-ref-token"))
 	})
 
 	It("returns an error if the TokenFetcher fails", func() {
 		fetcher.tokens = []string{""}
+		fetcher.refTokens = []string{""}
 		fetcher.errs = []error{errors.New("token fetch failure")}
 
 		_, err := c.Curl("some-url", "PUT", "some-body")
@@ -89,21 +116,21 @@ var _ = Describe("HttpCurlClient", func() {
 		}).To(Panic())
 	})
 
-	It("hits the correct URL and populates the Authorization header", func() {
-		doer.respBody = "resp-body"
-		body, err := c.AuthCurl("/v2/some-url", "PUT", "some-body", "some-token")
-		Expect(err).ToNot(HaveOccurred())
+	It("survives the race detector", func() {
+		go func() {
+			for i := 0; i < 100; i++ {
+				c.Curl("/v2/some-url", "PUT", "some-body")
+			}
+		}()
 
-		Expect(doer.URLs).To(ConsistOf("https://api.system-domain.com/v2/some-url"))
-		Expect(doer.methods).To(ConsistOf("PUT"))
-		Expect(string(body)).To(Equal("resp-body"))
-		Expect(doer.bodies).To(ConsistOf("some-body"))
-
-		Expect(doer.headers).To(ConsistOf(HaveKeyWithValue("Authorization", []string{"some-token"})))
+		for i := 0; i < 100; i++ {
+			c.Curl("/v2/some-url", "PUT", "some-body")
+		}
 	})
 })
 
 type spyDoer struct {
+	mu      sync.Mutex
 	URLs    []string
 	bodies  []string
 	methods []string
@@ -122,6 +149,9 @@ func newSpyDoer() *spyDoer {
 }
 
 func (s *spyDoer) Do(r *http.Request) (*http.Response, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.URLs = append(s.URLs, r.URL.String())
 	s.methods = append(s.methods, r.Method)
 	s.headers = append(s.headers, r.Header)
@@ -144,17 +174,27 @@ func (s *spyDoer) Do(r *http.Request) (*http.Response, error) {
 	}, s.err
 }
 
-type stubTokenFetcher struct {
-	tokens []string
-	errs   []error
+type spyTokenFetcher struct {
+	mu sync.Mutex
+
+	called int
+
+	tokens    []string
+	refTokens []string
+	errs      []error
 }
 
-func newStubTokenFetcher() *stubTokenFetcher {
-	return &stubTokenFetcher{}
+func newSpyTokenFetcher() *spyTokenFetcher {
+	return &spyTokenFetcher{}
 }
 
-func (s *stubTokenFetcher) Token() (string, string, error) {
-	if len(s.tokens) != len(s.errs) {
+func (s *spyTokenFetcher) Token() (string, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.called++
+
+	if len(s.tokens) != len(s.errs) || len(s.tokens) != len(s.refTokens) {
 		panic("tokens and errs are out of sync")
 	}
 
@@ -165,8 +205,27 @@ func (s *stubTokenFetcher) Token() (string, string, error) {
 	t := s.tokens[0]
 	s.tokens = s.tokens[1:]
 
+	r := s.refTokens[0]
+	s.refTokens = s.refTokens[1:]
+
 	e := s.errs[0]
 	s.errs = s.errs[1:]
 
-	return t, "", e
+	return t, r, e
+}
+
+type spySaveAndRestager struct {
+	mu           sync.Mutex
+	refreshToken string
+}
+
+func newSpySaveAndRestager() *spySaveAndRestager {
+	return &spySaveAndRestager{}
+}
+
+func (s *spySaveAndRestager) SaveAndRestage(refreshToken string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.refreshToken = refreshToken
 }

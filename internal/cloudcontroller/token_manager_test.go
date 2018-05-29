@@ -12,7 +12,6 @@ import (
 var _ = Describe("TokenManager", func() {
 	var (
 		uaa        *spyUAAClient
-		ac         *spyAuthCurler
 		m          *cloudcontroller.TokenManager
 		stubLogger *stubLogger
 	)
@@ -23,9 +22,7 @@ var _ = Describe("TokenManager", func() {
 		uaa.respRefreshToken = "new-refresh-token"
 		stubLogger = newStubLogger()
 
-		ac = &spyAuthCurler{}
 		m = cloudcontroller.NewTokenManager(
-			ac,
 			uaa,
 			"client-id",
 			"initial-refresh-token",
@@ -46,27 +43,8 @@ var _ = Describe("TokenManager", func() {
 		Expect(uaa.reqClientID).To(Equal("client-id"))
 	})
 
-	It("uses the AuthCurler to curl CAPI", func() {
-		_, refresh, _ := m.Token()
-		Expect(uaa.reqRefreshToken).To(Equal("initial-refresh-token"))
-		Expect(refresh).To(Equal("new-refresh-token"))
-
-		Expect(ac.url).To(Equal("/v3/apps/app-guid/environment_variables"))
-		Expect(ac.method).To(Equal("PATCH"))
-		Expect(ac.token).To(Equal("access-token"))
-		Expect(ac.body).To(MatchJSON(`{
-			     "var": {
-					 "REFRESH_TOKEN": "new-refresh-token"
-				}
-		}`))
-
-		m.Token()
-		Expect(uaa.reqRefreshToken).To(Equal("new-refresh-token"))
-	})
-
 	It("sets insecureSkipVerify", func() {
 		m = cloudcontroller.NewTokenManager(
-			ac,
 			uaa,
 			"client-id",
 			"refresh-token",
@@ -78,7 +56,6 @@ var _ = Describe("TokenManager", func() {
 		Expect(uaa.reqSkipCertVerify).To(BeTrue())
 
 		m = cloudcontroller.NewTokenManager(
-			ac,
 			uaa,
 			"client-id",
 			"refresh-token",
@@ -106,12 +83,6 @@ var _ = Describe("TokenManager", func() {
 
 		Expect(uaa.reqRefreshToken).To(Equal("initial-refresh-token"))
 	})
-
-	It("panics if unable to save REFRESH_TOKEN to cloud controller", func() {
-		ac.err = errors.New("CAPI is down")
-		Expect(func() { m.Token() }).To(Panic())
-		Expect(stubLogger.called).To(Equal(1))
-	})
 })
 
 type spyUAAClient struct {
@@ -133,20 +104,25 @@ func (s *spyUAAClient) GetRefreshToken(clientID, refreshToken string, insecureSk
 }
 
 type spyAuthCurler struct {
-	url    string
-	method string
-	body   string
-	token  string
-	err    error
+	urls    []string
+	methods []string
+	bodies  []string
+	errs    []error
 }
 
-func (s *spyAuthCurler) AuthCurl(url string, method string, body string, token string) ([]byte, error) {
-	s.url = url
-	s.method = method
-	s.body = body
-	s.token = token
+func (s *spyAuthCurler) Curl(url string, method string, body string) ([]byte, error) {
+	s.urls = append(s.urls, url)
+	s.methods = append(s.methods, method)
+	s.bodies = append(s.bodies, body)
 
-	return nil, s.err
+	if len(s.errs) == 0 {
+		return nil, nil
+	}
+
+	e := s.errs[0]
+	s.errs = s.errs[1:]
+
+	return nil, e
 }
 
 type stubLogger struct {

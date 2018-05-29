@@ -106,13 +106,13 @@ func createAndBind(
 
 	log.Printf("binding %d apps to drain...", len(apps))
 	for _, app := range apps {
-		if containsApp(app.Guid, drain.AppGuids) {
-			return
+		if containsApp(app.Guid, drain.AppGuids) || app.Guid == cfg.VCAPApplication.ID {
+			continue
 		}
 
 		if err := drainBinder.BindDrain(app.Guid, drain.Guid); err != nil {
 			log.Printf("failed to bind %s to drain: %s", app.Guid, err)
-			return
+			continue
 		}
 		drain.AppGuids = append(drain.AppGuids, app.Guid)
 	}

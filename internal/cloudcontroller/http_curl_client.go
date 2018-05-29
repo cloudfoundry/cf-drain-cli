@@ -26,7 +26,7 @@ type TokenFetcher interface {
 func NewHTTPCurlClient(apiAddr string, d Doer, f TokenFetcher) *HTTPCurlClient {
 	a, err := url.Parse(apiAddr)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalf("failed to parse CAPI address: %s", err)
 	}
 
 	return &HTTPCurlClient{
@@ -41,7 +41,7 @@ func NewHTTPCurlClient(apiAddr string, d Doer, f TokenFetcher) *HTTPCurlClient {
 func NewHTTPAuthCurlClient(apiAddr string, d Doer) *HTTPCurlClient {
 	a, err := url.Parse(apiAddr)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalf("failed to parse CAPI address: %s", err)
 	}
 
 	return &HTTPCurlClient{

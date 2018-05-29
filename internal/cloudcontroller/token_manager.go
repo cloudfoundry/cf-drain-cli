@@ -2,7 +2,6 @@ package cloudcontroller
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -14,6 +13,10 @@ type UAAClient interface {
 	GetRefreshToken(clientID, refreshToken string, insecureSkipVerify bool) (string, string, error)
 }
 
+type Logger interface {
+	Fatalf(format string, v ...interface{})
+}
+
 type TokenManager struct {
 	c                  AuthCurler
 	uaa                UAAClient
@@ -21,6 +24,7 @@ type TokenManager struct {
 	refreshToken       string
 	appGUID            string
 	insecureSkipVerify bool
+	log                Logger
 }
 
 func NewTokenManager(
@@ -30,6 +34,7 @@ func NewTokenManager(
 	initialRefreshToken string,
 	appGUID string,
 	skipCertVerify bool,
+	log Logger,
 
 ) *TokenManager {
 	return &TokenManager{
@@ -39,13 +44,14 @@ func NewTokenManager(
 		refreshToken:       initialRefreshToken,
 		appGUID:            appGUID,
 		insecureSkipVerify: skipCertVerify,
+		log:                log,
 	}
 }
 
 func (m *TokenManager) Token() (string, string, error) {
 	refToken, accToken, err := m.uaa.GetRefreshToken(m.clientID, m.refreshToken, m.insecureSkipVerify)
 	if err != nil {
-		log.Panicf("Failed to fetch tokens from UAA: %s", err)
+		m.log.Fatalf("Failed to fetch tokens from UAA: %s", err)
 	}
 
 	m.saveRefreshToken(accToken, refToken)
@@ -57,7 +63,7 @@ func (m *TokenManager) saveRefreshToken(accessToken, refreshToken string) {
 	body := fmt.Sprintf(`{"var":{"REFRESH_TOKEN": %q}}`, refreshToken)
 	_, err := m.c.AuthCurl(url, http.MethodPatch, body, accessToken)
 	if err != nil {
-		log.Panicf("Failed to updated REFRESH_TOKEN with cloud controller: %s", err)
+		m.log.Fatalf("Failed to updated REFRESH_TOKEN with cloud controller: %s", err)
 	}
 
 	m.refreshToken = refreshToken

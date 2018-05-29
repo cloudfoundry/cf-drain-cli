@@ -1,6 +1,7 @@
 package cloudcontroller
 
 import (
+	"log"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -16,7 +17,7 @@ func NewCLICurlClient(cli plugin.CliConnection) *CLICurlClient {
 
 func (c *CLICurlClient) Curl(URL, method, body string) ([]byte, error) {
 	if method != "GET" || body != "" {
-		panic("Request must be a GET with empty body")
+		log.Panic("Request must be a GET with empty body")
 	}
 	resp, err := c.conn.CliCommandWithoutTerminalOutput(
 		"curl",

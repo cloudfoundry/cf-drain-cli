@@ -11,15 +11,17 @@ import (
 
 var _ = Describe("TokenManager", func() {
 	var (
-		uaa *spyUAAClient
-		ac  *spyAuthCurler
-		m   *cloudcontroller.TokenManager
+		uaa        *spyUAAClient
+		ac         *spyAuthCurler
+		m          *cloudcontroller.TokenManager
+		stubLogger *stubLogger
 	)
 
 	BeforeEach(func() {
 		uaa = &spyUAAClient{}
 		uaa.respAccessToken = "access-token"
 		uaa.respRefreshToken = "new-refresh-token"
+		stubLogger = newStubLogger()
 
 		ac = &spyAuthCurler{}
 		m = cloudcontroller.NewTokenManager(
@@ -29,6 +31,7 @@ var _ = Describe("TokenManager", func() {
 			"initial-refresh-token",
 			"app-guid",
 			false,
+			stubLogger,
 		)
 	})
 
@@ -69,6 +72,7 @@ var _ = Describe("TokenManager", func() {
 			"refresh-token",
 			"appguid",
 			true,
+			stubLogger,
 		)
 		m.Token()
 		Expect(uaa.reqSkipCertVerify).To(BeTrue())
@@ -80,6 +84,7 @@ var _ = Describe("TokenManager", func() {
 			"refresh-token",
 			"appguid",
 			false,
+			stubLogger,
 		)
 		m.Token()
 		Expect(uaa.reqSkipCertVerify).To(BeFalse())
@@ -93,6 +98,7 @@ var _ = Describe("TokenManager", func() {
 	It("does not overwrite the refresh token if GetRefreshToken fails", func() {
 		uaa.respError = errors.New("Failed to fetch tokens from UAA")
 		Expect(func() { m.Token() }).To(Panic())
+		Expect(stubLogger.called).To(Equal(1))
 
 		// recovery
 		uaa.respError = nil
@@ -104,6 +110,7 @@ var _ = Describe("TokenManager", func() {
 	It("panics if unable to save REFRESH_TOKEN to cloud controller", func() {
 		ac.err = errors.New("CAPI is down")
 		Expect(func() { m.Token() }).To(Panic())
+		Expect(stubLogger.called).To(Equal(1))
 	})
 })
 
@@ -140,4 +147,17 @@ func (s *spyAuthCurler) AuthCurl(url string, method string, body string, token s
 	s.token = token
 
 	return nil, s.err
+}
+
+type stubLogger struct {
+	called int
+}
+
+func newStubLogger() *stubLogger {
+	return &stubLogger{}
+}
+
+func (s *stubLogger) Fatalf(format string, v ...interface{}) {
+	s.called++
+	panic("fatal")
 }

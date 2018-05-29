@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
@@ -12,6 +13,7 @@ import (
 )
 
 func main() {
+	log := log.New(os.Stderr, "", log.LstdFlags)
 	log.Printf("starting space drain...")
 	defer log.Printf("space drain closing...")
 
@@ -39,6 +41,7 @@ func main() {
 		cfg.RefreshToken,
 		cfg.VCAPApplication.ID,
 		cfg.SkipCertVerify,
+		log,
 	)
 
 	curler := cloudcontroller.NewHTTPCurlClient(cfg.APIAddr, httpClient, tokenFetcher)

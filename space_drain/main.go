@@ -60,50 +60,63 @@ func main() {
 	drainBinder := cloudcontroller.NewBindDrainClient(curler)
 	appLister := cloudcontroller.NewAppListerClient(curler)
 
+	createAndBind(drainLister, drainCreator, drainBinder, appLister, cfg)
 	for range time.Tick(time.Minute) {
-		drains, err := drainLister.Drains(cfg.SpaceID)
-		if err != nil {
-			log.Printf("failed to fetch drains: %s", err)
-			continue
-		}
-
-		drain, ok := hasDrain(cfg.DrainName, drains)
-		if !ok {
-			log.Printf("creating %s drain...", cfg.DrainName)
-			if err := drainCreator.CreateDrain(
-				cfg.DrainName,
-				cfg.DrainURL,
-				cfg.SpaceID,
-				cfg.DrainType,
-			); err != nil {
-				log.Printf("failed to create drain: %s", err)
-				continue
-			}
-			log.Printf("created %s drain", cfg.DrainName)
-
-			// Continue again so that ListDrains can find it and get its guid.
-			continue
-		}
-		apps, err := appLister.ListApps(cfg.SpaceID)
-		if err != nil {
-			log.Printf("failed to list apps: %s", err)
-			continue
-		}
-
-		log.Printf("binding %d apps to drain...", len(apps))
-		for _, app := range apps {
-			if containsApp(app.Guid, drain.AppGuids) {
-				continue
-			}
-
-			if err := drainBinder.BindDrain(app.Guid, drain.Guid); err != nil {
-				log.Printf("failed to bind %s to drain: %s", app.Guid, err)
-				continue
-			}
-			drain.AppGuids = append(drain.AppGuids, app.Guid)
-		}
-		log.Printf("done binding apps to drain.")
+		createAndBind(drainLister, drainCreator, drainBinder, appLister, cfg)
 	}
+}
+
+func createAndBind(
+	drainLister *drain.ServiceDrainLister,
+	drainCreator *cloudcontroller.CreateDrainClient,
+	drainBinder *cloudcontroller.BindDrainClient,
+	appLister *cloudcontroller.AppListerClient,
+	cfg Config,
+) {
+	drains, err := drainLister.Drains(cfg.SpaceID)
+	if err != nil {
+		log.Printf("failed to fetch drains: %s", err)
+		return
+	}
+
+	drain, ok := hasDrain(cfg.DrainName, drains)
+	if !ok {
+		log.Printf("creating %s drain...", cfg.DrainName)
+		if err := drainCreator.CreateDrain(
+			cfg.DrainName,
+			cfg.DrainURL,
+			cfg.SpaceID,
+			cfg.DrainType,
+		); err != nil {
+			log.Printf("failed to create drain: %s", err)
+			return
+		}
+		log.Printf("created %s drain", cfg.DrainName)
+
+		// go again so that ListDrains can find it and get its guid.
+		createAndBind(drainLister, drainCreator, drainBinder, appLister, cfg)
+		return
+	}
+
+	apps, err := appLister.ListApps(cfg.SpaceID)
+	if err != nil {
+		log.Printf("failed to list apps: %s", err)
+		return
+	}
+
+	log.Printf("binding %d apps to drain...", len(apps))
+	for _, app := range apps {
+		if containsApp(app.Guid, drain.AppGuids) {
+			return
+		}
+
+		if err := drainBinder.BindDrain(app.Guid, drain.Guid); err != nil {
+			log.Printf("failed to bind %s to drain: %s", app.Guid, err)
+			return
+		}
+		drain.AppGuids = append(drain.AppGuids, app.Guid)
+	}
+	log.Printf("done binding apps to drain.")
 }
 
 func containsApp(appGuid string, guids []string) bool {

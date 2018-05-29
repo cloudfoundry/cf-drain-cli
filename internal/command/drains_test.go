@@ -32,7 +32,7 @@ var _ = Describe("Drains", func() {
 		tableWriter = bytes.NewBuffer(nil)
 	})
 
-	It("reports the drain type and adapter type", func() {
+	It("reports the drain type", func() {
 		serviceDrainFetcher.drains = []drain.Drain{
 			{
 				Name:     "drain-1",

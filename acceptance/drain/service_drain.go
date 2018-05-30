@@ -165,6 +165,61 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		}, acceptance.Config().DefaultTimeout).ShouldNot(ContainSubstring("space-drain"))
 	})
 
+	It("deletes space-drain but not other drains", func() {
+		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
+		singleDrainName := fmt.Sprintf("single-some-drain-%d", time.Now().UnixNano())
+
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		Expect(err).ToNot(HaveOccurred())
+
+		defer CleanupBuildArtifacts()
+
+		CFWithTimeout(
+			1*time.Minute,
+			"drain-space",
+			"--drain-url", syslogDrainURL,
+			"--drain-name", drainName,
+			"--path", path.Dir(execPath),
+			"--force",
+		)
+
+		CF(
+			"drain",
+			logWriterAppName1,
+			syslogDrainURL,
+			"--drain-name", singleDrainName,
+		)
+
+		Eventually(func() string {
+			s := cf.Cf("drains")
+			Eventually(s, acceptance.Config().DefaultTimeout).Should(Exit(0))
+			return string(append(s.Out.Contents(), s.Err.Contents()...))
+		}, acceptance.Config().DefaultTimeout+3*time.Minute).Should(And(
+			ContainSubstring(drainName),
+			ContainSubstring(singleDrainName),
+		))
+
+		CFWithTimeout(
+			1*time.Minute,
+			"delete-drain-space",
+			drainName,
+			"--force",
+		)
+
+		Eventually(func() string {
+			s := cf.Cf("drains")
+			Eventually(s, acceptance.Config().DefaultTimeout).Should(Exit(0))
+			return string(append(s.Out.Contents(), s.Err.Contents()...))
+		}, acceptance.Config().DefaultTimeout+3*time.Minute).ShouldNot(ContainSubstring(drainName))
+
+		Consistently(func() string {
+			s := cf.Cf("drains")
+			Eventually(s, acceptance.Config().DefaultTimeout).Should(Exit(0))
+			return string(append(s.Out.Contents(), s.Err.Contents()...))
+		}, acceptance.Config().DefaultTimeout).Should(ContainSubstring(singleDrainName))
+	})
+
 	It("lists the all the drains", func() {
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
 

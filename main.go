@@ -45,6 +45,8 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drain-space":
 		tokenFetcher := command.NewTokenFetcher(configPath(log))
 		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, tokenFetcher, logger)
+	case "delete-drain-space":
+		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
 	}
 }
 
@@ -93,6 +95,9 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				HelpText: "Unbinds the service from applications and deletes the service.",
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain <drain-name>",
+					Options: map[string]string{
+						"-force": "Skip warning prompt. Default is false",
+					},
 				},
 			},
 			{
@@ -107,6 +112,16 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 						"-type":       "Which log type to filter on (logs, metrics, all). Default is all",
 						"-username":   "Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)",
 						"-force":      "Skip warning prompt. Default is false",
+					},
+				},
+			},
+			{
+				Name:     "delete-drain-space",
+				HelpText: "Deletes space drain app and unbinds all the apps in the space from the configured syslog drain",
+				UsageDetails: plugin.Usage{
+					Usage: "delete-drain-space <drain-name> [OPTIONS]",
+					Options: map[string]string{
+						"-force": "Skip warning prompt. Default is false",
 					},
 				},
 			},

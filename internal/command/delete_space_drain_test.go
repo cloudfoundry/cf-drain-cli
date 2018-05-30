@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"bytes"
+	"errors"
 	"io"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
@@ -37,9 +38,11 @@ var _ = Describe("DeleteSpaceDrain", func() {
 		reader.WriteString("Y\n")
 		command.DeleteSpaceDrain(cli, []string{"my-drain"}, logger, reader, serviceDrainFetcher, deleteDrain.deleteDrain)
 
+		Expect(cli.getAppName).To(Equal("my-drain"))
+
 		Expect(cli.cliCommandArgs).To(HaveLen(1))
 		Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-			"delete", "space-drain", "-f",
+			"delete", "my-drain", "-f",
 		}))
 	})
 
@@ -48,7 +51,7 @@ var _ = Describe("DeleteSpaceDrain", func() {
 
 		Expect(cli.cliCommandArgs).To(HaveLen(1))
 		Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-			"delete", "space-drain", "-f",
+			"delete", "my-drain", "-f",
 		}))
 	})
 
@@ -79,6 +82,20 @@ var _ = Describe("DeleteSpaceDrain", func() {
 			command.DeleteSpaceDrain(cli, []string{"a", "b"}, logger, nil, serviceDrainFetcher, deleteDrain.deleteDrain)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 2."))
+	})
+
+	It("fatals if deleting the space drain app fails", func() {
+		cli.deleteAppError = errors.New("some-error")
+		Expect(func() {
+			command.DeleteSpaceDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher, deleteDrain.deleteDrain)
+		}).To(Panic())
+	})
+
+	It("fatals if checkig the existence of the space drain app fails", func() {
+		cli.getAppError = errors.New("some-error")
+		Expect(func() {
+			command.DeleteSpaceDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher, deleteDrain.deleteDrain)
+		}).To(Panic())
 	})
 
 	It("aborts if the user cancels the confirmation", func() {

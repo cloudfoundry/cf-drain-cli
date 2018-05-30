@@ -40,8 +40,16 @@ func DeleteSpaceDrain(cli plugin.CliConnection, args []string, log Logger, in io
 		}
 	}
 
-	command := []string{"delete", "space-drain", "-f"}
-	cli.CliCommand(command...)
+	_, err = cli.GetApp(drainName)
+	if err != nil {
+		log.Fatalf("Failed to get app: %s %s", drainName, err)
+	}
+
+	command := []string{"delete", drainName, "-f"}
+	_, err = cli.CliCommand(command...)
+	if err != nil {
+		log.Fatalf("Failed to delete space-drain: %s", err)
+	}
 
 	deleteDrain(cli, []string{drainName, "--force"}, log, nil, df)
 }

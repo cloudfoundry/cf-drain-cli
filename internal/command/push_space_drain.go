@@ -23,7 +23,7 @@ type RefreshTokenFetcher interface {
 }
 
 type pushSpaceDrainOpts struct {
-	DrainName string `long:"drain-name" required:"true"`
+	DrainName string `long:"drain-name"`
 	DrainURL  string `long:"drain-url" required:"true"`
 	Path      string `long:"path"`
 	DrainType string `long:"type"`
@@ -41,6 +41,7 @@ func PushSpaceDrain(
 	opts := pushSpaceDrainOpts{
 		DrainType: "all",
 		Force:     false,
+		DrainName: "space-drain",
 	}
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
@@ -70,7 +71,7 @@ func PushSpaceDrain(
 		}
 	}
 
-	pushDrain(cli, "space-drain", "space_drain", nil, opts, d, f, log)
+	pushDrain(cli, opts.DrainName, "space_drain", nil, opts, d, f, log)
 }
 
 func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]string, opts pushSpaceDrainOpts, d Downloader, f RefreshTokenFetcher, log Logger) {

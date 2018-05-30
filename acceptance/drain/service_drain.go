@@ -3,6 +3,8 @@ package drain
 import (
 	"fmt"
 	"path"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -145,7 +147,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			"--force",
 		)
 
-		defer CF("delete", "space-drain", "-f", "-r")
+		defer CF("delete", drainName, "-f", "-r")
 
 		randomMessage1 := generator.PrefixedRandomName("RANDOM-MESSAGE-A", "LOG")
 		randomMessage2 := generator.PrefixedRandomName("RANDOM-MESSAGE-B", "LOG")
@@ -158,11 +160,21 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage1))
 		Eventually(logs, acceptance.Config().DefaultTimeout+3*time.Minute).Should(Say(randomMessage2))
 
+		// Apps are the first column listed.
+		re := regexp.MustCompile(fmt.Sprintf(`^(%s)`, drainName))
+
 		Consistently(func() string {
 			s := cf.Cf("drains")
 			Eventually(s, acceptance.Config().DefaultTimeout).Should(Exit(0))
-			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, acceptance.Config().DefaultTimeout).ShouldNot(ContainSubstring("space-drain"))
+
+			for _, line := range strings.Split(string(s.Out.Contents()), "\n") {
+				if re.Match([]byte(line)) {
+					return line
+				}
+			}
+
+			return ""
+		}, acceptance.Config().DefaultTimeout).ShouldNot(ContainSubstring(drainName))
 	})
 
 	It("deletes space-drain but not other drains", func() {

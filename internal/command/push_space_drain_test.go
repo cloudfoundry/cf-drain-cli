@@ -57,7 +57,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "space-drain",
+				"push", "some-drain",
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
@@ -68,21 +68,21 @@ var _ = Describe("PushSpaceDrain", func() {
 		))
 
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "space-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "space-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
+			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
+			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
+			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
+			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
+			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
+			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
+			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
+			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
 		))
 
 		Expect(cli.cliCommandArgs[1]).To(Equal(
 			[]string{
-				"start", "space-drain",
+				"start", "some-drain",
 			},
 		))
 	})
@@ -106,7 +106,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "space-drain",
+				"push", "some-drain",
 				"-p", "/downloaded/temp/dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
@@ -142,7 +142,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "space-drain",
+				"push", "some-drain",
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
@@ -153,21 +153,21 @@ var _ = Describe("PushSpaceDrain", func() {
 		))
 
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "space-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "space-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
+			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
+			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
+			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
+			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
+			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
+			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
+			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
+			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
 		))
 
 		Expect(cli.cliCommandArgs[1]).To(Equal(
 			[]string{
-				"start", "space-drain",
+				"start", "some-drain",
 			},
 		))
 	})
@@ -193,7 +193,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "space-drain",
+				"push", "some-drain",
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
@@ -204,21 +204,21 @@ var _ = Describe("PushSpaceDrain", func() {
 		))
 
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "space-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "space-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
+			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
+			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
+			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
+			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
+			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
+			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
+			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
+			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
 		))
 
 		Expect(cli.cliCommandArgs[1]).To(Equal(
 			[]string{
-				"start", "space-drain",
+				"start", "some-drain",
 			},
 		))
 	})
@@ -240,7 +240,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "space-drain",
+				"push", "some-drain",
 				"-p", "/downloaded/temp/dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
@@ -252,16 +252,54 @@ var _ = Describe("PushSpaceDrain", func() {
 
 		Expect(downloader.assetName).To(Equal("space_drain"))
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "space-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "space-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "space-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "space-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "space-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "space-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "space-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "space-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "space-drain", "DRAIN_SCOPE", "space"},
+			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
+			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
+			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
+			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
+			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
+			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
+			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
+			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
+			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
+		))
+
+		Expect(cli.cliCommandArgs[1]).To(Equal(
+			[]string{
+				"start", "some-drain",
+			},
+		))
+	})
+
+	It("defaults to space-drain if the drain-name is not provided", func() {
+		command.PushSpaceDrain(
+			cli,
+			reader,
+			[]string{
+				"--path", "some-temp-dir",
+				"--drain-url", "https://some-drain",
+				"--force",
+			},
+			downloader,
+			refreshTokenFetcher,
+			logger,
+		)
+
+		Expect(cli.cliCommandArgs).To(HaveLen(2))
+		Expect(cli.cliCommandArgs[0]).To(Equal(
+			[]string{
+				"push", "space-drain",
+				"-p", "some-temp-dir",
+				"-b", "binary_buildpack",
+				"-c", "./space_drain",
+				"--health-check-type", "process",
+				"--no-start",
+				"--no-route",
+			},
+		))
+
+		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ContainElement(
+			[]string{"set-env", "space-drain", "DRAIN_NAME", "space-drain"},
 		))
 
 		Expect(cli.cliCommandArgs[1]).To(Equal(
@@ -396,23 +434,6 @@ var _ = Describe("PushSpaceDrain", func() {
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("failed to push"))
-	})
-
-	It("fatally logs if the space-drain drain-name is not provided", func() {
-		Expect(func() {
-			command.PushSpaceDrain(
-				cli,
-				reader,
-				[]string{
-					"--path", "some-temp-dir",
-					"--drain-url", "https://some-drain",
-				},
-				downloader,
-				refreshTokenFetcher,
-				logger,
-			)
-		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("the required flag `--drain-name' was not specified"))
 	})
 
 	It("fatally logs if the space-drain drain-url is not provided", func() {

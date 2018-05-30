@@ -45,6 +45,7 @@ type stubCliConnection struct {
 	deleteServiceError error
 	pushAppError       error
 	startAppError      error
+	deleteAppError     error
 
 	currentSpaceName  string
 	currentSpaceGuid  string
@@ -155,6 +156,8 @@ func (s *stubCliConnection) CliCommand(args ...string) ([]string, error) {
 		err = s.pushAppError
 	case "start":
 		err = s.startAppError
+	case "delete":
+		err = s.deleteAppError
 	}
 
 	s.cliCommandArgs = append(s.cliCommandArgs, args)

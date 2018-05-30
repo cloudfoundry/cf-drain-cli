@@ -45,7 +45,6 @@ var _ = Describe("DeleteDrain", func() {
 				AppGuids: []string{"app-1-guid"},
 				Type:     "all",
 				DrainURL: "syslog://drain.url.com",
-				Scope:    "single",
 			})
 
 			command.DeleteDrain(cli, []string{"my-drain", "-f"}, logger, reader, serviceDrainFetcher)
@@ -56,37 +55,6 @@ var _ = Describe("DeleteDrain", func() {
 			}))
 			Expect(cli.cliCommandArgs[1]).To(Equal([]string{
 				"delete-service", "my-drain", "-f",
-			}))
-		})
-	})
-
-	Describe("space drain", func() {
-		BeforeEach(func() {
-			cli.getServicesApps = []string{"app-1"}
-			cli.getServicesName = "my-space-drain"
-		})
-		It("deletes the space drain app", func() {
-			reader.WriteString("y\n")
-
-			serviceDrainFetcher.drains = append(serviceDrainFetcher.drains, drain.Drain{
-				Name:     "my-space-drain",
-				Guid:     "my-space-drain-guid",
-				Apps:     []string{"app-1", "app-2"},
-				AppGuids: []string{"app-1-guid", "app-2-guid"},
-				Type:     "all",
-				DrainURL: "syslog://drain.url.com",
-				Scope:    "space",
-			})
-
-			command.DeleteDrain(cli, []string{"my-space-drain"}, logger, reader, serviceDrainFetcher)
-
-			Expect(cli.cliCommandArgs).To(HaveLen(2))
-
-			Expect(cli.cliCommandArgs[0]).To(Equal([]string{
-				"delete", "my-space-drain", "-f",
-			}))
-			Expect(cli.cliCommandArgs[1]).To(Equal([]string{
-				"delete-user", "space-drain-my-space-drain-guid", "-f",
 			}))
 		})
 	})

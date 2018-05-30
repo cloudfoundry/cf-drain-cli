@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
-	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 	"code.cloudfoundry.org/cli/plugin"
 	"code.cloudfoundry.org/cli/plugin/models"
 	flags "github.com/jessevdk/go-flags"
@@ -31,16 +29,6 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 	}
 
 	drainName := args[0]
-
-	space, err := cli.GetCurrentSpace()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	ok := deleteDrainAndUser(cli, serviceDrainFetcher, true, space.Guid, drainName)
-	if ok {
-		return
-	}
 
 	services, err := cli.GetServices()
 	if err != nil {
@@ -88,67 +76,6 @@ func DeleteDrain(cli plugin.CliConnection, args []string, log Logger, in io.Read
 
 	command := []string{"delete-service", drainName, "-f"}
 	_, err = cli.CliCommand(command...)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-}
-
-func deleteDrainAndUser(cli plugin.CliConnection, df DrainFetcher, isService bool, spaceGuid, drainName string) bool {
-	drains, err := df.Drains(spaceGuid)
-	if err != nil {
-		log.Fatalf("Failed to fetch drains: %s", err)
-	}
-
-	d, ok := findDrain(drains, drainName)
-	if ok {
-		if isService && d.Scope == "space" {
-			deleteDrain(cli, d)
-			deleteUser(cli, fmt.Sprintf("space-drain-%s", d.Guid))
-			return true
-		}
-		if !isService {
-			deleteDrain(cli, d)
-			deleteUser(cli, fmt.Sprintf("drain-%s", d.AppGuids[0]))
-			return true
-		}
-	}
-
-	return false
-}
-
-func findDrain(ds []drain.Drain, drainName string) (drain.Drain, bool) {
-	var drains []drain.Drain
-	for _, drain := range ds {
-		if drain.Name == drainName {
-			drains = append(drains, drain)
-		}
-	}
-
-	if len(drains) == 0 {
-		return drain.Drain{}, false
-	}
-
-	if len(drains) > 1 {
-		// can this ever happen?
-		log.Printf("more than one drain found with name: %s", drainName)
-		return drains[0], true
-	}
-
-	return drains[0], true
-}
-
-func deleteDrain(cli plugin.CliConnection, drain drain.Drain) {
-	command := []string{"delete", drain.Name, "-f"}
-	_, err := cli.CliCommand(command...)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-}
-
-func deleteUser(cli plugin.CliConnection, username string) {
-	command := []string{"delete-user", username, "-f"}
-	_, err := cli.CliCommand(command...)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}

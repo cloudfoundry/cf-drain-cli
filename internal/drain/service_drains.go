@@ -26,7 +26,6 @@ type Drain struct {
 	AppGuids []string
 	Type     string
 	DrainURL string
-	Scope    string
 }
 
 func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {

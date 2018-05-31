@@ -24,7 +24,7 @@ type RefreshTokenFetcher interface {
 
 type pushSpaceDrainOpts struct {
 	DrainName string `long:"drain-name"`
-	DrainURL  string `long:"drain-url" required:"true"`
+	DrainURL  string
 	Path      string `long:"path"`
 	DrainType string `long:"type"`
 	Force     bool   `long:"force"`
@@ -50,9 +50,11 @@ func PushSpaceDrain(
 		log.Fatalf("%s", err)
 	}
 
-	if len(args) > 0 {
-		log.Fatalf("Invalid arguments, expected 0, got %d.", len(args))
+	if len(args) != 1 {
+		log.Fatalf("Invalid arguments, expected 1, got %d.", len(args))
 	}
+
+	opts.DrainURL = args[0]
 
 	if !opts.Force {
 		log.Print(

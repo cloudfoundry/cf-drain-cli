@@ -39,9 +39,9 @@ var _ = Describe("PushSpaceDrain", func() {
 			cli,
 			reader,
 			[]string{
+				"https://some-drain",
 				"--path", "some-temp-dir",
 				"--drain-name", "some-drain",
-				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 			},
 			downloader,
@@ -93,8 +93,8 @@ var _ = Describe("PushSpaceDrain", func() {
 			cli,
 			reader,
 			[]string{
+				"https://some-drain",
 				"--drain-name", "some-drain",
-				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 			},
 			downloader,
@@ -124,9 +124,9 @@ var _ = Describe("PushSpaceDrain", func() {
 			cli,
 			reader,
 			[]string{
+				"https://some-drain",
 				"--path", "some-temp-dir",
 				"--drain-name", "some-drain",
-				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 			},
 			downloader,
@@ -178,9 +178,9 @@ var _ = Describe("PushSpaceDrain", func() {
 			cli,
 			nil,
 			[]string{
+				"https://some-drain",
 				"--path", "some-temp-dir",
 				"--drain-name", "some-drain",
-				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 				"--force",
 			},
@@ -229,8 +229,8 @@ var _ = Describe("PushSpaceDrain", func() {
 			cli,
 			reader,
 			[]string{
+				"https://some-drain",
 				"--drain-name", "some-drain",
-				"--drain-url", "https://some-drain",
 				"--type", "metrics",
 			},
 			downloader,
@@ -277,8 +277,8 @@ var _ = Describe("PushSpaceDrain", func() {
 			cli,
 			reader,
 			[]string{
+				"https://some-drain",
 				"--path", "some-temp-dir",
-				"--drain-url", "https://some-drain",
 				"--force",
 			},
 			downloader,
@@ -317,8 +317,8 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -341,9 +341,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -371,9 +371,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -391,9 +391,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -410,9 +410,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -429,9 +429,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -448,9 +448,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 				},
 				downloader,
 				refreshTokenFetcher,
@@ -474,7 +474,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				logger,
 			)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("the required flag `--drain-url' was not specified"))
+		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 0."))
 	})
 
 	It("fatally logs if there are extra command line arguments", func() {
@@ -483,9 +483,9 @@ var _ = Describe("PushSpaceDrain", func() {
 				cli,
 				reader,
 				[]string{
+					"https://some-drain",
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
-					"--drain-url", "https://some-drain",
 					"some-unknown-arg",
 				},
 				downloader,
@@ -493,7 +493,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				logger,
 			)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 0, got 1."))
+		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 2."))
 	})
 })
 

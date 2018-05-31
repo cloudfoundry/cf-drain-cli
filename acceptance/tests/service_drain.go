@@ -141,7 +141,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		CFWithTimeout(
 			1*time.Minute,
 			"drain-space",
-			"--drain-url", syslogDrainURL,
+			syslogDrainURL,
 			"--drain-name", drainName,
 			"--path", path.Dir(execPath),
 			"--force",
@@ -190,7 +190,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		CFWithTimeout(
 			1*time.Minute,
 			"drain-space",
-			"--drain-url", syslogDrainURL,
+			syslogDrainURL,
 			"--drain-name", drainName,
 			"--path", path.Dir(execPath),
 			"--force",
@@ -280,7 +280,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		CFWithTimeout(
 			1*time.Minute,
 			"drain-space",
-			"--drain-url", syslogDrainURL,
+			syslogDrainURL,
 			"--drain-name", "some-space-drain",
 			"--path", path.Dir(execPath),
 			"--force",
@@ -288,7 +288,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 
 		drainSpace := cf.Cf(
 			"drain-space",
-			"--drain-url", syslogDrainURL,
+			syslogDrainURL,
 			"--drain-name", "some-space-drain",
 			"--path", path.Dir(execPath),
 			"--force",
@@ -309,7 +309,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		CFWithTimeout(
 			1*time.Minute,
 			"drain-space",
-			"--drain-url", syslogDrainURL1,
+			syslogDrainURL1,
 			"--drain-name", "space-drain-papertrail",
 			"--path", path.Dir(execPath),
 			"--force",
@@ -318,7 +318,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		CFWithTimeout(
 			1*time.Minute,
 			"drain-space",
-			"--drain-url", syslogDrainURL2,
+			syslogDrainURL2,
 			"--drain-name", "space-drain-splunk",
 			"--path", path.Dir(execPath),
 			"--force",

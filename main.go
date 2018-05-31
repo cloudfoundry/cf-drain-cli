@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"text/tabwriter"
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
@@ -163,9 +164,16 @@ func (c CFDrainCLI) printOptions(cmdName string, index int) {
 		fmt.Println()
 		fmt.Println("OPTIONS:")
 	}
+	tw := tabwriter.NewWriter(os.Stderr, 3, 2, 2, ' ', 0)
 	for k, v := range c.GetMetadata().Commands[index].UsageDetails.Options {
-		fmt.Fprintln(os.Stderr, "   -"+k+"  "+v)
+		fmt.Fprintf(
+			tw,
+			"\t%s\t%s\n",
+			"-"+k,
+			v,
+		)
 	}
+	tw.Flush()
 }
 
 func (c CFDrainCLI) indexOfCommand(name string) int {

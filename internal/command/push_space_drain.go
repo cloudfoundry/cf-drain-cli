@@ -71,6 +71,11 @@ func PushSpaceDrain(
 		}
 	}
 
+	app, _ := cli.GetApp(opts.DrainName)
+	if app.Name == opts.DrainName {
+		log.Fatalf("A drain with that name already exists. Use --drain-name to create a drain with a different name.")
+	}
+
 	pushDrain(cli, opts.DrainName, "space_drain", nil, opts, d, f, log)
 }
 

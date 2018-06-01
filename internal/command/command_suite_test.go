@@ -67,9 +67,11 @@ func newStubCliConnection() *stubCliConnection {
 }
 
 func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, error) {
-	s.getAppName = name
+	if s.getAppError == nil {
+		s.getAppName = name
+	}
 	return plugin_models.GetAppModel{
-		Name: name,
+		Name: s.getAppName,
 		Guid: s.getAppGuid,
 	}, s.getAppError
 }

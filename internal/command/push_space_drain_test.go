@@ -24,6 +24,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		logger = &stubLogger{}
 		cli = newStubCliConnection()
 		cli.currentSpaceGuid = "space-guid"
+		cli.getAppError = errors.New("app not found")
 		cli.apiEndpoint = "https://api.something.com"
 		downloader = newStubDownloader()
 		downloader.path = "/downloaded/temp/dir/space_drain"
@@ -307,6 +308,29 @@ var _ = Describe("PushSpaceDrain", func() {
 				"start", "space-drain",
 			},
 		))
+	})
+
+	It("fatally logs if space-drain with same name already exists", func() {
+		cli.getAppError = nil
+		Expect(func() {
+			command.PushSpaceDrain(
+				cli,
+				reader,
+				[]string{
+					"--drain-name", "some-drain",
+					"--drain-url", "https://some-drain",
+				},
+				downloader,
+				refreshTokenFetcher,
+				logger,
+			)
+		}).To(Panic())
+
+		Expect(cli.getAppName).To(Equal("some-drain"))
+
+		Expect(cli.cliCommandArgs).To(HaveLen(0))
+
+		Expect(logger.fatalfMessage).To(Equal("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
 	})
 
 	DescribeTable("fatally logs if setting env variables fails", func(env string) {

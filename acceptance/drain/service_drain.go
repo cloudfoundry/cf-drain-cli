@@ -268,4 +268,68 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		drains = cf.Cf("drains")
 		Consistently(drains, 10).ShouldNot(Say("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"))
 	})
+
+	It("drain-space reports error when space-drain with same drain-name exists", func() {
+		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
+
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		Expect(err).ToNot(HaveOccurred())
+
+		defer CleanupBuildArtifacts()
+
+		CFWithTimeout(
+			1*time.Minute,
+			"drain-space",
+			"--drain-url", syslogDrainURL,
+			"--drain-name", "some-space-drain",
+			"--path", path.Dir(execPath),
+			"--force",
+		)
+
+		drainSpace := cf.Cf(
+			"drain-space",
+			"--drain-url", syslogDrainURL,
+			"--drain-name", "some-space-drain",
+			"--path", path.Dir(execPath),
+			"--force",
+		)
+
+		Eventually(drainSpace).Should(Say("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
+	})
+
+	It("a space-drain cannot drain to itself or to any other space-drains", func() {
+		syslogDrainURL1 := "syslog://space-drain-1.papertrail.com"
+		syslogDrainURL2 := "syslog://space-drain-2.splunk.com"
+
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		Expect(err).ToNot(HaveOccurred())
+
+		defer CleanupBuildArtifacts()
+
+		CFWithTimeout(
+			1*time.Minute,
+			"drain-space",
+			"--drain-url", syslogDrainURL1,
+			"--drain-name", "space-drain-papertrail",
+			"--path", path.Dir(execPath),
+			"--force",
+		)
+
+		CFWithTimeout(
+			1*time.Minute,
+			"drain-space",
+			"--drain-url", syslogDrainURL2,
+			"--drain-name", "space-drain-splunk",
+			"--path", path.Dir(execPath),
+			"--force",
+		)
+
+		papertrailDrainRegex := `(?m:^space-drain-papertrail)`
+
+		Eventually(func() string {
+			s := cf.Cf("drains")
+			Eventually(s, acceptance.Config().DefaultTimeout).Should(Exit(0))
+			return string(append(s.Out.Contents(), s.Err.Contents()...))
+		}, acceptance.Config().DefaultTimeout).ShouldNot(MatchRegexp(papertrailDrainRegex))
+	})
 })

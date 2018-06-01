@@ -159,6 +159,7 @@ var _ = Describe("CreateDrain", func() {
 	})
 
 	It("fatally logs when an invalid app name is given", func() {
+		cli.getAppName = "not-an-app"
 		cli.getAppError = errors.New("not an app")
 
 		Expect(func() {

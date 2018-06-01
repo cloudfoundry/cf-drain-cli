@@ -60,9 +60,9 @@ func main() {
 	drainBinder := cloudcontroller.NewBindDrainClient(curler)
 	appLister := cloudcontroller.NewAppListerClient(curler)
 
-	createAndBind(drainLister, drainCreator, drainBinder, appLister, cfg)
+	createAndBind(drainLister, drainCreator, drainBinder, appLister, curler, cfg)
 	for range time.Tick(time.Minute) {
-		createAndBind(drainLister, drainCreator, drainBinder, appLister, cfg)
+		createAndBind(drainLister, drainCreator, drainBinder, appLister, curler, cfg)
 	}
 }
 
@@ -71,6 +71,7 @@ func createAndBind(
 	drainCreator *cloudcontroller.CreateDrainClient,
 	drainBinder *cloudcontroller.BindDrainClient,
 	appLister *cloudcontroller.AppListerClient,
+	curler cloudcontroller.Curler,
 	cfg Config,
 ) {
 	drains, err := drainLister.Drains(cfg.SpaceID)
@@ -94,7 +95,7 @@ func createAndBind(
 		log.Printf("created %s drain", cfg.DrainName)
 
 		// go again so that ListDrains can find it and get its guid.
-		createAndBind(drainLister, drainCreator, drainBinder, appLister, cfg)
+		createAndBind(drainLister, drainCreator, drainBinder, appLister, curler, cfg)
 		return
 	}
 
@@ -106,6 +107,10 @@ func createAndBind(
 
 	log.Printf("binding %d apps to drain...", len(apps))
 	for _, app := range apps {
+		if isSpaceDrain(curler, app.Guid) {
+			continue
+		}
+
 		if containsApp(app.Guid, drain.AppGuids) || app.Guid == cfg.VCAPApplication.ID {
 			continue
 		}
@@ -124,6 +129,18 @@ func containsApp(appGuid string, guids []string) bool {
 		if g == appGuid {
 			return true
 		}
+	}
+
+	return false
+}
+
+func isSpaceDrain(curler cloudcontroller.Curler, appGUID string) bool {
+	c := cloudcontroller.NewClient(curler)
+
+	envs, _ := c.EnvVars(appGUID)
+
+	if envs["DRAIN_SCOPE"] == "space" {
+		return true
 	}
 
 	return false

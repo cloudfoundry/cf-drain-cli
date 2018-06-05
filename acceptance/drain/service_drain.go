@@ -1,4 +1,4 @@
-package drain
+package acceptance_test
 
 import (
 	"fmt"

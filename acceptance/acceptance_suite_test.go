@@ -10,8 +10,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 
 	"code.cloudfoundry.org/cf-drain-cli/acceptance"
-
-	_ "code.cloudfoundry.org/cf-drain-cli/acceptance/drain" //Required for ginkgo to pick up tests in subdirectories
+	_ "code.cloudfoundry.org/cf-drain-cli/acceptance/tests" //Required for ginkgo to pick up tests in subdirectories
 )
 
 func TestAcceptance(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"text/tabwriter"
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller"
@@ -35,10 +36,19 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 
 	switch args[0] {
 	case "drain":
+		if len(args) < 3 {
+			c.exitWithUsage("drain")
+		}
 		command.CreateDrain(conn, args[1:], downloader, logger)
 	case "delete-drain":
+		if len(args) < 2 {
+			c.exitWithUsage("delete-drain")
+		}
 		command.DeleteDrain(conn, args[1:], logger, os.Stdin, sdClient)
 	case "bind-drain":
+		if len(args) < 3 {
+			c.exitWithUsage("bind-drain")
+		}
 		command.BindDrain(conn, sdClient, args[1:], logger)
 	case "drains":
 		command.Drains(conn, nil, logger, os.Stdout, sdClient)
@@ -46,6 +56,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		tokenFetcher := command.NewTokenFetcher(configPath(log))
 		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, tokenFetcher, logger)
 	case "delete-drain-space":
+		if len(args) < 2 {
+			c.exitWithUsage("delete-drain-space")
+		}
 		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
 	}
 }
@@ -76,7 +89,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				Name:     "drain",
 				HelpText: "Creates a user provided service for syslog drains and binds it to a given application.",
 				UsageDetails: plugin.Usage{
-					Usage: "drain <app-name> <syslog-drain-url> [options]",
+					Usage: "drain APP_NAME SYSLOG_DRAIN_URL [OPTIONS]",
 					Options: map[string]string{
 						"-drain-name": "The name of the drain that will be created. If excluded, the drain name will be `cf-drain-UUID`.",
 						"-type":       "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
@@ -87,14 +100,14 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				Name:     "bind-drain",
 				HelpText: "Binds an application to an existing syslog drain.",
 				UsageDetails: plugin.Usage{
-					Usage: "bind-drain <app-name> <drain-name>",
+					Usage: "bind-drain APP_NAME DRAIN_NAME",
 				},
 			},
 			{
 				Name:     "delete-drain",
 				HelpText: "Unbinds the service from applications and deletes the service.",
 				UsageDetails: plugin.Usage{
-					Usage: "delete-drain <drain-name>",
+					Usage: "delete-drain DRAIN_NAME [OPTIONS]",
 					Options: map[string]string{
 						"-force": "Skip warning prompt. Default is false",
 					},
@@ -118,7 +131,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				Name:     "delete-drain-space",
 				HelpText: "Deletes space drain app and unbinds all the apps in the space from the configured syslog drain",
 				UsageDetails: plugin.Usage{
-					Usage: "delete-drain-space <drain-name> [OPTIONS]",
+					Usage: "delete-drain-space DRAIN_NAME [OPTIONS]",
 					Options: map[string]string{
 						"-force": "Skip warning prompt. Default is false",
 					},
@@ -126,6 +139,47 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 			},
 		},
 	}
+}
+
+func (c CFDrainCLI) exitWithUsage(cmdName string) {
+	i := c.indexOfCommand(cmdName)
+	fmt.Printf("\nInvalid arguments passed to %s command.\n\n", c.GetMetadata().Commands[i].Name)
+	c.printUsage(cmdName, i)
+	c.printOptions(cmdName, i)
+	fmt.Println()
+	os.Exit(127)
+}
+
+func (c CFDrainCLI) printUsage(cmdName string, index int) {
+	fmt.Println("USAGE:")
+	fmt.Print("   " + c.GetMetadata().Commands[index].UsageDetails.Usage)
+	fmt.Println()
+}
+
+func (c CFDrainCLI) printOptions(cmdName string, index int) {
+	if c.GetMetadata().Commands[index].UsageDetails.Options != nil {
+		fmt.Println()
+		fmt.Println("OPTIONS:")
+	}
+	tw := tabwriter.NewWriter(os.Stdout, 3, 2, 2, ' ', 0)
+	for k, v := range c.GetMetadata().Commands[index].UsageDetails.Options {
+		fmt.Fprintf(
+			tw,
+			"\t%s\t%s\n",
+			"-"+k,
+			v,
+		)
+	}
+	tw.Flush()
+}
+
+func (c CFDrainCLI) indexOfCommand(name string) int {
+	for i, cmd := range c.GetMetadata().Commands {
+		if cmd.Name == name {
+			return i
+		}
+	}
+	return -1
 }
 
 func main() {

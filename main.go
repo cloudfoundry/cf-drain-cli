@@ -144,9 +144,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 
 func (c CFDrainCLI) exitWithUsage(cmdName string) {
 	i := c.indexOfCommand(cmdName)
-	fmt.Println()
-	fmt.Fprintf(os.Stderr, "Invalid arguments passed to %s command.\n", c.GetMetadata().Commands[i].Name)
-	fmt.Println()
+	fmt.Printf("\nInvalid arguments passed to %s command.\n\n", c.GetMetadata().Commands[i].Name)
 	c.printUsage(cmdName, i)
 	c.printOptions(cmdName, i)
 	fmt.Println()
@@ -155,7 +153,7 @@ func (c CFDrainCLI) exitWithUsage(cmdName string) {
 
 func (c CFDrainCLI) printUsage(cmdName string, index int) {
 	fmt.Println("USAGE:")
-	fmt.Fprint(os.Stderr, "   "+c.GetMetadata().Commands[index].UsageDetails.Usage)
+	fmt.Print("   " + c.GetMetadata().Commands[index].UsageDetails.Usage)
 	fmt.Println()
 }
 
@@ -164,7 +162,7 @@ func (c CFDrainCLI) printOptions(cmdName string, index int) {
 		fmt.Println()
 		fmt.Println("OPTIONS:")
 	}
-	tw := tabwriter.NewWriter(os.Stderr, 3, 2, 2, ' ', 0)
+	tw := tabwriter.NewWriter(os.Stdout, 3, 2, 2, ' ', 0)
 	for k, v := range c.GetMetadata().Commands[index].UsageDetails.Options {
 		fmt.Fprintf(
 			tw,

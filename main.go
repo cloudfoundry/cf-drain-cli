@@ -53,6 +53,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drains":
 		command.Drains(conn, nil, logger, os.Stdout, sdClient)
 	case "drain-space":
+		if len(args) != 2 {
+			c.exitWithUsage("drain-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
+		}
 		tokenFetcher := command.NewTokenFetcher(configPath(log))
 		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, tokenFetcher, logger)
 	case "delete-drain-space":
@@ -140,9 +143,14 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 	}
 }
 
-func (c CFDrainCLI) exitWithUsage(cmdName string) {
+func (c CFDrainCLI) exitWithUsage(cmdName string, helpMsg ...string) {
 	i := c.indexOfCommand(cmdName)
-	fmt.Printf("\nInvalid arguments passed to %s command.\n\n", c.GetMetadata().Commands[i].Name)
+	fmt.Printf("\nInvalid arguments passed to %s command.", cmdName)
+	if len(helpMsg) != 0 {
+		fmt.Printf(" %s", helpMsg[0])
+	}
+	fmt.Println()
+	fmt.Println()
 	c.printUsage(cmdName, i)
 	c.printOptions(cmdName, i)
 	fmt.Println()

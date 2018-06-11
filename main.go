@@ -53,7 +53,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 	case "drains":
 		command.Drains(conn, nil, logger, os.Stdout, sdClient)
 	case "drain-space":
-		if len(args) != 2 {
+		if len(args) < 2 {
 			c.exitWithUsage("drain-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
 		}
 		tokenFetcher := command.NewTokenFetcher(configPath(log))

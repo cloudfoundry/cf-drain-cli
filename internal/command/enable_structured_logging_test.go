@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("EnableStructuredLogging", func() {
+var _ = Describe("EnableStructuredLogging", func() {
 	var (
 		logger *stubLogger
 		cli    *stubCliConnection

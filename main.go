@@ -63,6 +63,11 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("delete-drain-space")
 		}
 		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
+	case "enable-structured-logging":
+		if len(args) < 3 {
+			c.exitWithUsage("enable-structured-logging")
+		}
+		command.EnableStructuredLogging(conn, args[1:], downloader, logger)
 	}
 }
 
@@ -136,6 +141,16 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 					Usage: "delete-drain-space DRAIN_NAME [--force]",
 					Options: map[string]string{
 						"-force": "Skip warning prompt. Default is false",
+					},
+				},
+			},
+			{
+				Name:     "enable-structured-logging",
+				HelpText: "Creates a user provided service for Prism structured logging and binds it to a given application.",
+				UsageDetails: plugin.Usage{
+					Usage: "enable-structured-logging APP_NAME STRUCTURED_LOGGING_TYPE [--drain-name NAME]",
+					Options: map[string]string{
+						"-drain-name": "The name of the drain that will be created. If excluded, the drain name will be `cf-drain-UUID`.",
 					},
 				},
 			},

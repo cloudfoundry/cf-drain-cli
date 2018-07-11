@@ -103,7 +103,7 @@ OPTIONS:
 ```
 
 [cf-cli]: https://code.cloudfoundry.org/cli
-[ci-badge]: https://loggregator.ci.cf-app.com/api/v1/pipelines/products/jobs/cf-drain-cli-tests/badge
+[ci-badge]: https://loggregator.ci.cf-app.com/api/v1/pipelines/cf-syslog-drain/jobs/cf-drain-cli-tests/badge
 [ci-tests]: https://loggregator.ci.cf-app.com/teams/main/pipelines/products/jobs/cf-drain-cli-tests
 [golang-dl]: https://golang.org/dl/
 [latest-release]: https://github.com/cloudfoundry/cf-drain-cli/releases/latest

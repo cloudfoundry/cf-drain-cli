@@ -133,7 +133,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 
-		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
 		Expect(err).ToNot(HaveOccurred())
 
 		defer CleanupBuildArtifacts()
@@ -182,7 +182,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		drainName := fmt.Sprintf("some-drain-%d", time.Now().UnixNano())
 		singleDrainName := fmt.Sprintf("single-some-drain-%d", time.Now().UnixNano())
 
-		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
 		Expect(err).ToNot(HaveOccurred())
 
 		defer CleanupBuildArtifacts()
@@ -272,7 +272,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 	It("drain-space reports error when space-drain with same drain-name exists", func() {
 		syslogDrainURL := "syslog://" + SyslogDrainAddress(listenerAppName)
 
-		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
 		Expect(err).ToNot(HaveOccurred())
 
 		defer CleanupBuildArtifacts()
@@ -301,7 +301,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		syslogDrainURL1 := "syslog://space-drain-1.papertrail.com"
 		syslogDrainURL2 := "syslog://space-drain-2.splunk.com"
 
-		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/space_drain")
+		execPath, err := Build("code.cloudfoundry.org/cf-drain-cli/cmd/space_drain")
 		Expect(err).ToNot(HaveOccurred())
 
 		defer CleanupBuildArtifacts()

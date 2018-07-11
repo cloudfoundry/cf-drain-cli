@@ -28,7 +28,7 @@ cf install-plugin download/path/cf-drain-cli
 Make sure to have the [latest Go toolchain][golang-dl] installed.
 
 ```
-go get code.cloudfoundry.org/cf-drain-cli
+go get code.cloudfoundry.org/cf-drain-cli/cmd/cf-drain-cli
 cf install-plugin $GOPATH/bin/cf-drain-cli
 ```
 

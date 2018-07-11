@@ -85,7 +85,7 @@ func deleteOrg(cfg *acceptance.TestConfig) {
 }
 
 func installDrainsPlugin(cfg *acceptance.TestConfig) {
-	cliPath, err := Build("../main.go")
+	cliPath, err := Build("../cmd/cf-drain-cli/main.go")
 	Expect(err).ToNot(HaveOccurred())
 
 	Eventually(cf.Cf("install-plugin", cliPath, "-f"), cfg.DefaultTimeout).Should(Exit(0))

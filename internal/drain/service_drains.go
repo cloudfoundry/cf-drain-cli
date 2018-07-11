@@ -10,12 +10,28 @@ import (
 )
 
 type ServiceDrainLister struct {
-	c cloudcontroller.Curler
+	c                 cloudcontroller.Curler
+	appNameBatchLimit int
 }
 
-func NewServiceDrainLister(c cloudcontroller.Curler) *ServiceDrainLister {
-	return &ServiceDrainLister{
-		c: c,
+func NewServiceDrainLister(c cloudcontroller.Curler, opts ...ServiceDrainListerOption) *ServiceDrainLister {
+	dl := &ServiceDrainLister{
+		c:                 c,
+		appNameBatchLimit: 100,
+	}
+
+	for _, o := range opts {
+		o(dl)
+	}
+
+	return dl
+}
+
+type ServiceDrainListerOption func(l *ServiceDrainLister)
+
+func WithServiceDrainAppBatchLimit(limit int) ServiceDrainListerOption {
+	return func(l *ServiceDrainLister) {
+		l.appNameBatchLimit = limit
 	}
 }
 
@@ -28,10 +44,10 @@ type Drain struct {
 	DrainURL string
 }
 
-func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
+func (l *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 	var url string
 	url = fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid)
-	instances, err := c.fetchServiceInstances(url)
+	instances, err := l.fetchServiceInstances(url)
 	if err != nil {
 		return nil, err
 	}
@@ -43,18 +59,18 @@ func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 			continue
 		}
 
-		apps, err := c.fetchApps(s.Entity.ServiceBindingsURL)
+		apps, err := l.fetchApps(s.Entity.ServiceBindingsURL)
 		if err != nil {
 			return nil, err
 		}
 		appGuids = append(appGuids, apps...)
 
-		drainType, err := c.TypeFromDrainURL(s.Entity.SyslogDrainURL)
+		drainType, err := l.TypeFromDrainURL(s.Entity.SyslogDrainURL)
 		if err != nil {
 			return nil, err
 		}
 
-		drain, err := c.buildDrain(
+		drain, err := l.buildDrain(
 			apps,
 			s.Entity.Name,
 			s.MetaData.Guid,
@@ -68,7 +84,7 @@ func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 		drains = append(drains, drain)
 	}
 
-	appNames, err := c.fetchAppNames(appGuids)
+	appNames, err := l.fetchBatchAppNames(appGuids)
 	if err != nil {
 		return nil, err
 	}
@@ -81,18 +97,18 @@ func (c *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 			names = append(names, appNames[guid])
 			guids = append(guids, guid)
 		}
-		d.Apps = names
-		d.AppGuids = guids
+		d.Apps = uniqueStringSlice(names)
+		d.AppGuids = uniqueStringSlice(guids)
 		namedDrains = append(namedDrains, d)
 	}
 
 	return namedDrains, nil
 }
 
-func (c *ServiceDrainLister) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
+func (l *ServiceDrainLister) fetchServiceInstances(url string) ([]userProvidedServiceInstance, error) {
 	instances := []userProvidedServiceInstance{}
 	for url != "" {
-		resp, err := c.c.Curl(url, "GET", "")
+		resp, err := l.c.Curl(url, "GET", "")
 		if err != nil {
 			return nil, err
 		}
@@ -110,10 +126,10 @@ func (c *ServiceDrainLister) fetchServiceInstances(url string) ([]userProvidedSe
 	return instances, nil
 }
 
-func (c *ServiceDrainLister) fetchApps(url string) ([]string, error) {
+func (l *ServiceDrainLister) fetchApps(url string) ([]string, error) {
 	var apps []string
 	for url != "" {
-		resp, err := c.c.Curl(url, "GET", "")
+		resp, err := l.c.Curl(url, "GET", "")
 		if err != nil {
 			return nil, err
 		}
@@ -134,17 +150,43 @@ func (c *ServiceDrainLister) fetchApps(url string) ([]string, error) {
 	return apps, nil
 }
 
-func (c *ServiceDrainLister) fetchAppNames(guids []string) (map[string]string, error) {
+func (l *ServiceDrainLister) fetchBatchAppNames(guids []string) (map[string]string, error) {
+	guids = uniqueStringSlice(guids)
+
+	allAppNames := make(map[string]string)
+	for i := 0; i < len(guids); i += l.appNameBatchLimit {
+		end := i + l.appNameBatchLimit
+
+		if end > len(guids) {
+			end = len(guids)
+		}
+
+		appNames, err := l.fetchAppNames(guids[i:end])
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range appNames {
+			allAppNames[k] = v
+		}
+	}
+
+	return allAppNames, nil
+}
+
+func (l *ServiceDrainLister) fetchAppNames(guids []string) (map[string]string, error) {
 	if len(guids) == 0 {
 		return nil, nil
 	}
 
-	allGuids := strings.Join(guids, ",")
-	apps := make(map[string]string)
+	params := url.Values{
+		"guids": {strings.Join(guids, ",")},
+	}
 
-	url := fmt.Sprintf("/v3/apps?guids=%s", allGuids)
+	url := "/v3/apps?" + params.Encode()
+	apps := make(map[string]string)
 	for url != "" {
-		resp, err := c.c.Curl(url, "GET", "")
+		resp, err := l.c.Curl(url, "GET", "")
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +206,7 @@ func (c *ServiceDrainLister) fetchAppNames(guids []string) (map[string]string, e
 	return apps, nil
 }
 
-func (c *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
+func (l *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
 	uri, err := url.Parse(URL)
 	if err != nil {
 		return "", err
@@ -178,7 +220,7 @@ func (c *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
 	}
 }
 
-func (c *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
+func (l *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
 	return Drain{
 		Name:     name,
 		Guid:     guid,
@@ -226,4 +268,23 @@ type appsResponse struct {
 type appData struct {
 	Name string `json:"name"`
 	Guid string `json:"guid"`
+}
+
+func uniqueStringSlice(str []string) []string {
+	var results []string
+	for _, s := range str {
+		results = appendIfMissing(results, s)
+	}
+
+	return results
+}
+
+func appendIfMissing(data []string, element string) []string {
+	for _, elem := range data {
+		if elem == element {
+			return data
+		}
+	}
+
+	return append(data, element)
 }

@@ -35,10 +35,18 @@ var _ = Describe("GroupManager", func() {
 			reqs <- r
 			requestBodies <- body
 
-			if len(responseBodies) != 0 {
-				w.Write(<-responseBodies)
+			select {
+			case body := <-responseBodies:
+				w.Write(body)
+			default:
+				// DO NOTHING
 			}
 		}))
+	})
+
+	AfterEach(func() {
+		server.CloseClientConnections()
+		server.Close()
 	})
 
 	AfterSuite(func() {

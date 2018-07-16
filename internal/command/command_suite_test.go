@@ -20,7 +20,8 @@ func TestCommand(t *testing.T) {
 type stubCliConnection struct {
 	plugin.CliConnection
 
-	sslDisabled bool
+	sslDisabled      bool
+	sslDisabledError error
 
 	getAppName  string
 	getAppGuid  string
@@ -171,7 +172,7 @@ func (s *stubCliConnection) ApiEndpoint() (string, error) {
 }
 
 func (s *stubCliConnection) IsSSLDisabled() (bool, error) {
-	return s.sslDisabled, nil
+	return s.sslDisabled, s.sslDisabledError
 }
 
 type stubLogger struct {

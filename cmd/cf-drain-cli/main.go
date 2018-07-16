@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/user"
@@ -21,6 +22,7 @@ import (
 type CFDrainCLI struct{}
 
 func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
+	rand.Seed(time.Now().UnixNano())
 	log := log.New(os.Stderr, "", 0)
 	if len(args) == 0 {
 		log.Fatalf("Expected at least 1 argument, but got 0.")
@@ -63,6 +65,15 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("delete-drain-space")
 		}
 		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
+	case "drain-service":
+		if len(args) < 2 {
+			c.exitWithUsage("drain-service")
+		}
+		tf := command.NewTokenFetcher(configPath(log))
+		gp := func() string {
+			return fmt.Sprintf("%d", rand.Uint64())
+		}
+		command.PushServiceDrain(conn, args[1:], tf, logger, gp)
 	}
 }
 
@@ -136,6 +147,16 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 					Usage: "delete-drain-space DRAIN_NAME [--force]",
 					Options: map[string]string{
 						"-force": "Skip warning prompt. Default is false",
+					},
+				},
+			},
+			{
+				Name:     "drain-service",
+				HelpText: "Pushes app to drain a single service",
+				UsageDetails: plugin.Usage{
+					Usage: "drain-service SERVICE_NAME SYSLOG_DRAIN_URL --path PATH",
+					Options: map[string]string{
+						"-path": "Path to the service drain zip file.",
 					},
 				},
 			},

@@ -2,6 +2,7 @@
 
 git_root=$(git rev-parse --show-toplevel)
 
+export GOOS=linux
 pushd $git_root
     go get -u github.com/apoydence/cf-space-security/cmd/proxy
 
@@ -14,3 +15,4 @@ pushd $git_root
 
     zip -j forwarder.zip cmd/group-manager/group-manager cmd/syslog-forwarder/syslog-forwarder $(which proxy) scripts/run.sh
 popd
+unset GOOS

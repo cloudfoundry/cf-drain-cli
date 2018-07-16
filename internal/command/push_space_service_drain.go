@@ -7,36 +7,29 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
-type pushServiceDrainOpts struct {
+type pushSpaceServiceDrainOpts struct {
 	DrainName string
 	DrainURL  string
 	Path      string `long:"path"`
 }
 
-type GroupNameProvider func() string
-type GUIDProvider func() string
-
-func PushServiceDrain(
+func PushSpaceServiceDrain(
 	cli plugin.CliConnection,
 	args []string,
 	f RefreshTokenFetcher,
 	log Logger,
-	g GroupNameProvider,
+	group GroupNameProvider,
+	guid GUIDProvider,
 ) {
-	var opts pushServiceDrainOpts
+	var opts pushSpaceServiceDrainOpts
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
 	args, err := parser.ParseArgs(args)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	if len(args) != 2 {
-		log.Fatalf("Invalid arguments, expected 2 got %d.", len(args))
-	}
-
-	service, err := cli.GetService(args[0])
-	if err != nil {
-		log.Fatalf("%s", err)
+	if len(args) != 1 {
+		log.Fatalf("Invalid arguments, expected 1 got %d.", len(args))
 	}
 
 	skipCertVerify, err := cli.IsSSLDisabled()
@@ -59,8 +52,8 @@ func PushServiceDrain(
 		log.Fatalf("%s", err)
 	}
 
-	opts.DrainName = fmt.Sprintf("%s-forwarder", service.Name)
-	opts.DrainURL = args[1]
+	opts.DrainName = fmt.Sprintf("space-services-forwarder-%s", guid())
+	opts.DrainURL = args[0]
 
 	_, err = cli.CliCommand(
 		"push", opts.DrainName,
@@ -77,13 +70,12 @@ func PushServiceDrain(
 	}
 
 	envs := [][]string{
-		{"SOURCE_ID", service.Guid},
-		{"SOURCE_HOSTNAME", fmt.Sprintf("%s.%s.%s", org.Name, space.Name, opts.DrainName)},
+		{"SOURCE_HOSTNAME", fmt.Sprintf("%s.%s", org.Name, space.Name)},
 		{"CLIENT_ID", "cf"},
 		{"REFRESH_TOKEN", refreshToken},
 		{"CACHE_SIZE", "0"},
 		{"SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
-		{"GROUP_NAME", g()},
+		{"GROUP_NAME", group()},
 		{"SYSLOG_URL", opts.DrainURL},
 	}
 

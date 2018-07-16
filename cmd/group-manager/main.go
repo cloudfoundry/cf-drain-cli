@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/groupmanager"
@@ -17,9 +18,17 @@ func main() {
 		cfg.LogCacheHost,
 	)
 
-	var p groupmanager.GroupProviderFunc
-	p = func() []string {
+	var p groupmanager.GroupProvider
+	p = groupmanager.GroupProviderFunc(func() []string {
 		return []string{cfg.SourceID}
+	})
+
+	if cfg.SourceID == "" {
+		p = groupmanager.Space(
+			http.DefaultClient,
+			cfg.VCap.API,
+			cfg.VCap.SpaceGUID,
+		)
 	}
 
 	t := time.NewTicker(cfg.UpdateInterval)

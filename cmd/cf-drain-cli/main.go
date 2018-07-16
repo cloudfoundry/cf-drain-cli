@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/cf-drain-cli/internal/command"
 	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 	"code.cloudfoundry.org/cli/plugin"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type CFDrainCLI struct{}
@@ -70,10 +71,20 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("drain-service")
 		}
 		tf := command.NewTokenFetcher(configPath(log))
-		gp := func() string {
-			return fmt.Sprintf("%d", rand.Uint64())
+		command.PushServiceDrain(conn, args[1:], tf, logger, groupProvider)
+	case "drain-services-in-space":
+		if len(args) < 2 {
+			c.exitWithUsage("drain-services-in-space")
 		}
-		command.PushServiceDrain(conn, args[1:], tf, logger, gp)
+		tf := command.NewTokenFetcher(configPath(log))
+		command.PushSpaceServiceDrain(
+			conn,
+			args[1:],
+			tf,
+			logger,
+			groupProvider,
+			guidProvider,
+		)
 	}
 }
 
@@ -160,6 +171,16 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 					},
 				},
 			},
+			{
+				Name:     "drain-services-in-space",
+				HelpText: "Pushes app to drain all services in space",
+				UsageDetails: plugin.Usage{
+					Usage: "drain-services-in-space SYSLOG_DRAIN_URL --path PATH",
+					Options: map[string]string{
+						"-path": "Path to the service drain zip file.",
+					},
+				},
+			},
 		},
 	}
 }
@@ -241,4 +262,17 @@ func configPath(log *log.Logger) string {
 		log.Fatal(err)
 	}
 	return path.Join(usr.HomeDir, ".cf", "config.json")
+}
+
+func groupProvider() string {
+	return fmt.Sprintf("%d", rand.Uint64())
+}
+
+func guidProvider() string {
+	u, err := uuid.NewV4()
+	if err != nil {
+		log.Panicf("failed to generate UUID: %s", err)
+	}
+
+	return u.String()
 }

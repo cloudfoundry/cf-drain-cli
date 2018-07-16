@@ -3,16 +3,27 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"os"
 	"strings"
 	"time"
 
 	envstruct "code.cloudfoundry.org/go-envstruct"
 )
 
+type VCap struct {
+	API       string `json:"cf_api"`
+	SpaceGUID string `json:"space_id"`
+}
+
+func (v *VCap) UnmarshalEnv(data string) error {
+	err := json.Unmarshal([]byte(data), &v)
+
+	return err
+}
+
 type Config struct {
-	SourceID  string `env:"SOURCE_ID,        required"`
+	SourceID  string `env:"SOURCE_ID"`
 	GroupName string `env:"GROUP_NAME,       required"`
+	VCap      VCap   `env:"VCAP_APPLICATION, required"`
 
 	UpdateInterval time.Duration `env:"UPDATE_INTERVAL"`
 
@@ -28,24 +39,8 @@ func loadConfig() Config {
 		log.Fatalf("failed to load config")
 	}
 
-	cfg.LogCacheHost = getLogCacheHost()
+	cfg.LogCacheHost = strings.Replace(cfg.VCap.API, "https://api", "http://log-cache", 1)
+	cfg.VCap.API = strings.Replace(cfg.VCap.API, "https://api", "http://api", 1)
+
 	return cfg
-}
-
-func getLogCacheHost() string {
-	vcapEnv := os.Getenv("VCAP_APPLICATION")
-	if vcapEnv == "" {
-		log.Fatalf("failed to load VCAP_APPLICATION from envrionment")
-	}
-
-	var vcap struct {
-		API string `json:"cf_api"`
-	}
-
-	err := json.Unmarshal([]byte(vcapEnv), &vcap)
-	if err != nil {
-		log.Fatalf("failed to unmarshal VCAP_APPLICATION")
-	}
-
-	return strings.Replace(vcap.API, "https://api", "http://log-cache", 1)
 }

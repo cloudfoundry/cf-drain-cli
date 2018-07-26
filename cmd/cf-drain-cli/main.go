@@ -73,7 +73,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		tf := command.NewTokenFetcher(configPath(log))
 		command.PushServiceDrain(conn, args[1:], tf, logger, groupProvider)
 	case "drain-services-in-space":
-		if len(args) < 2 {
+		if len(args) < 3 {
 			c.exitWithUsage("drain-services-in-space")
 		}
 		tf := command.NewTokenFetcher(configPath(log))

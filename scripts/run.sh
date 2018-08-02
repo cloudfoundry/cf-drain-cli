@@ -6,9 +6,6 @@ PORT=9999 PROXY_HEALTH_PORT=10000 ./proxy &
 echo $! > /tmp/pids
 sleep 2
 
-HTTP_PROXY=localhost:9999 ./group-manager &
-echo $! >> /tmp/pids
-
 HTTP_PROXY=localhost:9999 ./syslog-forwarder &
 echo $! >> /tmp/pids
 

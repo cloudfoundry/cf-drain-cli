@@ -1,47 +1,66 @@
 package main
 
 import (
-	"context"
 	"expvar"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"code.cloudfoundry.org/cf-drain-cli/internal/egress"
+	"code.cloudfoundry.org/cf-drain-cli/internal/stream"
 	envstruct "code.cloudfoundry.org/go-envstruct"
-	logcache "code.cloudfoundry.org/go-log-cache"
+	loggregator "code.cloudfoundry.org/go-loggregator"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	orchestrator "code.cloudfoundry.org/go-orchestrator"
 	"code.cloudfoundry.org/loggregator-tools/log-cache-forwarders/pkg/expvarfilter"
 	"code.cloudfoundry.org/loggregator-tools/log-cache-forwarders/pkg/metrics"
 )
 
 func main() {
-	log := log.New(os.Stderr, "[Syslog-Forwarder] ", log.LstdFlags)
-	log.Println("Starting Syslog Forwarder...")
-	defer log.Println("Closing Syslog Forwarder...")
-
-	rand.Seed(time.Now().UnixNano())
+	l := log.New(os.Stderr, "[Syslog-Forwarder] ", log.LstdFlags)
+	l.Println("Starting Syslog Forwarder...")
+	defer l.Println("Closing Syslog Forwarder...")
 
 	cfg := LoadConfig()
 	envstruct.WriteReport(&cfg)
 
-	m := startMetricsEmit(log)
+	m := startMetricsEmit(l)
+	success := m.NewCounter("EgressSuccess")
+	failure := m.NewCounter("EgressFailure")
 
-	groupClient := logcache.NewShardGroupReaderClient(
-		cfg.LogCacheHost,
+	client := loggregator.NewRLPGatewayClient(cfg.Vcap.RLPAddr,
+		loggregator.WithRLPGatewayClientLogger(l),
 	)
 
-	logcache.Walk(
-		context.Background(),
-		cfg.GroupName,
-		egress.NewVisitor(createSyslogWriter(cfg, log), m, log),
-		groupClient.BuildReader(rand.Uint64()),
-		logcache.WithWalkStartTime(time.Now()),
-		logcache.WithWalkBackoff(logcache.NewAlwaysRetryBackoff(250*time.Millisecond)),
-		logcache.WithWalkLimit(1000),
-		logcache.WithWalkLogger(log),
+	streamAggregator := stream.NewAggregator(client, cfg.ShardID, l)
+	o := createOrchestrator(streamAggregator)
+
+	sm := stream.NewSourceManager(
+		&stream.SingleOrSpaceProvider{cfg.SourceID, cfg.Vcap.API, cfg.Vcap.SpaceGUID},
+		o,
+		cfg.UpdateInterval,
 	)
+	go sm.Start()
+
+	envs := streamAggregator.Consume()
+	w := createSyslogWriter(cfg, l)
+	for e := range envs {
+		err := w.Write(e.(*loggregator_v2.Envelope))
+		if err != nil {
+			l.Printf("error writing envelope to syslog: %s", err)
+			failure(1)
+			continue
+		}
+		success(1)
+	}
+}
+
+func createOrchestrator(s *stream.Aggregator) *orchestrator.Orchestrator {
+	o := orchestrator.New(
+		stream.Communicator{},
+	)
+	o.AddWorker(s)
+	return o
 }
 
 func createSyslogWriter(cfg Config, log *log.Logger) egress.WriteCloser {

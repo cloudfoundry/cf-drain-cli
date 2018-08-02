@@ -1,4 +1,4 @@
-package main_test
+package stream_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestGroupManager(t *testing.T) {
+func TestStream(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "GroupManager Suite")
+	RunSpecs(t, "Stream Suite")
 }

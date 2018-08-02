@@ -4,39 +4,33 @@ import (
 	"encoding/json"
 	"log"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
 	envstruct "code.cloudfoundry.org/go-envstruct"
-	"github.com/nu7hatch/gouuid"
 )
 
 type Config struct {
+	SourceID       string `env:"SOURCE_ID,                 report"`
 	SourceHostname string `env:"SOURCE_HOSTNAME, required, report"`
-	GroupName      string `env:"GROUP_NAME, required, report"`
 
 	SyslogURL *url.URL `env:"SYSLOG_URL, required, report"`
 
 	SkipCertVerify bool `env:"SKIP_CERT_VERIFY, report"`
 
-	DialTimeout time.Duration `env:"DIAL_TIMEOUT, report"`
-	IOTimeout   time.Duration `env:"IO_TIMEOUT, report"`
-	KeepAlive   time.Duration `env:"KEEP_ALIVE, report"`
+	UpdateInterval time.Duration `env:"UPDATE_INTERVAL, report"`
+	DialTimeout    time.Duration `env:"DIAL_TIMEOUT,    report"`
+	IOTimeout      time.Duration `env:"IO_TIMEOUT,      report"`
+	KeepAlive      time.Duration `env:"KEEP_ALIVE,      report"`
+	Vcap           VCap          `env:"VCAP_APPLICATION,        required"`
 
-	// Derived from VcapApplication
-	LogCacheHost string
+	ShardID string // Comes from the VCAP application ID
 }
 
 func LoadConfig() Config {
-	defaultGroup, err := uuid.NewV4()
-	if err != nil {
-		log.Fatalf("unable to generate uuid: %s", err)
-	}
-
 	cfg := Config{
+		UpdateInterval: 30 * time.Second,
 		SkipCertVerify: false,
-		GroupName:      defaultGroup.String(),
 		KeepAlive:      10 * time.Second,
 		DialTimeout:    5 * time.Second,
 		IOTimeout:      time.Minute,
@@ -45,25 +39,26 @@ func LoadConfig() Config {
 		log.Fatalf("failed to load config from environment: %s", err)
 	}
 
-	cfg.LogCacheHost = getLogCacheHost()
+	cfg.ShardID = cfg.Vcap.AppID
 
 	return cfg
 }
 
-func getLogCacheHost() string {
-	vcapEnv := os.Getenv("VCAP_APPLICATION")
-	if vcapEnv == "" {
-		log.Fatalf("failed to load VCAP_APPLICATION from envrionment")
-	}
+type VCap struct {
+	AppID     string `json:"application_id"`
+	API       string `json:"cf_api"`
+	SpaceGUID string `json:"space_id"`
 
-	var vcap struct {
-		API string `json:"cf_api"`
-	}
+	// Derived from VcapApplication
+	RLPAddr string
+}
 
-	err := json.Unmarshal([]byte(vcapEnv), &vcap)
-	if err != nil {
-		log.Fatalf("failed to unmarshal VCAP_APPLICATION")
+func (v *VCap) UnmarshalEnv(data string) error {
+	if err := json.Unmarshal([]byte(data), &v); err != nil {
+		return err
 	}
+	v.RLPAddr = strings.Replace(v.API, "https://api", "http://log-stream", 1)
+	v.API = strings.Replace(v.API, "https", "http", 1)
 
-	return strings.Replace(vcap.API, "https://api", "http://log-cache", 1)
+	return nil
 }

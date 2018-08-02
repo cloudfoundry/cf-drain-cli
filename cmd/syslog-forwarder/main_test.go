@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"os/exec"
 	"time"
 
@@ -112,8 +111,8 @@ var _ = Describe("Main", func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			cmd := exec.CommandContext(ctx, path)
 			cmd.Env = forwarderEnv
-			cmd.Stderr = os.Stderr
-			cmd.Stdout = os.Stdout
+			cmd.Stderr = GinkgoWriter
+			cmd.Stdout = GinkgoWriter
 			err = cmd.Start()
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -163,8 +162,8 @@ var _ = Describe("Main", func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			cmd := exec.CommandContext(ctx, path)
 			cmd.Env = forwarderEnv
-			cmd.Stderr = os.Stderr
-			cmd.Stdout = os.Stdout
+			cmd.Stderr = GinkgoWriter
+			cmd.Stdout = GinkgoWriter
 			err = cmd.Start()
 			Expect(err).ToNot(HaveOccurred())
 		})

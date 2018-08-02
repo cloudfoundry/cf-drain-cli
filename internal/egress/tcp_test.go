@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"time"
 
+	"code.cloudfoundry.org/cf-drain-cli/internal/egress"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
-	"code.cloudfoundry.org/loggregator-tools/log-cache-forwarders/pkg/egress/syslog"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -19,10 +19,10 @@ import (
 var _ = Describe("TCPWriter", func() {
 	var (
 		listener net.Listener
-		binding  = &syslog.URLBinding{
+		binding  = &egress.URLBinding{
 			Hostname: "test-hostname",
 		}
-		netConf = syslog.NetworkConfig{
+		netConf = egress.NetworkConfig{
 			WriteTimeout: time.Second,
 			DialTimeout:  100 * time.Millisecond,
 		}
@@ -41,13 +41,13 @@ var _ = Describe("TCPWriter", func() {
 
 	Describe("Write()", func() {
 		var (
-			writer syslog.WriteCloser
+			writer egress.WriteCloser
 		)
 
 		BeforeEach(func() {
 			var err error
 
-			writer = syslog.NewTCPWriter(
+			writer = egress.NewTCPWriter(
 				binding,
 				netConf,
 			)
@@ -65,7 +65,7 @@ var _ = Describe("TCPWriter", func() {
 			actual, err := buf.ReadString('\n')
 			Expect(err).ToNot(HaveOccurred())
 
-			expected := fmt.Sprintf("89 <%d>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [APP/2] - - just a test\n", expectedPriority)
+			expected := fmt.Sprintf("101 <%d>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [APP/2] - - just a test\n", expectedPriority)
 			Expect(actual).To(Equal(expected))
 		},
 			Entry("stdout", loggregator_v2.Log_OUT, 14),
@@ -84,11 +84,11 @@ var _ = Describe("TCPWriter", func() {
 			actual, err := buf.ReadString('\n')
 			Expect(err).ToNot(HaveOccurred())
 
-			expected := fmt.Sprintf("%d <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [%s] - - just a test\n", expectedLength, expectedProcessID)
+			expected := fmt.Sprintf("%d <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [%s] - - just a test\n", expectedLength, expectedProcessID)
 			Expect(actual).To(Equal(expected))
 		},
-			Entry("app source type", "app/foo/bar", "26", "APP/FOO/BAR/26", 98),
-			Entry("other source type", "other", "1", "OTHER/1", 91),
+			Entry("app source type", "app/foo/bar", "26", "APP/FOO/BAR/26", 110),
+			Entry("other source type", "other", "1", "OTHER/1", 103),
 		)
 
 		It("writes gauge metrics to the tcp drain", func() {
@@ -108,11 +108,27 @@ var _ = Describe("TCPWriter", func() {
 			}
 
 			Expect(msgs).To(ConsistOf(
-				"128 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [1] - [gauge@47450 name=\"cpu\" value=\"0.23\" unit=\"percentage\"] \n",
-				"124 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [1] - [gauge@47450 name=\"disk\" value=\"1234\" unit=\"bytes\"] \n",
-				"130 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [1] - [gauge@47450 name=\"disk_quota\" value=\"1024\" unit=\"bytes\"] \n",
-				"126 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [1] - [gauge@47450 name=\"memory\" value=\"5423\" unit=\"bytes\"] \n",
-				"132 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [1] - [gauge@47450 name=\"memory_quota\" value=\"8000\" unit=\"bytes\"] \n",
+				"140 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [gauge@47450 name=\"cpu\" value=\"0.23\" unit=\"percentage\"] \n",
+				"136 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [gauge@47450 name=\"disk\" value=\"1234\" unit=\"bytes\"] \n",
+				"142 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [gauge@47450 name=\"disk_quota\" value=\"1024\" unit=\"bytes\"] \n",
+				"138 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [gauge@47450 name=\"memory\" value=\"5423\" unit=\"bytes\"] \n",
+				"144 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [gauge@47450 name=\"memory_quota\" value=\"8000\" unit=\"bytes\"] \n",
+			))
+		})
+
+		It("appends the envelope sourceid to the counter hostname", func() {
+			env := buildCounterEnvelope("1")
+			Expect(writer.Write(env)).To(Succeed())
+
+			conn, err := listener.Accept()
+			Expect(err).ToNot(HaveOccurred())
+			buf := bufio.NewReader(conn)
+
+			actual, err := buf.ReadString('\n')
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(actual).To(Equal(
+				"141 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [counter@47450 name=\"some-counter\" total=\"99\" delta=\"1\"] \n",
 			))
 		})
 
@@ -128,7 +144,7 @@ var _ = Describe("TCPWriter", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(actual).To(Equal(
-				"129 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [1] - [counter@47450 name=\"some-counter\" total=\"99\" delta=\"1\"] \n",
+				"141 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [1] - [counter@47450 name=\"some-counter\" total=\"99\" delta=\"1\"] \n",
 			))
 		})
 
@@ -143,7 +159,7 @@ var _ = Describe("TCPWriter", func() {
 			actual, err := buf.ReadString('\n')
 			Expect(err).ToNot(HaveOccurred())
 
-			expected := fmt.Sprintf("97 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [OTHER/1] - - no null `` please\n")
+			expected := fmt.Sprintf("109 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [OTHER/1] - - no null `` please\n")
 			Expect(actual).To(Equal(expected))
 		})
 
@@ -161,7 +177,7 @@ var _ = Describe("TCPWriter", func() {
 			actual, err := buf.ReadString('\n')
 			Expect(err).ToNot(HaveOccurred())
 
-			expected := "89 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [APP/2] - - just a test\n"
+			expected := "101 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [APP/2] - - just a test\n"
 			Expect(actual).To(Equal(expected))
 		})
 
@@ -182,7 +198,7 @@ var _ = Describe("TCPWriter", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(actual).To(Equal(
-				"93 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [MY-TASK/2] - - just a test\n",
+				"105 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [MY-TASK/2] - - just a test\n",
 			))
 		})
 	})
@@ -192,7 +208,7 @@ var _ = Describe("TCPWriter", func() {
 			env := buildLogEnvelope("APP", "2", "just a test", loggregator_v2.Log_OUT)
 			binding.URL, _ = url.Parse("syslog://localhost-garbage:9999")
 
-			writer := syslog.NewTCPWriter(
+			writer := egress.NewTCPWriter(
 				binding,
 				netConf,
 			)
@@ -207,14 +223,14 @@ var _ = Describe("TCPWriter", func() {
 
 	Describe("Cancel Context", func() {
 		var (
-			writer syslog.WriteCloser
+			writer egress.WriteCloser
 			conn   net.Conn
 		)
 
 		Context("with a happy dialer", func() {
 			BeforeEach(func() {
 				var err error
-				writer = syslog.NewTCPWriter(
+				writer = egress.NewTCPWriter(
 					binding,
 					netConf,
 				)

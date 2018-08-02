@@ -94,7 +94,7 @@ var _ = Describe("HTTPWriter", func() {
 		Expect(drain.messages).To(HaveLen(3))
 		expected := &rfc5424.Message{
 			AppName:   "test-app-id",
-			Hostname:  "test-hostname",
+			Hostname:  "test-hostname.test-app-id",
 			Priority:  rfc5424.Priority(14),
 			ProcessID: "[APP/1]",
 			Message:   []byte("just a test\n"),
@@ -107,7 +107,7 @@ var _ = Describe("HTTPWriter", func() {
 
 		expected = &rfc5424.Message{
 			AppName:   "test-app-id",
-			Hostname:  "test-hostname",
+			Hostname:  "test-hostname.test-app-id",
 			Priority:  rfc5424.Priority(11),
 			ProcessID: "[CELL/5]",
 			Message:   []byte("log from cell\n"),

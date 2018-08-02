@@ -75,7 +75,7 @@ var _ = Describe("TLSWriter", func() {
 		actual, err := buf.ReadString('\n')
 		Expect(err).ToNot(HaveOccurred())
 
-		expected := fmt.Sprintf("89 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname test-app-id [APP/2] - - just a test\n")
+		expected := fmt.Sprintf("101 <14>1 1970-01-01T00:00:00.012345+00:00 test-hostname.test-app-id test-app-id [APP/2] - - just a test\n")
 		Expect(actual).To(Equal(expected))
 	})
 })

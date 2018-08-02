@@ -256,7 +256,7 @@ func messageBytes(appName string) []byte {
 	msg := &rfc5424.Message{
 		Timestamp: time.Unix(0, logTimestamp).UTC(),
 		AppName:   appName,
-		Hostname:  "TEST_HOSTNAME",
+		Hostname:  "TEST_HOSTNAME." + appName,
 		Priority:  rfc5424.Priority(14),
 		ProcessID: "[APP/PROC/WEB/0]",
 		Message:   []byte("log body\n"),

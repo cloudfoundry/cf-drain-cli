@@ -1,9 +1,7 @@
 package command
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"path"
 	"strconv"
 	"strings"
@@ -27,12 +25,10 @@ type pushSpaceDrainOpts struct {
 	DrainURL  string
 	Path      string `long:"path"`
 	DrainType string `long:"type"`
-	Force     bool   `long:"force"`
 }
 
 func PushSpaceDrain(
 	cli plugin.CliConnection,
-	reader io.Reader,
 	args []string,
 	d Downloader,
 	f RefreshTokenFetcher,
@@ -40,7 +36,6 @@ func PushSpaceDrain(
 ) {
 	opts := pushSpaceDrainOpts{
 		DrainType: "all",
-		Force:     false,
 		DrainName: "space-drain",
 	}
 
@@ -55,23 +50,6 @@ func PushSpaceDrain(
 	}
 
 	opts.DrainURL = args[0]
-
-	if !opts.Force {
-		log.Print(
-			"The space drain functionality is an experimental feature. ",
-			"See https://github.com/cloudfoundry/cf-drain-cli#space-drain-experimental for more details.\n",
-			"Do you wish to proceed? [y/N] ",
-		)
-
-		buf := bufio.NewReader(reader)
-		resp, err := buf.ReadString('\n')
-		if err != nil {
-			log.Fatalf("Failed to read user input: %s", err)
-		}
-		if strings.TrimSpace(strings.ToLower(resp)) != "y" {
-			log.Fatalf("OK, exiting.")
-		}
-	}
 
 	app, _ := cli.GetApp(opts.DrainName)
 	if app.Name == opts.DrainName {

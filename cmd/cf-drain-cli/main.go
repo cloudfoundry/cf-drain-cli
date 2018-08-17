@@ -60,7 +60,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("drain-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
 		}
 		tokenFetcher := command.NewTokenFetcher(configPath(log))
-		command.PushSpaceDrain(conn, os.Stdin, args[1:], downloader, tokenFetcher, logger)
+		command.PushSpaceDrain(conn, args[1:], downloader, tokenFetcher, logger)
 	case "delete-drain-space":
 		if len(args) < 2 {
 			c.exitWithUsage("delete-drain-space")
@@ -79,6 +79,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		tf := command.NewTokenFetcher(configPath(log))
 		command.PushSpaceServiceDrain(
 			conn,
+			os.Stdin,
 			args[1:],
 			tf,
 			logger,
@@ -147,7 +148,6 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 						"-drain-name": "Name for the space drain",
 						"-path":       "Path to the space drain app to push. If omitted the latest release will be downloaded",
 						"-type":       "Which log type to filter on (logs, metrics, all). Default is all",
-						"-force":      "Skip warning prompt. Default is false",
 					},
 				},
 			},
@@ -177,7 +177,8 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "drain-services-in-space SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
-						"-path": "Path to the service drain zip file.",
+						"-path":  "Path to the service drain zip file.",
+						"-force": "Skip warning prompt. Default is false",
 					},
 				},
 			},

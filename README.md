@@ -79,12 +79,7 @@ USAGE:
    drains
 ```
 
-#### Space Drain (Experimental)
-
-**Note:**
-The space drain functionality is an experimental feature. It can create additional
-load in large deployments because it binds every app in the space to a drain. Be 
-sure to consider your deployment size when deciding whether to use a full space drain.
+#### Space Drain
 
 ```
 NAME:
@@ -96,10 +91,29 @@ USAGE:
 OPTIONS:
    --drain-name               Name for the space drain. Required
    --drain-url                Syslog endpoint for the space drain. Required
-   --force                    Skip warning prompt. Default is false
    --path                     Path to the space drain app to push. If omitted the latest release will be downloaded
    --type                     Which log type to filter on (logs, metrics, all). Default is all
    --username                 Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)
+```
+
+#### Drain Services In Space
+
+**Note:**
+The drain services in space functionality is an experimental feature. It uses
+an experimental API known as the RLP (Reverse Log Proxy) Gateway. The RLP
+Gateway is not deployed with CF Deployment by default, if you are unsure if it
+is available to you, please check with your operator.
+
+```
+NAME:
+   drain-services-in-space - Pushes app to drain all services in space
+
+USAGE:
+   drain-services-in-space SYSLOG_DRAIN_URL --path PATH
+
+OPTIONS:
+   --force       Skip warning prompt. Default is false
+   --path        Path to the service drain zip file.
 ```
 
 [cf-cli]: https://code.cloudfoundry.org/cli

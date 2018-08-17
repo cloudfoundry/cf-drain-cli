@@ -3,6 +3,7 @@ package command_test
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -18,6 +19,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		refreshTokenFetcher *stubRefreshTokenFetcher
 		groupNameProvider   func() string
 		guidProvider        func() string
+		reader              *strings.Reader
 	)
 
 	BeforeEach(func() {
@@ -34,11 +36,14 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 
 		groupNameProvider = func() string { return "test-group" }
 		guidProvider = func() string { return "a-guid" }
+
+		reader = strings.NewReader("y\n")
 	})
 
 	It("pushes app from the given space-drain zip file", func() {
 		command.PushSpaceServiceDrain(
 			cli,
+			reader,
 			[]string{
 				"https://syslog-drain",
 				"--path", "service-drain-zip",
@@ -48,6 +53,12 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			groupNameProvider,
 			guidProvider,
 		)
+
+		Expect(logger.printMessages).To(ConsistOf(
+			"The drain services in space functionality is an experimental feature. " +
+				"See https://github.com/cloudfoundry/cf-drain-cli#drain-services-in-space for more details.\n" +
+				"Do you wish to proceed? [y/N] ",
+		))
 
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
@@ -80,12 +91,55 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		))
 	})
 
+	It("accepts capital Y for warning prompt", func() {
+		reader = strings.NewReader("Y\n")
+		command.PushSpaceServiceDrain(
+			cli,
+			reader,
+			[]string{
+				"https://syslog-drain",
+				"--path", "service-drain-zip",
+			},
+			refreshTokenFetcher,
+			logger,
+			groupNameProvider,
+			guidProvider,
+		)
+
+		Expect(logger.printMessages).To(ConsistOf(
+			"The drain services in space functionality is an experimental feature. " +
+				"See https://github.com/cloudfoundry/cf-drain-cli#drain-services-in-space for more details.\n" +
+				"Do you wish to proceed? [y/N] ",
+		))
+		Expect(cli.cliCommandArgs).To(HaveLen(2))
+	})
+
+	It("does not show warning prompt with --force flag", func() {
+		command.PushSpaceServiceDrain(
+			cli,
+			nil,
+			[]string{
+				"https://syslog-drain",
+				"--path", "service-drain-zip",
+				"--force",
+			},
+			refreshTokenFetcher,
+			logger,
+			groupNameProvider,
+			guidProvider,
+		)
+
+		Expect(logger.printMessages).To(BeEmpty())
+		Expect(cli.cliCommandArgs).To(HaveLen(2))
+	})
+
 	DescribeTable("fatally logs if interactions with the plugin fails", func(setup func(), msg string) {
 		setup()
 
 		Expect(func() {
 			command.PushSpaceServiceDrain(
 				cli,
+				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",
@@ -110,6 +164,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		Expect(func() {
 			command.PushSpaceServiceDrain(
 				cli,
+				reader,
 				args,
 				refreshTokenFetcher,
 				logger,
@@ -129,4 +184,24 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		}, 2),
 		Entry("too few", []string{}, 0),
 	)
+
+	It("fatally logs if confirmation is given anything other than y", func() {
+		reader = strings.NewReader("no\n")
+		Expect(func() {
+			command.PushSpaceServiceDrain(
+				cli,
+				reader,
+				[]string{
+					"https://syslog-drain",
+					"--path", "service-drain-zip",
+				},
+				refreshTokenFetcher,
+				logger,
+				groupNameProvider,
+				guidProvider,
+			)
+		}).To(Panic())
+
+		Expect(logger.fatalfMessage).To(Equal("OK, exiting."))
+	})
 })

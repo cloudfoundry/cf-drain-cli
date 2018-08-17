@@ -2,7 +2,6 @@ package command_test
 
 import (
 	"errors"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -17,7 +16,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		cli                 *stubCliConnection
 		downloader          *stubDownloader
 		refreshTokenFetcher *stubRefreshTokenFetcher
-		reader              *strings.Reader
 	)
 
 	BeforeEach(func() {
@@ -28,7 +26,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		cli.apiEndpoint = "https://api.something.com"
 		downloader = newStubDownloader()
 		downloader.path = "/downloaded/temp/dir/space_drain"
-		reader = strings.NewReader("y\n")
 
 		refreshTokenFetcher = newStubRefreshTokenFetcher()
 		refreshTokenFetcher.token = "some-refresh-token"
@@ -37,7 +34,6 @@ var _ = Describe("PushSpaceDrain", func() {
 	It("pushes app from the given space-drain directory", func() {
 		command.PushSpaceDrain(
 			cli,
-			reader,
 			[]string{
 				"https://some-drain",
 				"--path", "some-temp-dir",
@@ -48,12 +44,6 @@ var _ = Describe("PushSpaceDrain", func() {
 			refreshTokenFetcher,
 			logger,
 		)
-
-		Expect(logger.printMessages).To(ConsistOf(
-			"The space drain functionality is an experimental feature. " +
-				"See https://github.com/cloudfoundry/cf-drain-cli#space-drain-experimental for more details.\n" +
-				"Do you wish to proceed? [y/N] ",
-		))
 
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
@@ -91,7 +81,6 @@ var _ = Describe("PushSpaceDrain", func() {
 	It("downloads the app before pushing app from the given space-drain directory", func() {
 		command.PushSpaceDrain(
 			cli,
-			reader,
 			[]string{
 				"https://some-drain",
 				"--drain-name", "some-drain",
@@ -118,116 +107,9 @@ var _ = Describe("PushSpaceDrain", func() {
 		))
 	})
 
-	It("accepts capital Y for warning prompt", func() {
-		reader = strings.NewReader("Y\n")
-		command.PushSpaceDrain(
-			cli,
-			reader,
-			[]string{
-				"https://some-drain",
-				"--path", "some-temp-dir",
-				"--drain-name", "some-drain",
-				"--type", "metrics",
-			},
-			downloader,
-			refreshTokenFetcher,
-			logger,
-		)
-
-		Expect(logger.printMessages).To(ConsistOf(
-			"The space drain functionality is an experimental feature. " +
-				"See https://github.com/cloudfoundry/cf-drain-cli#space-drain-experimental for more details.\n" +
-				"Do you wish to proceed? [y/N] ",
-		))
-
-		Expect(cli.cliCommandArgs).To(HaveLen(2))
-		Expect(cli.cliCommandArgs[0]).To(Equal(
-			[]string{
-				"push", "some-drain",
-				"-p", "some-temp-dir",
-				"-b", "binary_buildpack",
-				"-c", "./space_drain",
-				"--health-check-type", "process",
-				"--no-start",
-				"--no-route",
-			},
-		))
-
-		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
-		))
-
-		Expect(cli.cliCommandArgs[1]).To(Equal(
-			[]string{
-				"start", "some-drain",
-			},
-		))
-	})
-
-	It("does not show warning prompt with --force flag", func() {
-		command.PushSpaceDrain(
-			cli,
-			nil,
-			[]string{
-				"https://some-drain",
-				"--path", "some-temp-dir",
-				"--drain-name", "some-drain",
-				"--type", "metrics",
-				"--force",
-			},
-			downloader,
-			refreshTokenFetcher,
-			logger,
-		)
-
-		Expect(logger.printMessages).To(BeEmpty())
-
-		Expect(cli.cliCommandArgs).To(HaveLen(2))
-		Expect(cli.cliCommandArgs[0]).To(Equal(
-			[]string{
-				"push", "some-drain",
-				"-p", "some-temp-dir",
-				"-b", "binary_buildpack",
-				"-c", "./space_drain",
-				"--health-check-type", "process",
-				"--no-start",
-				"--no-route",
-			},
-		))
-
-		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
-		))
-
-		Expect(cli.cliCommandArgs[1]).To(Equal(
-			[]string{
-				"start", "some-drain",
-			},
-		))
-	})
-
 	It("pushes downloaded app", func() {
 		command.PushSpaceDrain(
 			cli,
-			reader,
 			[]string{
 				"https://some-drain",
 				"--drain-name", "some-drain",
@@ -275,11 +157,9 @@ var _ = Describe("PushSpaceDrain", func() {
 	It("defaults to space-drain if the drain-name is not provided", func() {
 		command.PushSpaceDrain(
 			cli,
-			reader,
 			[]string{
 				"https://some-drain",
 				"--path", "some-temp-dir",
-				"--force",
 			},
 			downloader,
 			refreshTokenFetcher,
@@ -315,7 +195,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--drain-name", "some-drain",
@@ -339,7 +218,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",
@@ -363,33 +241,11 @@ var _ = Describe("PushSpaceDrain", func() {
 		Entry("DRAIN_SCOPE", "DRAIN_SCOPE"),
 	)
 
-	It("fatally logs if confirmation is given anything other than y", func() {
-		reader = strings.NewReader("no\n")
-
-		Expect(func() {
-			command.PushSpaceDrain(
-				cli,
-				reader,
-				[]string{
-					"https://some-drain",
-					"--path", "some-temp-dir",
-					"--drain-name", "some-drain",
-				},
-				downloader,
-				refreshTokenFetcher,
-				logger,
-			)
-		}).To(Panic())
-
-		Expect(logger.fatalfMessage).To(Equal("OK, exiting."))
-	})
-
 	It("fatally logs if fetching the space fails", func() {
 		cli.currentSpaceError = errors.New("some-error")
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",
@@ -408,7 +264,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",
@@ -427,7 +282,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",
@@ -446,7 +300,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",
@@ -464,7 +317,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"--path", "some-temp-dir",
 					"--drain-name", "some-drain",
@@ -481,7 +333,6 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(func() {
 			command.PushSpaceDrain(
 				cli,
-				reader,
 				[]string{
 					"https://some-drain",
 					"--path", "some-temp-dir",

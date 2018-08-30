@@ -15,7 +15,6 @@ var _ = Describe("DeleteDrain", func() {
 		cli                 *stubCliConnection
 		logger              *stubLogger
 		reader              *bytes.Buffer
-		appDrainFetcher     *stubDrainFetcher
 		serviceDrainFetcher *stubDrainFetcher
 	)
 
@@ -28,7 +27,6 @@ var _ = Describe("DeleteDrain", func() {
 
 		reader = bytes.NewBuffer(nil)
 
-		appDrainFetcher = newStubDrainFetcher()
 		serviceDrainFetcher = newStubDrainFetcher()
 	})
 

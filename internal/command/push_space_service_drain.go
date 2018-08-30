@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -21,6 +22,7 @@ func PushSpaceServiceDrain(
 	cli plugin.CliConnection,
 	reader io.Reader,
 	args []string,
+	d Downloader,
 	f RefreshTokenFetcher,
 	log Logger,
 	group GroupNameProvider,
@@ -79,6 +81,12 @@ func PushSpaceServiceDrain(
 
 	opts.DrainName = fmt.Sprintf("space-services-forwarder-%s", guid())
 	opts.DrainURL = args[0]
+
+	if opts.Path == "" {
+		log.Printf("Downloading latest space service drain from github...")
+		opts.Path = path.Dir(d.Download("space_service_drain"))
+		log.Printf("Done downloading space service drain from github.")
+	}
 
 	_, err = cli.CliCommand(
 		"push", opts.DrainName,

@@ -81,6 +81,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			conn,
 			os.Stdin,
 			args[1:],
+			downloader,
 			tf,
 			logger,
 			groupProvider,
@@ -177,7 +178,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "drain-services-in-space SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
-						"-path":  "Path to the service drain zip file.",
+						"-path":  "Path to the service drain zip file. If omitted the latest release will be downloaded",
 						"-force": "Skip warning prompt. Default is false",
 					},
 				},

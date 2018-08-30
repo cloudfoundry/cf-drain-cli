@@ -79,7 +79,7 @@ func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, erro
 
 func (s *stubCliConnection) GetCurrentSpace() (plugin_models.Space, error) {
 	return plugin_models.Space{
-		plugin_models.SpaceFields{
+		SpaceFields: plugin_models.SpaceFields{
 			Name: s.currentSpaceName,
 			Guid: s.currentSpaceGuid,
 		},
@@ -88,7 +88,7 @@ func (s *stubCliConnection) GetCurrentSpace() (plugin_models.Space, error) {
 
 func (s *stubCliConnection) GetCurrentOrg() (plugin_models.Organization, error) {
 	return plugin_models.Organization{
-		plugin_models.OrganizationFields{
+		OrganizationFields: plugin_models.OrganizationFields{
 			Name: s.currentOrgName,
 		},
 	}, s.currentOrgError

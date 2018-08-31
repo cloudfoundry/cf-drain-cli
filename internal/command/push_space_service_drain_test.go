@@ -110,15 +110,16 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			guidProvider,
 		)
 
-		Expect(downloader.assetName).To(HavePrefix("space-services-forwarder-"))
+		Expect(downloader.assetName).To(Equal("forwarder.zip"))
 
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "some-drain",
+				"push", "space-services-forwarder-a-guid",
 				"-p", "/downloaded/temp/dir",
+				"-i", "3",
 				"-b", "binary_buildpack",
-				"-c", "./space_drain",
+				"-c", "./run.sh",
 				"--health-check-type", "process",
 				"--no-start",
 				"--no-route",
@@ -143,33 +144,31 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
-				"push", "some-drain",
+				"push", "space-services-forwarder-a-guid",
 				"-p", "/downloaded/temp/dir",
+				"-i", "3",
 				"-b", "binary_buildpack",
-				"-c", "./space_drain",
+				"-c", "./run.sh",
 				"--health-check-type", "process",
 				"--no-start",
 				"--no-route",
 			},
 		))
 
-		Expect(downloader.assetName).To(Equal("space_drain"))
+		Expect(downloader.assetName).To(Equal("forwarder.zip"))
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
-			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
-			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
-			[]string{"set-env", "some-drain", "DRAIN_URL", "https://some-drain"},
-			[]string{"set-env", "some-drain", "DRAIN_TYPE", "metrics"},
-			[]string{"set-env", "some-drain", "API_ADDR", "https://api.something.com"},
-			[]string{"set-env", "some-drain", "UAA_ADDR", "https://uaa.something.com"},
-			[]string{"set-env", "some-drain", "CLIENT_ID", "cf"},
-			[]string{"set-env", "some-drain", "REFRESH_TOKEN", "some-refresh-token"},
-			[]string{"set-env", "some-drain", "SKIP_CERT_VERIFY", "false"},
-			[]string{"set-env", "some-drain", "DRAIN_SCOPE", "space"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "SOURCE_HOSTNAME", "org.space"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "CLIENT_ID", "cf"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "REFRESH_TOKEN", "refresh-token"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "CACHE_SIZE", "0"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "SKIP_CERT_VERIFY", "true"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "GROUP_NAME", "test-group"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "SYSLOG_URL", "https://some-drain"},
 		))
 
 		Expect(cli.cliCommandArgs[1]).To(Equal(
 			[]string{
-				"start", "some-drain",
+				"start", "space-services-forwarder-a-guid",
 			},
 		))
 	})

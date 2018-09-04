@@ -144,7 +144,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL,
 			"--drain-name", drainName,
 			"--path", path.Dir(execPath),
-			"--force",
 		)
 
 		defer CF("delete", drainName, "-f", "-r")
@@ -193,7 +192,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL,
 			"--drain-name", drainName,
 			"--path", path.Dir(execPath),
-			"--force",
 		)
 
 		CF(
@@ -283,7 +281,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL,
 			"--drain-name", "some-space-drain",
 			"--path", path.Dir(execPath),
-			"--force",
 		)
 
 		drainSpace := cf.Cf(
@@ -291,7 +288,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL,
 			"--drain-name", "some-space-drain",
 			"--path", path.Dir(execPath),
-			"--force",
 		)
 
 		Eventually(drainSpace).Should(Say("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
@@ -312,7 +308,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL1,
 			"--drain-name", "space-drain-papertrail",
 			"--path", path.Dir(execPath),
-			"--force",
 		)
 
 		CFWithTimeout(
@@ -321,7 +316,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			syslogDrainURL2,
 			"--drain-name", "space-drain-splunk",
 			"--path", path.Dir(execPath),
-			"--force",
 		)
 
 		papertrailDrainRegex := `(?m:^space-drain-papertrail)`

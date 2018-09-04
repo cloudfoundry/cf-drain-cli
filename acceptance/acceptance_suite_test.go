@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -15,7 +16,14 @@ import (
 
 func TestAcceptance(t *testing.T) {
 	_, err := acceptance.LoadConfig()
+
 	if err != nil {
+		// Pulling from os.Getenv directly, because the Config will fail and the
+		// value is not garunteed to be set.
+		if os.Getenv("MUST_RUN_ACCEPTANCE") == "true" {
+			t.Fatal(err)
+		}
+
 		// skipping tests from acceptance package
 		t.Skip()
 	}

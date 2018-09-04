@@ -25,7 +25,6 @@ func PushSpaceServiceDrain(
 	d Downloader,
 	f RefreshTokenFetcher,
 	log Logger,
-	group GroupNameProvider,
 	guid GUIDProvider,
 ) {
 	opts := pushSpaceServiceDrainOpts{
@@ -84,13 +83,13 @@ func PushSpaceServiceDrain(
 
 	if opts.Path == "" {
 		log.Printf("Downloading latest space service drain from github...")
-		opts.Path = path.Dir(d.Download("forwarder.zip"))
+		opts.Path = path.Dir(d.Download("forwarder.zip")) + "/forwarder.zip"
 		log.Printf("Done downloading space service drain from github.")
 	}
 
 	_, err = cli.CliCommand(
 		"push", opts.DrainName,
-		"-p", opts.Path+"/forwarder.zip",
+		"-p", opts.Path,
 		"-i", "3",
 		"-b", "binary_buildpack",
 		"-c", "./run.sh",
@@ -108,7 +107,6 @@ func PushSpaceServiceDrain(
 		{"REFRESH_TOKEN", refreshToken},
 		{"CACHE_SIZE", "0"},
 		{"SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
-		{"GROUP_NAME", group()},
 		{"SYSLOG_URL", opts.DrainURL},
 	}
 

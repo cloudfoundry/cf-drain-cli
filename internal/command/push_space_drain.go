@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"log"
 	"path"
 	"strconv"
 	"strings"
@@ -21,10 +22,12 @@ type RefreshTokenFetcher interface {
 }
 
 type pushSpaceDrainOpts struct {
-	DrainName string `long:"drain-name"`
-	DrainURL  string
-	Path      string `long:"path"`
-	DrainType string `long:"type"`
+	DrainName        string `long:"drain-name"`
+	DrainURL         string
+	Path             string `long:"path"`
+	DrainType        string `long:"type"`
+	IncludeServices  bool   `long:"include-services"`
+	ServiceDrainPath string `long:"path-to-service-drain-app"`
 }
 
 func PushSpaceDrain(
@@ -33,6 +36,7 @@ func PushSpaceDrain(
 	d Downloader,
 	f RefreshTokenFetcher,
 	log Logger,
+	guid GUIDProvider,
 ) {
 	opts := pushSpaceDrainOpts{
 		DrainType: "all",
@@ -51,15 +55,56 @@ func PushSpaceDrain(
 
 	opts.DrainURL = args[0]
 
-	app, _ := cli.GetApp(opts.DrainName)
-	if app.Name == opts.DrainName {
-		log.Fatalf("A drain with that name already exists. Use --drain-name to create a drain with a different name.")
+	checkIfDrainExists(cli, opts.DrainName)
+
+	refreshToken, err := f.RefreshToken()
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 
-	pushDrain(cli, opts.DrainName, "space_drain", nil, opts, d, f, log)
+	space, err := cli.GetCurrentSpace()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	org, err := cli.GetCurrentOrg()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	skipCertVerify, err := cli.IsSSLDisabled()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	pushDrain(cli, "space_drain", opts, d, log)
+	setEnvVarsForSpaceDrain(cli, space, opts, refreshToken, skipCertVerify, log)
+	cli.CliCommand("start", opts.DrainName)
+
+	spaceServiceDrainAppName := fmt.Sprintf("space-services-forwarder-%s", guid())
+	pushSpaceServiceDrain(cli, spaceServiceDrainAppName, opts, d, log)
+	setEnvVarsForSpaceServiceDrain(
+		cli,
+		space,
+		org,
+		refreshToken,
+		skipCertVerify,
+		spaceServiceDrainAppName,
+		opts.DrainURL,
+		log,
+	)
+
+	cli.CliCommand("start", spaceServiceDrainAppName)
 }
 
-func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]string, opts pushSpaceDrainOpts, d Downloader, f RefreshTokenFetcher, log Logger) {
+func checkIfDrainExists(cli plugin.CliConnection, appName string) {
+	app, _ := cli.GetApp(appName)
+	if app.Name == appName {
+		log.Fatalf("A drain with that name already exists. Use --drain-name to create a drain with a different name.")
+	}
+}
+
+func pushDrain(cli plugin.CliConnection, command string, opts pushSpaceDrainOpts, d Downloader, log Logger) {
 	if opts.Path == "" {
 		log.Printf("Downloading latest space drain from github...")
 		opts.Path = path.Dir(d.Download(command))
@@ -67,7 +112,7 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 	}
 
 	_, err := cli.CliCommand(
-		"push", appName,
+		"push", opts.DrainName,
 		"-p", opts.Path,
 		"-b", "binary_buildpack",
 		"-c", fmt.Sprint("./", command),
@@ -78,21 +123,12 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
+}
 
-	space := currentSpace(cli, log)
+func setEnvVarsForSpaceDrain(cli plugin.CliConnection, space plugin_models.Space, opts pushSpaceDrainOpts, refreshToken string, skipCertVerify bool, log Logger) {
 	api := apiEndpoint(cli, log)
 
-	skipCertVerify, err := cli.IsSSLDisabled()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	refreshToken, err := f.RefreshToken()
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	sharedEnvs := [][]string{
+	envs := [][]string{
 		{"SPACE_ID", space.Guid},
 		{"DRAIN_NAME", opts.DrainName},
 		{"DRAIN_URL", opts.DrainURL},
@@ -105,15 +141,67 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 		{"DRAIN_SCOPE", "space"},
 	}
 
-	envs := append(sharedEnvs, extraEnvs...)
+	for _, env := range envs {
+		_, err := cli.CliCommandWithoutTerminalOutput("set-env", opts.DrainName, env[0], env[1])
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
+}
+
+func pushSpaceServiceDrain(cli plugin.CliConnection, appName string, opts pushSpaceDrainOpts, d Downloader, log Logger) {
+	if opts.ServiceDrainPath == "" {
+		log.Printf("Downloading latest space service drain from github...")
+		opts.ServiceDrainPath = path.Dir(d.Download("forwarder.zip")) + "/forwarder.zip"
+		log.Printf("Done downloading space service drain from github.")
+	}
+	_, err := cli.CliCommand(
+		"push", appName,
+		"-p", opts.ServiceDrainPath,
+		"-i", "3",
+		"-b", "binary_buildpack",
+		"-c", "./run.sh",
+		"--health-check-type", "process",
+		"--no-start",
+		"--no-route",
+	)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+}
+
+func setEnvVarsForSpaceServiceDrain(
+	cli plugin.CliConnection,
+	space plugin_models.Space,
+	org plugin_models.Organization,
+	refreshToken string,
+	skipCertVerify bool,
+	appName string,
+	drainURL string,
+	log Logger) {
+	envs := [][]string{
+		{"SOURCE_HOSTNAME", fmt.Sprintf("%s.%s", org, space)},
+		{"CLIENT_ID", "cf"},
+		{"REFRESH_TOKEN", refreshToken},
+		{"CACHE_SIZE", "0"},
+		{"SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
+		{"SYSLOG_URL", drainURL},
+	}
+
 	for _, env := range envs {
 		_, err := cli.CliCommandWithoutTerminalOutput("set-env", appName, env[0], env[1])
 		if err != nil {
 			log.Fatalf("%s", err)
 		}
 	}
+}
 
-	cli.CliCommand("start", appName)
+func currentOrg(cli plugin.CliConnection, log Logger) plugin_models.Organization {
+	org, err := cli.GetCurrentOrg()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	return org
 }
 
 func currentSpace(cli plugin.CliConnection, log Logger) plugin_models.Space {

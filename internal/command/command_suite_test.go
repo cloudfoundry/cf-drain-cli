@@ -195,8 +195,8 @@ func (l *stubLogger) Print(a ...interface{}) {
 }
 
 type stubDownloader struct {
-	path      string
-	assetName string
+	path       string
+	assetNames []string
 }
 
 func newStubDownloader() *stubDownloader {
@@ -204,6 +204,6 @@ func newStubDownloader() *stubDownloader {
 }
 
 func (s *stubDownloader) Download(assetName string) string {
-	s.assetName = assetName
+	s.assetNames = append(s.assetNames, assetName)
 	return s.path
 }

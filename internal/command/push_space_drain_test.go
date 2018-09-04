@@ -15,6 +15,7 @@ var _ = Describe("PushSpaceDrain", func() {
 		logger              *stubLogger
 		cli                 *stubCliConnection
 		downloader          *stubDownloader
+		guidProvider        func() string
 		refreshTokenFetcher *stubRefreshTokenFetcher
 	)
 
@@ -29,6 +30,8 @@ var _ = Describe("PushSpaceDrain", func() {
 
 		refreshTokenFetcher = newStubRefreshTokenFetcher()
 		refreshTokenFetcher.token = "some-refresh-token"
+
+		guidProvider = func() string { return "a-guid" }
 	})
 
 	It("pushes app from the given space-drain directory", func() {
@@ -43,9 +46,10 @@ var _ = Describe("PushSpaceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
+			guidProvider,
 		)
 
-		Expect(cli.cliCommandArgs).To(HaveLen(2))
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "some-drain",
@@ -89,11 +93,12 @@ var _ = Describe("PushSpaceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
+			guidProvider,
 		)
 
-		Expect(downloader.assetName).To(Equal("space_drain"))
+		Expect(downloader.assetNames).To(ContainElement("space_drain"))
 
-		Expect(cli.cliCommandArgs).To(HaveLen(2))
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "some-drain",
@@ -118,9 +123,10 @@ var _ = Describe("PushSpaceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
+			guidProvider,
 		)
 
-		Expect(cli.cliCommandArgs).To(HaveLen(2))
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "some-drain",
@@ -133,7 +139,7 @@ var _ = Describe("PushSpaceDrain", func() {
 			},
 		))
 
-		Expect(downloader.assetName).To(Equal("space_drain"))
+		Expect(downloader.assetNames).To(ContainElement("space_drain"))
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
 			[]string{"set-env", "some-drain", "SPACE_ID", "space-guid"},
 			[]string{"set-env", "some-drain", "DRAIN_NAME", "some-drain"},
@@ -164,9 +170,10 @@ var _ = Describe("PushSpaceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
+			guidProvider,
 		)
 
-		Expect(cli.cliCommandArgs).To(HaveLen(2))
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "space-drain",
@@ -202,6 +209,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 
@@ -210,6 +218,85 @@ var _ = Describe("PushSpaceDrain", func() {
 		Expect(cli.cliCommandArgs).To(HaveLen(0))
 
 		Expect(logger.fatalfMessage).To(Equal("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
+	})
+
+	It("pushes the syslog forwarder for service draining if include-service flag is provided", func() {
+		command.PushSpaceDrain(
+			cli,
+			[]string{
+				"https://some-drain",
+				"--path", "some-temp-dir",
+				"--include-services",
+			},
+			downloader,
+			refreshTokenFetcher,
+			logger,
+			guidProvider,
+		)
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
+		Expect(cli.cliCommandArgs[2]).To(Equal(
+			[]string{
+				"push", "space-services-forwarder-a-guid",
+				"-p", "/downloaded/temp/dir/forwarder.zip",
+				"-i", "3",
+				"-b", "binary_buildpack",
+				"-c", "./run.sh",
+				"--health-check-type", "process",
+				"--no-start",
+				"--no-route",
+			},
+		))
+
+		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
+			[]string{"set-env", "space-services-forwarder-a-guid", "SOURCE_HOSTNAME", "org.space"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "CLIENT_ID", "cf"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "REFRESH_TOKEN", "refresh-token"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "CACHE_SIZE", "0"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "SKIP_CERT_VERIFY", "true"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "SYSLOG_URL", "https://syslog-drain"},
+		))
+
+		Expect(cli.cliCommandArgs[3]).To(Equal(
+			[]string{
+				"start", "space-services-forwarder-a-guid",
+			},
+		))
+	})
+
+	It("downloads the syslog forwarder app if not path is provided", func() {
+		command.PushSpaceDrain(
+			cli,
+			[]string{
+				"https://some-drain",
+				"--include-services",
+			},
+			downloader,
+			refreshTokenFetcher,
+			logger,
+			guidProvider,
+		)
+
+		Expect(downloader.assetNames).To(ContainElement("forwarder.zip"))
+	})
+
+	PIt("uses service drain app provided with the path-to-service-drain-app", func() {
+		command.PushSpaceDrain(
+			cli,
+			[]string{
+				"https://syslog-drain",
+				"--path", "service-drain-zip",
+				"--include-services",
+				"--path-to-service-drain-app", "service-drain.zip",
+			},
+			downloader,
+			refreshTokenFetcher,
+			logger,
+			guidProvider,
+		)
+
+		Expect(cli.cliCommandArgs).To(HaveLen(4))
+		Expect(cli.cliCommandArgs[0]).To(ContainElement("-p"))
+		Expect(cli.cliCommandArgs[0]).To(ContainElement("service-drain-zip"))
 	})
 
 	DescribeTable("fatally logs if setting env variables fails", func(env string) {
@@ -226,6 +313,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).Should(Equal("some-error"))
@@ -254,6 +342,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("some-error"))
@@ -272,6 +361,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("some-error"))
@@ -290,6 +380,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("some-error"))
@@ -308,6 +399,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("failed to push"))
@@ -324,6 +416,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 0."))
@@ -342,6 +435,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
+				guidProvider,
 			)
 		}).To(Panic())
 		Expect(logger.fatalfMessage).To(Equal("Invalid arguments, expected 1, got 2."))

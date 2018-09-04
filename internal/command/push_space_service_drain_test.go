@@ -18,7 +18,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		cli                 *stubCliConnection
 		downloader          *stubDownloader
 		refreshTokenFetcher *stubRefreshTokenFetcher
-		groupNameProvider   func() string
 		guidProvider        func() string
 		reader              *strings.Reader
 	)
@@ -38,7 +37,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		refreshTokenFetcher = newStubRefreshTokenFetcher()
 		refreshTokenFetcher.token = "refresh-token"
 
-		groupNameProvider = func() string { return "test-group" }
 		guidProvider = func() string { return "a-guid" }
 
 		reader = strings.NewReader("y\n")
@@ -55,7 +53,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
-			groupNameProvider,
 			guidProvider,
 		)
 
@@ -85,7 +82,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			[]string{"set-env", "space-services-forwarder-a-guid", "REFRESH_TOKEN", "refresh-token"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CACHE_SIZE", "0"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "SKIP_CERT_VERIFY", "true"},
-			[]string{"set-env", "space-services-forwarder-a-guid", "GROUP_NAME", "test-group"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "SYSLOG_URL", "https://syslog-drain"},
 		))
 
@@ -106,17 +102,16 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
-			groupNameProvider,
 			guidProvider,
 		)
 
-		Expect(downloader.assetName).To(Equal("forwarder.zip"))
+		Expect(downloader.assetNames).To(ContainElement("forwarder.zip"))
 
 		Expect(cli.cliCommandArgs).To(HaveLen(2))
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "space-services-forwarder-a-guid",
-				"-p", "/downloaded/temp/dir",
+				"-p", "/downloaded/temp/dir/forwarder.zip",
 				"-i", "3",
 				"-b", "binary_buildpack",
 				"-c", "./run.sh",
@@ -137,7 +132,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
-			groupNameProvider,
 			guidProvider,
 		)
 
@@ -145,7 +139,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "space-services-forwarder-a-guid",
-				"-p", "/downloaded/temp/dir",
+				"-p", "/downloaded/temp/dir/forwarder.zip",
 				"-i", "3",
 				"-b", "binary_buildpack",
 				"-c", "./run.sh",
@@ -155,14 +149,13 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			},
 		))
 
-		Expect(downloader.assetName).To(Equal("forwarder.zip"))
+		Expect(downloader.assetNames).To(ContainElement("forwarder.zip"))
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
 			[]string{"set-env", "space-services-forwarder-a-guid", "SOURCE_HOSTNAME", "org.space"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CLIENT_ID", "cf"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "REFRESH_TOKEN", "refresh-token"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CACHE_SIZE", "0"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "SKIP_CERT_VERIFY", "true"},
-			[]string{"set-env", "space-services-forwarder-a-guid", "GROUP_NAME", "test-group"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "SYSLOG_URL", "https://some-drain"},
 		))
 
@@ -185,7 +178,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
-			groupNameProvider,
 			guidProvider,
 		)
 
@@ -209,7 +201,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			downloader,
 			refreshTokenFetcher,
 			logger,
-			groupNameProvider,
 			guidProvider,
 		)
 
@@ -231,7 +222,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
-				groupNameProvider,
 				guidProvider,
 			)
 		}).To(Panic())
@@ -254,7 +244,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
-				groupNameProvider,
 				guidProvider,
 			)
 		}).To(Panic())
@@ -284,7 +273,6 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 				downloader,
 				refreshTokenFetcher,
 				logger,
-				groupNameProvider,
 				guidProvider,
 			)
 		}).To(Panic())

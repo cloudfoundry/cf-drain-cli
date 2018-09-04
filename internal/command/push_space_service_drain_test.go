@@ -33,7 +33,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		cli.sslDisabled = true
 
 		downloader = newStubDownloader()
-		downloader.path = "/downloaded/temp/dir/space_drain"
+		downloader.path = "/downloaded/temp/dir/forwarder.zip"
 
 		refreshTokenFetcher = newStubRefreshTokenFetcher()
 		refreshTokenFetcher.token = "refresh-token"
@@ -96,7 +96,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		))
 	})
 
-	It("downloads the app before pushing app from the given space-drain directory", func() {
+	It("downloads the app before pushing app", func() {
 		command.PushSpaceServiceDrain(
 			cli,
 			reader,
@@ -116,7 +116,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "space-services-forwarder-a-guid",
-				"-p", "/downloaded/temp/dir",
+				"-p", "/downloaded/temp/dir/forwarder.zip",
 				"-i", "3",
 				"-b", "binary_buildpack",
 				"-c", "./run.sh",
@@ -145,7 +145,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		Expect(cli.cliCommandArgs[0]).To(Equal(
 			[]string{
 				"push", "space-services-forwarder-a-guid",
-				"-p", "/downloaded/temp/dir",
+				"-p", "/downloaded/temp/dir/forwarder.zip",
 				"-i", "3",
 				"-b", "binary_buildpack",
 				"-c", "./run.sh",

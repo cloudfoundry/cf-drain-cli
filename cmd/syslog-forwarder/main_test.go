@@ -102,6 +102,8 @@ var _ = Describe("Main", func() {
 
 		close(rlpResp)
 		close(syslogReqs)
+
+		proxy.Close()
 	})
 
 	AfterSuite(func() {

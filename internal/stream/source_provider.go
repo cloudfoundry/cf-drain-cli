@@ -9,9 +9,10 @@ import (
 )
 
 type SingleOrSpaceProvider struct {
-	Source    string
-	ApiAddr   string
-	SpaceGuid string
+	Source          string
+	ApiAddr         string
+	SpaceGuid       string
+	IncludeServices bool
 }
 
 func (s *SingleOrSpaceProvider) SourceIDs() ([]string, error) {
@@ -19,11 +20,34 @@ func (s *SingleOrSpaceProvider) SourceIDs() ([]string, error) {
 		return []string{s.Source}, nil
 	}
 
-	return serviceInstanceGuids(s.ApiAddr, s.SpaceGuid)
+	sg, err := s.serviceInstanceGuids()
+	if err != nil {
+		return nil, err
+	}
+
+	ag, err := s.appGuids()
+	if err != nil {
+		return nil, err
+	}
+
+	return append(sg, ag...), nil
 }
 
-func serviceInstanceGuids(api, space string) ([]string, error) {
-	resp, err := http.Get(api + "/v3/service_instances?space_guids=" + space)
+func (s *SingleOrSpaceProvider) appGuids() ([]string, error) {
+	return s.resourceGuids("apps")
+}
+
+func (s *SingleOrSpaceProvider) serviceInstanceGuids() ([]string, error) {
+	if s.IncludeServices {
+		return s.resourceGuids("service_instances")
+	}
+
+	return nil, nil
+}
+
+func (s *SingleOrSpaceProvider) resourceGuids(resource string) ([]string, error) {
+	url := fmt.Sprintf("%s/v3/%s?space_guids=%s", s.ApiAddr, resource, s.SpaceGuid)
+	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("failed to make capi request: %s", err)
 		return nil, err

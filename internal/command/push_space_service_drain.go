@@ -103,6 +103,7 @@ func PushSpaceServiceDrain(
 
 	envs := [][]string{
 		{"SOURCE_HOSTNAME", fmt.Sprintf("%s.%s", org.Name, space.Name)},
+		{"INCLUDE_SERVICES", "true"},
 		{"CLIENT_ID", "cf"},
 		{"REFRESH_TOKEN", refreshToken},
 		{"CACHE_SIZE", "0"},

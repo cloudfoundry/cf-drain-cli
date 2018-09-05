@@ -324,6 +324,6 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			s := cf.Cf("drains")
 			Eventually(s, acceptance.Config().DefaultTimeout).Should(Exit(0))
 			return string(append(s.Out.Contents(), s.Err.Contents()...))
-		}, acceptance.Config().DefaultTimeout).ShouldNot(MatchRegexp(papertrailDrainRegex))
+		}, acceptance.Config().DefaultTimeout+3*time.Minute).ShouldNot(MatchRegexp(papertrailDrainRegex))
 	})
 })

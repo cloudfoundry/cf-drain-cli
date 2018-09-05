@@ -26,7 +26,8 @@ var _ = Describe("Main", func() {
 
 		capiReqs     chan *http.Request
 		capiRespCode int
-		capiResps    chan []byte
+		serviceResps chan []byte
+		appResps     chan []byte
 
 		rlpReqs chan *http.Request
 		rlpResp chan []byte
@@ -36,12 +37,14 @@ var _ = Describe("Main", func() {
 		syslogBodies chan []byte
 
 		cancel func()
+		cmd    *exec.Cmd
 	)
 
 	BeforeEach(func() {
 		capiRespCode = http.StatusOK
-		capiResps = make(chan []byte, 100)
-		capiReqs = make(chan *http.Request)
+		serviceResps = make(chan []byte, 100)
+		appResps = make(chan []byte, 100)
+		capiReqs = make(chan *http.Request, 100)
 
 		rlpResp = make(chan []byte, 100)
 		rlpReqs = make(chan *http.Request)
@@ -66,7 +69,16 @@ var _ = Describe("Main", func() {
 				if capiRespCode != 200 {
 					w.WriteHeader(capiRespCode)
 				}
-				w.Write(<-capiResps)
+
+				w.Write(<-serviceResps)
+			case "/v3/apps":
+				capiReqs <- r
+
+				if capiRespCode != 200 {
+					w.WriteHeader(capiRespCode)
+				}
+
+				w.Write(<-appResps)
 			default:
 				panic(fmt.Sprintf("unhandled request: %s", r.URL.Path))
 			}
@@ -86,7 +98,10 @@ var _ = Describe("Main", func() {
 
 	AfterEach(func() {
 		cancel()
+		cmd.Wait()
+
 		close(rlpResp)
+		close(syslogReqs)
 	})
 
 	AfterSuite(func() {
@@ -96,6 +111,7 @@ var _ = Describe("Main", func() {
 	Context("single source id", func() {
 		BeforeEach(func() {
 			forwarderEnv := []string{
+				"INCLUDE_SERVICES=true",
 				"SOURCE_ID=service-1",
 				"SOURCE_HOSTNAME=TEST_HOSTNAME",
 				`VCAP_APPLICATION={"application_id":"forwarder-id","cf_api":"https://api.test-server.com", "space_id": "space-guid"}`,
@@ -109,7 +125,7 @@ var _ = Describe("Main", func() {
 
 			var ctx context.Context
 			ctx, cancel = context.WithCancel(context.Background())
-			cmd := exec.CommandContext(ctx, path)
+			cmd = exec.CommandContext(ctx, path)
 			cmd.Env = forwarderEnv
 			cmd.Stderr = GinkgoWriter
 			cmd.Stdout = GinkgoWriter
@@ -147,6 +163,7 @@ var _ = Describe("Main", func() {
 	Context("whole space", func() {
 		BeforeEach(func() {
 			forwarderEnv := []string{
+				"INCLUDE_SERVICES=true",
 				"UPDATE_INTERVAL=500ms",
 				"SOURCE_HOSTNAME=TEST_HOSTNAME",
 				"SKIP_CERT_VERIFY=true",
@@ -160,7 +177,7 @@ var _ = Describe("Main", func() {
 
 			var ctx context.Context
 			ctx, cancel = context.WithCancel(context.Background())
-			cmd := exec.CommandContext(ctx, path)
+			cmd = exec.CommandContext(ctx, path)
 			cmd.Env = forwarderEnv
 			cmd.Stderr = GinkgoWriter
 			cmd.Stdout = GinkgoWriter
@@ -168,50 +185,52 @@ var _ = Describe("Main", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("forwards the logs for service instances in a space from the RLP to the syslog endpoint", func() {
-			capiResps <- []byte(serviceInstancesBody)
+		It("forwards the logs for services and apps instances in a space from the RLP to the syslog endpoint", func() {
+			serviceResps <- []byte(serviceInstancesBody)
+			appResps <- []byte(appsBody)
+
 			rlpResp <- []byte(buildSSEMessage("service-1"))
 			rlpResp <- []byte(buildSSEMessage("service-2"))
 			rlpResp <- []byte(buildSSEMessage("service-3"))
+			rlpResp <- []byte(buildSSEMessage("app-1"))
+			rlpResp <- []byte(buildSSEMessage("app-2"))
+			rlpResp <- []byte(buildSSEMessage("app-3"))
+
+			numLogs := 6
 
 			var capiReq *http.Request
 			Eventually(capiReqs).Should(Receive(&capiReq))
 			Expect(capiReq.URL.Path).To(Equal("/v3/service_instances"))
 			Expect(capiReq.URL.Query()).To(HaveKeyWithValue("space_guids", []string{"space-guid"}))
 
+			Eventually(capiReqs).Should(Receive(&capiReq))
+			Expect(capiReq.URL.Path).To(Equal("/v3/apps"))
+			Expect(capiReq.URL.Query()).To(HaveKeyWithValue("space_guids", []string{"space-guid"}))
+
 			var sourceIDs []string
 			var rlpReq *http.Request
-			Eventually(rlpReqs).Should(Receive(&rlpReq))
-			Expect(rlpReq.URL.Path).To(Equal("/v2/read"))
-			Expect(rlpReq.URL.Host).To(Equal("log-stream.test-server.com"))
-			Expect(rlpReq.Method).To(Equal(http.MethodGet))
-			Expect(rlpReq.URL.Query()).To(HaveKey("log"))
-			Expect(rlpReq.URL.Query()).To(HaveKey("counter"))
-			Expect(rlpReq.URL.Query()).To(HaveKey("gauge"))
-			Expect(rlpReq.URL.Query()).To(HaveKeyWithValue("shard_id", []string{"forwarder-id"}))
-			sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
-
-			Eventually(rlpReqs).Should(Receive(&rlpReq))
-			Expect(rlpReq.URL.Query()).To(HaveKey("log"))
-			Expect(rlpReq.URL.Query()).To(HaveKey("counter"))
-			Expect(rlpReq.URL.Query()).To(HaveKey("gauge"))
-			Expect(rlpReq.URL.Query()).To(HaveKeyWithValue("shard_id", []string{"forwarder-id"}))
-			sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
-
-			Eventually(rlpReqs).Should(Receive(&rlpReq))
-			Expect(rlpReq.URL.Query()).To(HaveKey("log"))
-			Expect(rlpReq.URL.Query()).To(HaveKey("counter"))
-			Expect(rlpReq.URL.Query()).To(HaveKey("gauge"))
-			Expect(rlpReq.URL.Query()).To(HaveKeyWithValue("shard_id", []string{"forwarder-id"}))
-			sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
+			for i := 0; i < numLogs; i++ {
+				Eventually(rlpReqs).Should(Receive(&rlpReq))
+				Expect(rlpReq.URL.Path).To(Equal("/v2/read"))
+				Expect(rlpReq.URL.Host).To(Equal("log-stream.test-server.com"))
+				Expect(rlpReq.Method).To(Equal(http.MethodGet))
+				Expect(rlpReq.URL.Query()).To(HaveKey("log"))
+				Expect(rlpReq.URL.Query()).To(HaveKey("counter"))
+				Expect(rlpReq.URL.Query()).To(HaveKey("gauge"))
+				Expect(rlpReq.URL.Query()).To(HaveKeyWithValue("shard_id", []string{"forwarder-id"}))
+				sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
+			}
 
 			Expect(sourceIDs).To(ConsistOf(
 				"service-1",
 				"service-2",
 				"service-3",
+				"app-1",
+				"app-2",
+				"app-3",
 			))
 
-			Eventually(syslogReqs).Should(HaveLen(3))
+			Eventually(syslogReqs).Should(HaveLen(numLogs))
 
 			var bodies [][]byte
 			for len(syslogReqs) > 0 {
@@ -224,10 +243,15 @@ var _ = Describe("Main", func() {
 				messageBytes("service-1"),
 				messageBytes("service-2"),
 				messageBytes("service-3"),
+				messageBytes("app-1"),
+				messageBytes("app-2"),
+				messageBytes("app-3"),
 			))
 
 			//the forwarder adapts to changes in the space
-			capiResps <- []byte(serviceInstancesBody2)
+			serviceResps <- []byte(serviceInstancesBody2)
+			appResps <- []byte(emptyJSON)
+
 			rlpResp <- []byte(buildSSEMessage("service-4"))
 
 			Eventually(capiReqs, 30).Should(Receive(&capiReq))
@@ -247,6 +271,83 @@ var _ = Describe("Main", func() {
 			Eventually(syslogBodies).Should(Receive(&actual))
 
 			Expect(messageBytes("service-4")).To(Equal(actual))
+		})
+	})
+
+	Context("only apps", func() {
+		BeforeEach(func() {
+			forwarderEnv := []string{
+				"UPDATE_INTERVAL=500ms",
+				"SOURCE_HOSTNAME=TEST_HOSTNAME",
+				"SKIP_CERT_VERIFY=true",
+				`VCAP_APPLICATION={"application_id":"forwarder-id","cf_api":"https://api.test-server.com", "space_id": "space-guid"}`,
+				fmt.Sprintf("HTTP_PROXY=%s", proxy.URL),
+				fmt.Sprintf("SYSLOG_URL=%s", fakeSyslog.URL),
+			}
+
+			path, err := gexec.Build("code.cloudfoundry.org/cf-drain-cli/cmd/syslog-forwarder")
+			Expect(err).ToNot(HaveOccurred())
+
+			var ctx context.Context
+			ctx, cancel = context.WithCancel(context.Background())
+			cmd = exec.CommandContext(ctx, path)
+			cmd.Env = forwarderEnv
+			cmd.Stderr = GinkgoWriter
+			cmd.Stdout = GinkgoWriter
+			err = cmd.Start()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("forwards the logs for apps in a space from the RLP to the syslog endpoint", func() {
+			serviceResps <- []byte(serviceInstancesBody)
+			appResps <- []byte(appsBody)
+
+			rlpResp <- []byte(buildSSEMessage("app-1"))
+			rlpResp <- []byte(buildSSEMessage("app-2"))
+			rlpResp <- []byte(buildSSEMessage("app-3"))
+
+			numLogs := 3
+
+			var capiReq *http.Request
+			Eventually(capiReqs).Should(Receive(&capiReq))
+			Expect(capiReq.URL.Path).ToNot(Equal("/v3/service_instances"))
+			Expect(capiReq.URL.Path).To(Equal("/v3/apps"))
+			Expect(capiReq.URL.Query()).To(HaveKeyWithValue("space_guids", []string{"space-guid"}))
+
+			var sourceIDs []string
+			var rlpReq *http.Request
+			for i := 0; i < numLogs; i++ {
+				Eventually(rlpReqs).Should(Receive(&rlpReq))
+				Expect(rlpReq.URL.Path).To(Equal("/v2/read"))
+				Expect(rlpReq.URL.Host).To(Equal("log-stream.test-server.com"))
+				Expect(rlpReq.Method).To(Equal(http.MethodGet))
+				Expect(rlpReq.URL.Query()).To(HaveKey("log"))
+				Expect(rlpReq.URL.Query()).To(HaveKey("counter"))
+				Expect(rlpReq.URL.Query()).To(HaveKey("gauge"))
+				Expect(rlpReq.URL.Query()).To(HaveKeyWithValue("shard_id", []string{"forwarder-id"}))
+				sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
+			}
+
+			Expect(sourceIDs).To(ConsistOf(
+				"app-1",
+				"app-2",
+				"app-3",
+			))
+
+			Eventually(syslogReqs, 10).Should(HaveLen(numLogs))
+
+			var bodies [][]byte
+			for len(syslogReqs) > 0 {
+				req := <-syslogReqs
+				Expect(req.Method).To(Equal(http.MethodPost))
+				bodies = append(bodies, <-syslogBodies)
+			}
+
+			Expect(bodies).To(ConsistOf(
+				messageBytes("app-1"),
+				messageBytes("app-2"),
+				messageBytes("app-3"),
+			))
 		})
 	})
 })
@@ -316,3 +417,22 @@ var serviceInstancesBody2 = `
 	]
 }
 `
+var appsBody = `
+{
+	"resources": [
+		{
+			"guid": "app-1"
+		},
+		{
+			"guid": "app-2"
+		},
+		{
+			"guid": "app-3"
+		}
+	]
+}
+`
+
+var emptyJSON = `{
+	"resources": []
+}`

@@ -81,6 +81,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
 			[]string{"set-env", "space-services-forwarder-a-guid", "SOURCE_HOSTNAME", "org.space"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "INCLUDE_SERVICES", "true"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CLIENT_ID", "cf"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "REFRESH_TOKEN", "refresh-token"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CACHE_SIZE", "0"},
@@ -158,6 +159,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		Expect(downloader.assetName).To(Equal("forwarder.zip"))
 		Expect(cli.cliCommandWithoutTerminalOutputArgs).To(ConsistOf(
 			[]string{"set-env", "space-services-forwarder-a-guid", "SOURCE_HOSTNAME", "org.space"},
+			[]string{"set-env", "space-services-forwarder-a-guid", "INCLUDE_SERVICES", "true"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CLIENT_ID", "cf"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "REFRESH_TOKEN", "refresh-token"},
 			[]string{"set-env", "space-services-forwarder-a-guid", "CACHE_SIZE", "0"},

@@ -11,8 +11,9 @@ import (
 )
 
 type Config struct {
-	SourceID       string `env:"SOURCE_ID,                 report"`
-	SourceHostname string `env:"SOURCE_HOSTNAME, required, report"`
+	SourceID        string `env:"SOURCE_ID,                 report"`
+	SourceHostname  string `env:"SOURCE_HOSTNAME, required, report"`
+	IncludeServices bool   `env:"INCLUDE_SERVICES, report"`
 
 	SyslogURL *url.URL `env:"SYSLOG_URL, required, report"`
 

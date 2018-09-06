@@ -7,36 +7,33 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
-type pushServiceDrainOpts struct {
-	DrainName string
+type migrateSpaceDrainOpts struct {
+	DrainName string `long:"drain-name"`
 	DrainURL  string
 	Path      string `long:"path"`
 }
 
-type GroupNameProvider func() string
-type GUIDProvider func() string
-
-func PushServiceDrain(
+func MigrateSpaceDrain(
 	cli plugin.CliConnection,
 	args []string,
+	d Downloader,
 	f RefreshTokenFetcher,
+	fetcher DrainFetcher,
 	log Logger,
-	g GroupNameProvider,
+	guid GUIDProvider,
 ) {
-	var opts pushServiceDrainOpts
+	opts := migrateSpaceDrainOpts{
+		DrainName: "space-drain",
+	}
+
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
 	args, err := parser.ParseArgs(args)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	if len(args) != 2 {
-		log.Fatalf("Invalid arguments, expected 2 got %d.", len(args))
-	}
-
-	service, err := cli.GetService(args[0])
-	if err != nil {
-		log.Fatalf("%s", err)
+	if len(args) != 1 {
+		log.Fatalf("Invalid arguments, expected 1, got %d.", len(args))
 	}
 
 	skipCertVerify, err := cli.IsSSLDisabled()
@@ -59,43 +56,41 @@ func PushServiceDrain(
 		log.Fatalf("%s", err)
 	}
 
-	opts.DrainName = fmt.Sprintf("%s-forwarder", service.Name)
-	opts.DrainURL = args[1]
+	opts.DrainURL = args[0]
+
+	if opts.Path == "" {
+		log.Printf("Downloading latest syslog forwarder from github...")
+		opts.Path = d.Download("forwarder.zip")
+		log.Printf("Done downloading syslog forwarder from github.")
+	}
 
 	envs := [][]string{
-		{"SOURCE_ID", service.Guid},
 		{"SOURCE_HOSTNAME", fmt.Sprintf("%s.%s.%s", org.Name, space.Name, opts.DrainName)},
 		{"CLIENT_ID", "cf"},
 		{"REFRESH_TOKEN", refreshToken},
-		{"CACHE_SIZE", "0"},
 		{"SKIP_CERT_VERIFY", fmt.Sprintf("%t", skipCertVerify)},
-		{"GROUP_NAME", g()},
 		{"SYSLOG_URL", opts.DrainURL},
 	}
 	pushSyslogForwarder(cli, log, opts.DrainName, opts.Path, envs)
-}
 
-func pushSyslogForwarder(cli plugin.CliConnection, log Logger, drainName, path string, envs [][]string) {
-	_, err := cli.CliCommand(
-		"push", drainName,
-		"-p", path,
-		"-i", "3",
-		"-b", "binary_buildpack",
-		"-c", "./run.sh",
-		"--health-check-type", "process",
-		"--no-start",
-		"--no-route",
-	)
+	drains, err := fetcher.Drains(space.Guid)
 	if err != nil {
-		log.Fatalf("%s", err)
+		log.Fatalf("Failed to fetch drains: %s", err)
 	}
 
-	for _, env := range envs {
-		_, err := cli.CliCommandWithoutTerminalOutput("set-env", drainName, env[0], env[1])
-		if err != nil {
-			log.Fatalf("%s", err)
+	for _, drain := range drains {
+		if drain.DrainURL == opts.DrainURL {
+			for _, app := range drain.Apps {
+				_, err := cli.CliCommand("unbind-service", app, drain.Name)
+				if err != nil {
+					log.Fatalf("%s", err)
+				}
+			}
+
+			_, err := cli.CliCommand("delete-service", drain.Name)
+			if err != nil {
+				log.Fatalf("%s", err)
+			}
 		}
 	}
-
-	cli.CliCommand("start", drainName)
 }

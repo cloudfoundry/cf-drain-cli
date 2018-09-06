@@ -116,6 +116,20 @@ OPTIONS:
    --path        Path to the service drain zip file.
 ```
 
+### Migrate Space Drain
+
+```
+NAME:
+   migrate-space-drain - Migrates space drain using CUPS to space drain using syslog-forwarder application
+
+USAGE:
+   migrate-space-drain SYSLOG_DRAIN_URL
+
+OPTIONS:
+   --drain-name       Name for the space drain
+   --path             Path to the syslog-forwarder zip file. If omitted the latest release will be downloaded
+```
+
 [cf-cli]: https://code.cloudfoundry.org/cli
 [ci-badge]: https://loggregator.ci.cf-app.com/api/v1/pipelines/cf-syslog-drain/jobs/cf-drain-cli-tests/badge
 [ci-tests]: https://loggregator.ci.cf-app.com/teams/main/pipelines/products/jobs/cf-drain-cli-tests

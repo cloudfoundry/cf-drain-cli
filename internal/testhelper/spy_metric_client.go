@@ -6,31 +6,43 @@ import (
 	"code.cloudfoundry.org/go-loggregator/pulseemitter"
 )
 
+type TestMetric interface {
+	Delta() uint64
+	GaugeValue() float64
+}
+
 type SpyMetricClient struct {
-	metrics map[string]*SpyMetric
+	metrics map[string]TestMetric
 }
 
 func NewMetricClient() *SpyMetricClient {
 	return &SpyMetricClient{
-		metrics: make(map[string]*SpyMetric),
+		metrics: make(map[string]TestMetric),
 	}
 }
 
-func (s *SpyMetricClient) NewCounterMetric(name string, opts ...pulseemitter.MetricOption) pulseemitter.CounterMetric {
+func (s *SpyMetricClient) NewCounterMetric(
+	name string,
+	opts ...pulseemitter.MetricOption,
+) pulseemitter.CounterMetric {
 	m := &SpyMetric{}
 	s.metrics[name] = m
 
 	return m
 }
 
-func (s *SpyMetricClient) NewGaugeMetric(name, unit string, opts ...pulseemitter.MetricOption) pulseemitter.GaugeMetric {
-	m := &SpyMetric{}
+func (s *SpyMetricClient) NewGaugeMetric(
+	name string,
+	unit string,
+	opts ...pulseemitter.MetricOption,
+) pulseemitter.GaugeMetric {
+	m := &SpyGaugeMetric{}
 	s.metrics[name] = m
 
 	return m
 }
 
-func (s *SpyMetricClient) GetMetric(name string) *SpyMetric {
+func (s *SpyMetricClient) GetMetric(name string) TestMetric {
 	return s.metrics[name]
 }
 
@@ -48,12 +60,6 @@ func (s *SpyMetric) Increment(c uint64) {
 
 func (s *SpyMetric) Emit(c pulseemitter.LogClient) {}
 
-func (s *SpyMetric) Set(c float64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.gaugeValue = c
-}
-
 func (s *SpyMetric) Delta() uint64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -64,4 +70,26 @@ func (s *SpyMetric) GaugeValue() float64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.gaugeValue
+}
+
+type SpyGaugeMetric struct {
+	SpyMetric
+}
+
+func (s *SpyGaugeMetric) Increment(c float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.gaugeValue += c
+}
+
+func (s *SpyGaugeMetric) Decrement(c float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.gaugeValue -= c
+}
+
+func (s *SpyGaugeMetric) Set(c float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.gaugeValue = c
 }

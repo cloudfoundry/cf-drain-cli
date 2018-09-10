@@ -26,7 +26,10 @@ var _ = Describe("Aggregator", func() {
 
 	It("adds a stream to be consumed", func() {
 		agg := stream.NewAggregator(gatewayClient, "shard-id", logger)
-		agg.Add("source-id-1")
+		agg.Add(stream.Resource{
+			GUID: "source-id-1",
+			Name: "source-1",
+		})
 
 		_ = agg.Consume()
 
@@ -45,7 +48,10 @@ var _ = Describe("Aggregator", func() {
 
 	It("removes a stream already being consumed", func() {
 		agg := stream.NewAggregator(gatewayClient, "shard-id", logger)
-		agg.Add("source-id-1")
+		agg.Add(stream.Resource{
+			GUID: "source-id-1",
+			Name: "source-1",
+		})
 		_ = agg.Consume()
 		Eventually(gatewayClient.streamReqs).Should(HaveLen(1))
 
@@ -57,15 +63,33 @@ var _ = Describe("Aggregator", func() {
 
 	It("lists source IDs being aggregated", func() {
 		agg := stream.NewAggregator(gatewayClient, "shard-id", logger)
-		agg.Add("source-id-1")
-		agg.Add("source-id-2")
+		agg.Add(stream.Resource{
+			GUID: "source-id-1",
+			Name: "source-1",
+		})
+		agg.Add(stream.Resource{
+			GUID: "source-id-2",
+			Name: "source-2",
+		})
 
-		Expect(agg.List()).To(Equal([]interface{}{"source-id-1", "source-id-2"}))
+		Expect(agg.List()).To(Equal([]interface{}{
+			stream.Resource{
+				GUID: "source-id-1",
+				Name: "source-1",
+			},
+			stream.Resource{
+				GUID: "source-id-2",
+				Name: "source-2",
+			},
+		}))
 	})
 
 	It("forwards produced logs to the consumer", func() {
 		agg := stream.NewAggregator(gatewayClient, "shard-id", logger)
-		agg.Add("source-id-1")
+		agg.Add(stream.Resource{
+			GUID: "source-id-1",
+			Name: "source-1",
+		})
 
 		c := agg.Consume()
 		Eventually(c).Should(Receive())

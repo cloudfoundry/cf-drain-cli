@@ -21,7 +21,7 @@ type Aggregator struct {
 	sync.Mutex
 	client    GatewayClient
 	agg       *streamaggregator.StreamAggregator
-	streamIDs []string
+	resources []Resource
 	log       *log.Logger
 	shardID   string
 }
@@ -48,15 +48,15 @@ func (a *Aggregator) Consume() <-chan interface{} {
 
 // Add adds a new source ID to the aggregator. This is called by the
 // orchestrator.
-func (a *Aggregator) Add(id string) {
-	a.log.Printf("adding producer for %s", id)
+func (a *Aggregator) Add(r Resource) {
+	a.log.Printf("adding producer for %s", r.GUID)
 
 	a.Lock()
 	defer a.Unlock()
 
-	producer := &streamProducer{id, a.shardID, a.client, a.log}
-	a.agg.AddProducer(id, producer)
-	a.streamIDs = append(a.streamIDs, id)
+	producer := streamProducer{r.GUID, r.Name, a.shardID, a.client, a.log}
+	a.agg.AddProducer(r.GUID, producer)
+	a.resources = append(a.resources, r)
 }
 
 // Remove removes an existing source ID from the aggregator. This is called by the
@@ -68,14 +68,14 @@ func (a *Aggregator) Remove(id string) {
 	defer a.Unlock()
 	a.agg.RemoveProducer(id)
 
-	var newIDs []string
-	for _, g := range a.streamIDs {
-		if g == id {
+	var resources []Resource
+	for _, g := range a.resources {
+		if g.GUID == id {
 			continue
 		}
-		newIDs = append(newIDs, g)
+		resources = append(resources, g)
 	}
-	a.streamIDs = newIDs
+	a.resources = resources
 }
 
 // List returns the current list of stream IDs being aggregated. This is
@@ -85,7 +85,7 @@ func (a *Aggregator) List() []interface{} {
 	defer a.Unlock()
 
 	var taskNames []interface{}
-	for _, k := range a.streamIDs {
+	for _, k := range a.resources {
 		taskNames = append(taskNames, k)
 	}
 
@@ -94,12 +94,13 @@ func (a *Aggregator) List() []interface{} {
 
 type streamProducer struct {
 	guid    string
+	name    string
 	shardID string
 	client  GatewayClient
 	log     *log.Logger
 }
 
-func (s *streamProducer) Produce(ctx context.Context, _ interface{}, c chan<- interface{}) {
+func (s streamProducer) Produce(ctx context.Context, _ interface{}, c chan<- interface{}) {
 	stream := s.client.Stream(ctx, &loggregator_v2.EgressBatchRequest{
 		ShardId:   s.shardID,
 		Selectors: selectorsForSource(s.guid),
@@ -113,6 +114,11 @@ func (s *streamProducer) Produce(ctx context.Context, _ interface{}, c chan<- in
 		}
 
 		for _, e := range envs {
+			if e.GetTags() == nil {
+				e.Tags = make(map[string]string)
+			}
+
+			e.GetTags()["hostname_suffix"] = s.name
 			c <- e
 		}
 	}

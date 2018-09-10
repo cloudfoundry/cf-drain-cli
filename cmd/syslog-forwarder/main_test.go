@@ -30,7 +30,7 @@ var _ = Describe("Main", func() {
 		appResps     chan []byte
 
 		rlpReqs chan *http.Request
-		rlpResp chan []byte
+		rlpResp map[string]chan []byte
 
 		fakeSyslog   *httptest.Server
 		syslogReqs   chan *http.Request
@@ -46,7 +46,7 @@ var _ = Describe("Main", func() {
 		appResps = make(chan []byte, 100)
 		capiReqs = make(chan *http.Request, 100)
 
-		rlpResp = make(chan []byte, 100)
+		rlpResp = make(map[string]chan []byte)
 		rlpReqs = make(chan *http.Request)
 		proxy = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
@@ -59,7 +59,10 @@ var _ = Describe("Main", func() {
 				flusher := w.(http.Flusher)
 				flusher.Flush()
 
-				for data := range rlpResp {
+				sourceID := r.URL.Query().Get("source_id")
+				c := rlpResp[sourceID]
+
+				for data := range c {
 					w.Write(data)
 					flusher.Flush()
 				}
@@ -100,10 +103,12 @@ var _ = Describe("Main", func() {
 		cancel()
 		cmd.Wait()
 
-		close(rlpResp)
+		for _, c := range rlpResp {
+			close(c)
+		}
 		close(syslogReqs)
 
-		proxy.Close()
+		proxy.CloseClientConnections()
 	})
 
 	AfterSuite(func() {
@@ -136,7 +141,8 @@ var _ = Describe("Main", func() {
 		})
 
 		It("forwards the logs from the RLP to the syslog endpoint", func() {
-			rlpResp <- []byte(buildSSEMessage("service-1"))
+			rlpResp["service-1"] = make(chan []byte, 100)
+			rlpResp["service-1"] <- []byte(buildSSEMessage("service-1"))
 
 			var rlpReq *http.Request
 			Eventually(rlpReqs).Should(Receive(&rlpReq))
@@ -157,8 +163,7 @@ var _ = Describe("Main", func() {
 
 			var actual []byte
 			Eventually(syslogBodies).Should(Receive(&actual))
-
-			Expect(expected).To(Equal(actual))
+			Expect(expected).To(Equal(string(actual)))
 		})
 	})
 
@@ -185,18 +190,24 @@ var _ = Describe("Main", func() {
 			cmd.Stdout = GinkgoWriter
 			err = cmd.Start()
 			Expect(err).ToNot(HaveOccurred())
-		})
+		}, 5)
 
 		It("forwards the logs for services and apps instances in a space from the RLP to the syslog endpoint", func() {
 			serviceResps <- []byte(serviceInstancesBody)
 			appResps <- []byte(appsBody)
 
-			rlpResp <- []byte(buildSSEMessage("service-1"))
-			rlpResp <- []byte(buildSSEMessage("service-2"))
-			rlpResp <- []byte(buildSSEMessage("service-3"))
-			rlpResp <- []byte(buildSSEMessage("app-1"))
-			rlpResp <- []byte(buildSSEMessage("app-2"))
-			rlpResp <- []byte(buildSSEMessage("app-3"))
+			rlpResp["service-1"] = make(chan []byte, 100)
+			rlpResp["service-1"] <- []byte(buildSSEMessage("service-1"))
+			rlpResp["service-2"] = make(chan []byte, 100)
+			rlpResp["service-2"] <- []byte(buildSSEMessage("service-2"))
+			rlpResp["service-3"] = make(chan []byte, 100)
+			rlpResp["service-3"] <- []byte(buildSSEMessage("service-3"))
+			rlpResp["app-1"] = make(chan []byte, 100)
+			rlpResp["app-1"] <- []byte(buildSSEMessage("app-1"))
+			rlpResp["app-2"] = make(chan []byte, 100)
+			rlpResp["app-2"] <- []byte(buildSSEMessage("app-2"))
+			rlpResp["app-3"] = make(chan []byte, 100)
+			rlpResp["app-3"] <- []byte(buildSSEMessage("app-3"))
 
 			numLogs := 6
 
@@ -234,11 +245,11 @@ var _ = Describe("Main", func() {
 
 			Eventually(syslogReqs).Should(HaveLen(numLogs))
 
-			var bodies [][]byte
+			var bodies []string
 			for len(syslogReqs) > 0 {
 				req := <-syslogReqs
 				Expect(req.Method).To(Equal(http.MethodPost))
-				bodies = append(bodies, <-syslogBodies)
+				bodies = append(bodies, string(<-syslogBodies))
 			}
 
 			Expect(bodies).To(ConsistOf(
@@ -254,7 +265,8 @@ var _ = Describe("Main", func() {
 			serviceResps <- []byte(serviceInstancesBody2)
 			appResps <- []byte(emptyJSON)
 
-			rlpResp <- []byte(buildSSEMessage("service-4"))
+			rlpResp["service-4"] = make(chan []byte, 100)
+			rlpResp["service-4"] <- []byte(buildSSEMessage("service-4"))
 
 			Eventually(capiReqs, 30).Should(Receive(&capiReq))
 			Expect(capiReq.URL.Path).To(Equal("/v3/service_instances"))
@@ -272,8 +284,8 @@ var _ = Describe("Main", func() {
 			var actual []byte
 			Eventually(syslogBodies).Should(Receive(&actual))
 
-			Expect(messageBytes("service-4")).To(Equal(actual))
-		})
+			Expect(messageBytes("service-4")).To(Equal(string(actual)))
+		}, 5)
 	})
 
 	Context("only apps", func() {
@@ -304,9 +316,12 @@ var _ = Describe("Main", func() {
 			serviceResps <- []byte(serviceInstancesBody)
 			appResps <- []byte(appsBody)
 
-			rlpResp <- []byte(buildSSEMessage("app-1"))
-			rlpResp <- []byte(buildSSEMessage("app-2"))
-			rlpResp <- []byte(buildSSEMessage("app-3"))
+			rlpResp["app-1"] = make(chan []byte, 100)
+			rlpResp["app-1"] <- []byte(buildSSEMessage("app-1"))
+			rlpResp["app-2"] = make(chan []byte, 100)
+			rlpResp["app-2"] <- []byte(buildSSEMessage("app-2"))
+			rlpResp["app-3"] = make(chan []byte, 100)
+			rlpResp["app-3"] <- []byte(buildSSEMessage("app-3"))
 
 			numLogs := 3
 
@@ -338,11 +353,11 @@ var _ = Describe("Main", func() {
 
 			Eventually(syslogReqs, 10).Should(HaveLen(numLogs))
 
-			var bodies [][]byte
+			var bodies []string
 			for len(syslogReqs) > 0 {
 				req := <-syslogReqs
 				Expect(req.Method).To(Equal(http.MethodPost))
-				bodies = append(bodies, <-syslogBodies)
+				bodies = append(bodies, string(<-syslogBodies))
 			}
 
 			Expect(bodies).To(ConsistOf(
@@ -354,11 +369,11 @@ var _ = Describe("Main", func() {
 	})
 })
 
-func messageBytes(appName string) []byte {
+func messageBytes(appID string) string {
 	msg := &rfc5424.Message{
 		Timestamp: time.Unix(0, logTimestamp).UTC(),
-		AppName:   appName,
-		Hostname:  "TEST_HOSTNAME." + appName,
+		AppName:   appID,
+		Hostname:  "TEST_HOSTNAME." + appID,
 		Priority:  rfc5424.Priority(14),
 		ProcessID: "[APP/PROC/WEB/0]",
 		Message:   []byte("log body\n"),
@@ -367,7 +382,7 @@ func messageBytes(appName string) []byte {
 	b, err := msg.MarshalBinary()
 	Expect(err).ToNot(HaveOccurred())
 
-	return b
+	return string(b)
 }
 
 func buildSSEMessage(sourceID string) string {
@@ -399,13 +414,17 @@ var serviceInstancesBody = `
 {
 	"resources": [
 		{
-			"guid": "service-1"
+			"guid": "service-1",
+			"name": "service-1-name"
 		},
 		{
-			"guid": "service-2"
+			"guid": "service-2",
+			"name": "service-2-name"
+
 		},
 		{
-			"guid": "service-3"
+			"guid": "service-3",
+			"name": "service-3-name"
 		}
 	]
 }
@@ -414,7 +433,8 @@ var serviceInstancesBody2 = `
 {
 	"resources": [
 		{
-			"guid": "service-4"
+			"guid": "service-4",
+			"name": "service-4-name"
 		}
 	]
 }
@@ -423,13 +443,16 @@ var appsBody = `
 {
 	"resources": [
 		{
-			"guid": "app-1"
+			"guid": "app-1",
+			"name": "app-1-name"
 		},
 		{
-			"guid": "app-2"
+			"guid": "app-2",
+			"name": "app-2-name"
 		},
 		{
-			"guid": "app-3"
+			"guid": "app-3",
+			"name": "app-3-name"
 		}
 	]
 }

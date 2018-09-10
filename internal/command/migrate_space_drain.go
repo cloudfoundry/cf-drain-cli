@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"net/url"
 
 	"code.cloudfoundry.org/cli/plugin"
 	flags "github.com/jessevdk/go-flags"
@@ -58,6 +59,11 @@ func MigrateSpaceDrain(
 
 	opts.DrainURL = args[0]
 
+	drainURL, err := url.Parse(opts.DrainURL)
+	if err != nil {
+		log.Fatalf("Invalid drain URL: %s", err)
+	}
+
 	if opts.Path == "" {
 		log.Printf("Downloading latest syslog forwarder from github...")
 		opts.Path = d.Download("forwarder.zip")
@@ -73,13 +79,48 @@ func MigrateSpaceDrain(
 	}
 	pushSyslogForwarder(cli, log, opts.DrainName, opts.Path, envs)
 
+	apps, err := cli.GetApps()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	for _, app := range apps {
+		if app.Name == opts.DrainName {
+			continue
+		}
+
+		a, err := cli.GetApp(app.Name)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+
+		dURL, ok := a.EnvironmentVars["DRAIN_URL"].(string)
+		if !ok {
+			continue
+		}
+
+		u, err := url.Parse(dURL)
+		if err != nil {
+			continue
+		}
+
+		if drainURL.Scheme == u.Scheme && drainURL.Host == u.Host {
+			cli.CliCommand("delete", a.Name, "-r")
+		}
+	}
+
 	drains, err := fetcher.Drains(space.Guid)
 	if err != nil {
 		log.Fatalf("Failed to fetch drains: %s", err)
 	}
 
 	for _, drain := range drains {
-		if drain.DrainURL == opts.DrainURL {
+		u, err := url.Parse(drain.DrainURL)
+		if err != nil {
+			continue
+		}
+
+		if drainURL.Scheme == u.Scheme && drainURL.Host == u.Host {
 			for _, app := range drain.Apps {
 				_, err := cli.CliCommand("unbind-service", app, drain.Name)
 				if err != nil {

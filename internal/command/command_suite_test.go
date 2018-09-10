@@ -23,9 +23,13 @@ type stubCliConnection struct {
 	sslDisabled      bool
 	sslDisabledError error
 
-	getAppName  string
-	getAppGuid  string
-	getAppError error
+	getAppsApps  []plugin_models.GetAppsModel
+	getAppsError error
+
+	getAppName    string
+	getAppGuid    string
+	getAppError   error
+	getAppEnvVars map[string]interface{}
 
 	getServicesName  string
 	getServicesError error
@@ -67,13 +71,18 @@ func newStubCliConnection() *stubCliConnection {
 	}
 }
 
+func (s *stubCliConnection) GetApps() ([]plugin_models.GetAppsModel, error) {
+	return s.getAppsApps, s.getAppsError
+}
+
 func (s *stubCliConnection) GetApp(name string) (plugin_models.GetAppModel, error) {
 	if s.getAppError == nil {
 		s.getAppName = name
 	}
 	return plugin_models.GetAppModel{
-		Name: s.getAppName,
-		Guid: s.getAppGuid,
+		Name:            s.getAppName,
+		Guid:            s.getAppGuid,
+		EnvironmentVars: s.getAppEnvVars,
 	}, s.getAppError
 }
 

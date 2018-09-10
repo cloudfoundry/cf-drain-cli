@@ -36,7 +36,12 @@ func main() {
 	o := createOrchestrator(streamAggregator)
 
 	sm := stream.NewSourceManager(
-		&stream.SingleOrSpaceProvider{cfg.SourceID, cfg.Vcap.API, cfg.Vcap.SpaceGUID, cfg.IncludeServices},
+		&stream.SingleOrSpaceProvider{
+			cfg.SourceID,
+			cfg.Vcap.API,
+			cfg.Vcap.SpaceGUID,
+			cfg.IncludeServices,
+		},
 		o,
 		cfg.UpdateInterval,
 	)

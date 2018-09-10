@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	HttpProxy       string `env:"HTTP_PROXY, required, report"`
 	SourceID        string `env:"SOURCE_ID,                 report"`
 	SourceHostname  string `env:"SOURCE_HOSTNAME, required, report"`
 	IncludeServices bool   `env:"INCLUDE_SERVICES, report"`

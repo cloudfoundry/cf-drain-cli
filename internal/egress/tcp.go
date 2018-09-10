@@ -97,7 +97,7 @@ func generateRFC5424Messages(
 	hostname string,
 	appID string,
 ) []rfc5424.Message {
-	hostname = fmt.Sprintf("%s.%s", hostname, appID)
+	hostname = fmt.Sprintf("%s.%s", hostname, env.GetTags()["hostname_suffix"])
 
 	switch env.GetMessage().(type) {
 	case *loggregator_v2.Envelope_Log:
@@ -146,8 +146,8 @@ func generateRFC5424Messages(
 				},
 			})
 		}
-		return gauges
 
+		return gauges
 	case *loggregator_v2.Envelope_Counter:
 		return []rfc5424.Message{
 			{

@@ -7,8 +7,8 @@ import (
 	orchestrator "code.cloudfoundry.org/go-orchestrator"
 )
 
-type SourceIDProvider interface {
-	SourceIDs() ([]string, error)
+type SourceProvider interface {
+	Resources() ([]Resource, error)
 }
 
 type Orchestrator interface {
@@ -17,12 +17,12 @@ type Orchestrator interface {
 }
 
 type SourceManager struct {
-	s        SourceIDProvider
+	s        SourceProvider
 	o        Orchestrator
 	interval time.Duration
 }
 
-func NewSourceManager(s SourceIDProvider, o Orchestrator, interval time.Duration) *SourceManager {
+func NewSourceManager(s SourceProvider, o Orchestrator, interval time.Duration) *SourceManager {
 	return &SourceManager{
 		s:        s,
 		o:        o,
@@ -40,20 +40,20 @@ func (s *SourceManager) Start() {
 }
 
 func (s *SourceManager) updateSources() {
-	sourceIDs, err := s.s.SourceIDs()
+	resources, err := s.s.Resources()
 	if err != nil {
 		return
 	}
 
-	tasks := sourceIDsToTasks(sourceIDs)
+	tasks := resourcesToTasks(resources)
 	s.o.UpdateTasks(tasks)
 	s.o.NextTerm(context.Background())
 }
 
-func sourceIDsToTasks(sids []string) []orchestrator.Task {
+func resourcesToTasks(resources []Resource) []orchestrator.Task {
 	var tasks []orchestrator.Task
-	for _, s := range sids {
-		tasks = append(tasks, orchestrator.Task{Name: s, Instances: 1})
+	for _, r := range resources {
+		tasks = append(tasks, orchestrator.Task{Name: r, Instances: 1})
 	}
 
 	return tasks
@@ -68,8 +68,9 @@ func (a Communicator) List(ctx context.Context, worker interface{}) ([]interface
 
 func (a Communicator) Add(ctx context.Context, worker, task interface{}) error {
 	sa := worker.(*Aggregator)
-	guid := task.(string)
-	sa.Add(guid)
+	r := task.(Resource)
+
+	sa.Add(r)
 
 	return nil
 }
@@ -77,7 +78,7 @@ func (a Communicator) Add(ctx context.Context, worker, task interface{}) error {
 func (a Communicator) Remove(ctx context.Context, worker, task interface{}) error {
 	sa := worker.(*Aggregator)
 	if task != nil {
-		sa.Remove(task.(string))
+		sa.Remove(task.(Resource).GUID)
 	}
 
 	return nil

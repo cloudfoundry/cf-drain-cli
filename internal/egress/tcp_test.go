@@ -263,7 +263,8 @@ var _ = Describe("TCPWriter", func() {
 func buildLogEnvelope(srcType, srcInstance, payload string, logType loggregator_v2.Log_Type) *loggregator_v2.Envelope {
 	return &loggregator_v2.Envelope{
 		Tags: map[string]string{
-			"source_type": srcType,
+			"source_type":     srcType,
+			"hostname_suffix": "test-app-id",
 		},
 		InstanceId: srcInstance,
 		Timestamp:  12345678,
@@ -282,6 +283,9 @@ func buildGaugeEnvelope(srcInstance string) *loggregator_v2.Envelope {
 		InstanceId: srcInstance,
 		Timestamp:  12345678,
 		SourceId:   "test-app-id",
+		Tags: map[string]string{
+			"hostname_suffix": "test-app-id",
+		},
 		Message: &loggregator_v2.Envelope_Gauge{
 			Gauge: &loggregator_v2.Gauge{
 				Metrics: map[string]*loggregator_v2.GaugeValue{
@@ -318,6 +322,9 @@ func buildTimerEnvelope() *loggregator_v2.Envelope {
 		Message: &loggregator_v2.Envelope_Timer{
 			Timer: &loggregator_v2.Timer{},
 		},
+		Tags: map[string]string{
+			"hostname_suffix": "test-app-id",
+		},
 	}
 }
 
@@ -332,6 +339,9 @@ func buildCounterEnvelope(srcInstance string) *loggregator_v2.Envelope {
 				Total: 99,
 				Delta: 1,
 			},
+		},
+		Tags: map[string]string{
+			"hostname_suffix": "test-app-id",
 		},
 	}
 }

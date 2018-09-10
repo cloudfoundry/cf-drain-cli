@@ -83,7 +83,7 @@ var _ = Describe("Main", func() {
 
 				w.Write(<-appResps)
 			default:
-				panic(fmt.Sprintf("unhandled request: %s", r.URL.Path))
+				w.WriteHeader(http.StatusNotFound)
 			}
 		}))
 
@@ -141,6 +141,7 @@ var _ = Describe("Main", func() {
 		})
 
 		It("forwards the logs from the RLP to the syslog endpoint", func() {
+			serviceResps <- []byte(serviceInstancesBody)
 			rlpResp["service-1"] = make(chan []byte, 100)
 			rlpResp["service-1"] <- []byte(buildSSEMessage("service-1"))
 
@@ -159,7 +160,7 @@ var _ = Describe("Main", func() {
 			Eventually(syslogReqs).Should(Receive(&syslogReq))
 			Expect(syslogReq.Method).To(Equal(http.MethodPost))
 
-			expected := messageBytes("service-1")
+			expected := messageBytes("service-1-name", "service-1")
 
 			var actual []byte
 			Eventually(syslogBodies).Should(Receive(&actual))
@@ -253,12 +254,12 @@ var _ = Describe("Main", func() {
 			}
 
 			Expect(bodies).To(ConsistOf(
-				messageBytes("service-1"),
-				messageBytes("service-2"),
-				messageBytes("service-3"),
-				messageBytes("app-1"),
-				messageBytes("app-2"),
-				messageBytes("app-3"),
+				messageBytes("service-1-name", "service-1"),
+				messageBytes("service-2-name", "service-2"),
+				messageBytes("service-3-name", "service-3"),
+				messageBytes("app-1-name", "app-1"),
+				messageBytes("app-2-name", "app-2"),
+				messageBytes("app-3-name", "app-3"),
 			))
 
 			//the forwarder adapts to changes in the space
@@ -284,7 +285,7 @@ var _ = Describe("Main", func() {
 			var actual []byte
 			Eventually(syslogBodies).Should(Receive(&actual))
 
-			Expect(messageBytes("service-4")).To(Equal(string(actual)))
+			Expect(messageBytes("service-4-name", "service-4")).To(Equal(string(actual)))
 		}, 5)
 	})
 
@@ -361,19 +362,19 @@ var _ = Describe("Main", func() {
 			}
 
 			Expect(bodies).To(ConsistOf(
-				messageBytes("app-1"),
-				messageBytes("app-2"),
-				messageBytes("app-3"),
+				messageBytes("app-1-name", "app-1"),
+				messageBytes("app-2-name", "app-2"),
+				messageBytes("app-3-name", "app-3"),
 			))
 		})
 	})
 })
 
-func messageBytes(appID string) string {
+func messageBytes(hostnameSuffix, appID string) string {
 	msg := &rfc5424.Message{
 		Timestamp: time.Unix(0, logTimestamp).UTC(),
 		AppName:   appID,
-		Hostname:  "TEST_HOSTNAME." + appID,
+		Hostname:  "TEST_HOSTNAME." + hostnameSuffix,
 		Priority:  rfc5424.Priority(14),
 		ProcessID: "[APP/PROC/WEB/0]",
 		Message:   []byte("log body\n"),

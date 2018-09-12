@@ -159,7 +159,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				Name:     "drain-space",
 				HelpText: "Pushes app to bind all apps in the space to the configured syslog drain",
 				UsageDetails: plugin.Usage{
-					Usage: "drain-space SYSLOG_DRAIN_URL [--drain-name NAME] [--path PATH] [--type TYPE] [--force]",
+					Usage: "drain-space SYSLOG_DRAIN_URL [--drain-name NAME] [--path PATH] [--type TYPE]",
 					Options: map[string]string{
 						"-drain-name": "Name for the space drain",
 						"-path":       "Path to the space drain app to push. If omitted the latest release will be downloaded",

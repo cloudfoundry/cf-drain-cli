@@ -240,7 +240,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		)
 
 		drains = cf.Cf("drains")
-		Eventually(drains).Should(Say(drainsRegex))
+		Eventually(drains, acceptance.Config().DefaultTimeout).Should(Say(drainsRegex))
 	})
 
 	It("deletes the drain", func() {
@@ -255,7 +255,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		)
 
 		drains = cf.Cf("drains")
-		Eventually(drains).Should(Say(drainsRegex))
+		Eventually(drains, acceptance.Config().DefaultTimeout).Should(Say(drainsRegex))
 
 		CF(
 			"delete-drain",
@@ -264,7 +264,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 		)
 
 		drains = cf.Cf("drains")
-		Consistently(drains, 10).ShouldNot(Say("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"))
+		Consistently(drains, acceptance.Config().DefaultTimeout).ShouldNot(Say("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"))
 	})
 
 	It("drain-space reports error when space-drain with same drain-name exists", func() {
@@ -290,7 +290,7 @@ LOG-EMITTER-1--[0-9a-f]{16}\s+cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}
 			"--path", path.Dir(execPath),
 		)
 
-		Eventually(drainSpace).Should(Say("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
+		Eventually(drainSpace, acceptance.Config().DefaultTimeout).Should(Say("A drain with that name already exists. Use --drain-name to create a drain with a different name."))
 	})
 
 	It("a space-drain cannot drain to itself or to any other space-drains", func() {

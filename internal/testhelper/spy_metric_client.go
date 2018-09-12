@@ -31,17 +31,6 @@ func (s *SpyMetricClient) NewCounterMetric(
 	return m
 }
 
-func (s *SpyMetricClient) NewGaugeMetric(
-	name string,
-	unit string,
-	opts ...pulseemitter.MetricOption,
-) pulseemitter.GaugeMetric {
-	m := &SpyGaugeMetric{}
-	s.metrics[name] = m
-
-	return m
-}
-
 func (s *SpyMetricClient) GetMetric(name string) TestMetric {
 	return s.metrics[name]
 }

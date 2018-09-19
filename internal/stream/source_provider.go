@@ -16,6 +16,7 @@ type SingleOrSpaceProvider struct {
 	SpaceGuid       string
 	IncludeServices bool
 	httpClient      Getter
+	excludeFilter   SourceIDFilter
 }
 
 func NewSingleOrSpaceProvider(
@@ -31,6 +32,7 @@ func NewSingleOrSpaceProvider(
 		SpaceGuid:       spaceID,
 		IncludeServices: includeServices,
 		httpClient:      http.DefaultClient,
+		excludeFilter:   func(string) bool { return false },
 	}
 
 	for _, o := range opts {
@@ -40,51 +42,42 @@ func NewSingleOrSpaceProvider(
 	return ssp
 }
 
-func (s *SingleOrSpaceProvider) SourceIDs() ([]string, error) {
-	rs, err := s.Resources()
+func (s *SingleOrSpaceProvider) Resources() ([]Resource, error) {
+	if s.Source != "" {
+		return s.resourcesForSingleApp()
+	}
+	return s.resourcesForSpace()
+}
+
+func (s *SingleOrSpaceProvider) resourcesForSingleApp() ([]Resource, error) {
+	url := fmt.Sprintf("%s/v3/apps/%s", s.ApiAddr, s.Source)
+	resp, err := s.httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 
-	var ids []string
-	for _, r := range rs {
-		ids = append(ids, r.GUID)
+	if resp.StatusCode != http.StatusOK {
+		resources, err := s.resources("service_instances")
+		if err != nil {
+			return nil, err
+		}
+
+		for _, resource := range resources {
+			if resource.GUID == s.Source {
+				return []Resource{resource}, nil
+			}
+		}
 	}
 
-	return ids, nil
+	var resource Resource
+	err = json.NewDecoder(resp.Body).Decode(&resource)
+	if err != nil {
+		return nil, err
+	}
+	return []Resource{resource}, nil
 }
 
-func (s *SingleOrSpaceProvider) Resources() ([]Resource, error) {
-	if s.Source != "" {
-		// Individual App or service
-		url := fmt.Sprintf("%s/v3/apps/%s", s.ApiAddr, s.Source)
-		resp, err := s.httpClient.Get(url)
-		if err != nil {
-			return nil, err
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			resources, err := s.resources("service_instances")
-			if err != nil {
-				return nil, err
-			}
-
-			for _, resource := range resources {
-				if resource.GUID == s.Source {
-					return []Resource{resource}, nil
-				}
-			}
-		}
-
-		var resource Resource
-		err = json.NewDecoder(resp.Body).Decode(&resource)
-		if err != nil {
-			return nil, err
-		}
-		return []Resource{resource}, nil
-	}
-
-	// Space wide
+func (s *SingleOrSpaceProvider) resourcesForSpace() ([]Resource, error) {
 	sg, err := s.serviceInstances()
 	if err != nil {
 		return nil, err
@@ -95,7 +88,16 @@ func (s *SingleOrSpaceProvider) Resources() ([]Resource, error) {
 		return nil, err
 	}
 
-	return append(sg, ag...), nil
+	resources := append(sg, ag...)
+
+	var filtered []Resource
+	for _, r := range resources {
+		if !s.excludeFilter(r.GUID) {
+			filtered = append(filtered, r)
+		}
+	}
+
+	return filtered, nil
 }
 
 func (s *SingleOrSpaceProvider) apps() ([]Resource, error) {
@@ -140,6 +142,16 @@ type SingleOrSpaceProviderOption func(*SingleOrSpaceProvider)
 func WithSourceProviderClient(httpClient Getter) SingleOrSpaceProviderOption {
 	return func(ssp *SingleOrSpaceProvider) {
 		ssp.httpClient = httpClient
+	}
+}
+
+// SourceIDFilter returns true if the passed source id should be filtered from
+// the space list from CAPI
+type SourceIDFilter func(string) bool
+
+func WithSourceProviderSpaceExcludeFilter(excludeFilter SourceIDFilter) SingleOrSpaceProviderOption {
+	return func(ssp *SingleOrSpaceProvider) {
+		ssp.excludeFilter = excludeFilter
 	}
 }
 

@@ -193,7 +193,7 @@ var _ = Describe("Main", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}, 5)
 
-		It("forwards the logs for services and apps instances in a space from the RLP to the syslog endpoint", func() {
+		It("forwards the logs for services and non-forwarder app instances in a space from the RLP to the syslog endpoint", func() {
 			serviceResps <- []byte(serviceInstancesBody)
 			appResps <- []byte(appsBody)
 
@@ -210,7 +210,7 @@ var _ = Describe("Main", func() {
 			rlpResp["app-3"] = make(chan []byte, 100)
 			rlpResp["app-3"] <- []byte(buildSSEMessage("app-3"))
 
-			numLogs := 6
+			numSources := 6
 
 			var capiReq *http.Request
 			Eventually(capiReqs).Should(Receive(&capiReq))
@@ -223,7 +223,7 @@ var _ = Describe("Main", func() {
 
 			var sourceIDs []string
 			var rlpReq *http.Request
-			for i := 0; i < numLogs; i++ {
+			for i := 0; i < numSources; i++ {
 				Eventually(rlpReqs).Should(Receive(&rlpReq))
 				Expect(rlpReq.URL.Path).To(Equal("/v2/read"))
 				Expect(rlpReq.URL.Host).To(Equal("log-stream.test-server.com"))
@@ -235,6 +235,8 @@ var _ = Describe("Main", func() {
 				sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
 			}
 
+			Consistently(rlpReqs).ShouldNot(Receive(&rlpReq))
+
 			Expect(sourceIDs).To(ConsistOf(
 				"service-1",
 				"service-2",
@@ -244,7 +246,7 @@ var _ = Describe("Main", func() {
 				"app-3",
 			))
 
-			Eventually(syslogReqs).Should(HaveLen(numLogs))
+			Eventually(syslogReqs).Should(HaveLen(numSources))
 
 			var bodies []string
 			for len(syslogReqs) > 0 {
@@ -345,6 +347,8 @@ var _ = Describe("Main", func() {
 				Expect(rlpReq.URL.Query()).To(HaveKeyWithValue("shard_id", []string{"forwarder-id"}))
 				sourceIDs = append(sourceIDs, rlpReq.URL.Query()["source_id"]...)
 			}
+
+			Consistently(rlpReqs).ShouldNot(Receive(&rlpReq))
 
 			Expect(sourceIDs).To(ConsistOf(
 				"app-1",
@@ -454,6 +458,10 @@ var appsBody = `
 		{
 			"guid": "app-3",
 			"name": "app-3-name"
+		},
+		{
+			"guid": "forwarder-id",
+			"name": "syslog-forwarder"
 		}
 	]
 }

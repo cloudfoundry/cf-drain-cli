@@ -35,12 +35,14 @@ func main() {
 	streamAggregator := stream.NewAggregator(client, cfg.ShardID, l)
 	o := createOrchestrator(streamAggregator)
 
+	excludeSelf := func(sourceID string) bool { return sourceID == cfg.Vcap.AppID }
 	sm := stream.NewSourceManager(
 		stream.NewSingleOrSpaceProvider(
 			cfg.SourceID,
 			cfg.Vcap.API,
 			cfg.Vcap.SpaceGUID,
 			cfg.IncludeServices,
+			stream.WithSourceProviderSpaceExcludeFilter(excludeSelf),
 		),
 		o,
 		cfg.UpdateInterval,

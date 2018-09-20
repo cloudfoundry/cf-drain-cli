@@ -92,7 +92,7 @@ var _ = Describe("MigrateSpaceDrain", func() {
 		}))
 
 		Expect(cli.cliCommandArgs[2]).To(Equal([]string{
-			"delete", "existing-space-drain", "-r",
+			"delete", "existing-space-drain", "-r", "-f",
 		}))
 
 		Expect(cli.cliCommandArgs[3]).To(Equal([]string{

@@ -105,7 +105,10 @@ func MigrateSpaceDrain(
 		}
 
 		if drainURL.Scheme == u.Scheme && drainURL.Host == u.Host {
-			cli.CliCommand("delete", a.Name, "-r", "-f")
+			_, err := cli.CliCommand("delete", a.Name, "-r", "-f")
+			if err != nil {
+				log.Fatalf("Failed to delete old space drain: %s", err)
+			}
 		}
 	}
 

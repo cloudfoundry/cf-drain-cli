@@ -294,6 +294,37 @@ var _ = Describe("MigrateSpaceDrain", func() {
 		Expect(logger.fatalfMessage).To(Equal("Failed to fetch drains: an error"))
 	})
 
+	It("fatally logs if deleting the app fails", func() {
+		cli.deleteAppError = errors.New("an error")
+
+		cli.getAppsApps = []plugin_models.GetAppsModel{
+			{
+				Name: "existing-space-drain",
+			},
+		}
+
+		cli.getAppEnvVars = map[string]interface{}{
+			"DRAIN_URL": "syslog://my-drain.drain:4123?drain-type=all",
+		}
+
+		Expect(func() {
+			command.MigrateSpaceDrain(
+				cli,
+				[]string{
+					"syslog://my-drain.drain:4123",
+					"--path", "/tmp/syslog-forwarder.zip",
+				},
+				downloader,
+				refreshTokenFetcher,
+				serviceDrainFetcher,
+				logger,
+				func() string { return "a-guid" },
+			)
+		}).To(Panic())
+
+		Expect(logger.fatalfMessage).To(Equal("Failed to delete old space drain: an error"))
+	})
+
 	It("fatally logs if it fails to unbind a service", func() {
 		serviceDrainFetcher.drains = []drain.Drain{
 			{Name: "drain-a", Apps: []string{"app-a"}, DrainURL: "syslog://my-drain.drain:4123"},

@@ -131,7 +131,7 @@ func MigrateSpaceDrain(
 				}
 			}
 
-			_, err := cli.CliCommand("delete-service", drain.Name)
+			_, err := cli.CliCommand("delete-service", drain.Name, "-f")
 			if err != nil {
 				log.Fatalf("%s", err)
 			}

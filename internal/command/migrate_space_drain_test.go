@@ -104,7 +104,7 @@ var _ = Describe("MigrateSpaceDrain", func() {
 		}))
 
 		Expect(cli.cliCommandArgs[5]).To(Equal([]string{
-			"delete-service", "drain-a",
+			"delete-service", "drain-a", "-f",
 		}))
 	})
 
@@ -172,7 +172,7 @@ var _ = Describe("MigrateSpaceDrain", func() {
 		}))
 
 		Expect(cli.cliCommandArgs[4]).To(Equal([]string{
-			"delete-service", "drain-a",
+			"delete-service", "drain-a", "-f",
 		}))
 	})
 

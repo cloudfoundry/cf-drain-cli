@@ -66,20 +66,19 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("delete-drain-space")
 		}
 		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
-	case "drain-service":
+	case "v2-drain-service":
 		if len(args) < 2 {
-			c.exitWithUsage("drain-service")
+			c.exitWithUsage("v2-drain-service")
 		}
 		tf := command.NewTokenFetcher(configPath(log))
 		command.PushServiceDrain(conn, args[1:], tf, logger, groupProvider)
-	case "drain-services-in-space":
+	case "v2-drain-services-in-space":
 		if len(args) < 2 {
-			c.exitWithUsage("drain-services-in-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
+			c.exitWithUsage("v2-drain-services-in-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
 		}
 		tf := command.NewTokenFetcher(configPath(log))
 		command.PushSpaceServiceDrain(
 			conn,
-			os.Stdin,
 			args[1:],
 			downloader,
 			tf,
@@ -87,9 +86,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			groupProvider,
 			guidProvider,
 		)
-	case "migrate-space-drain":
+	case "v2-migrate-space-drain":
 		if len(args) < 2 {
-			c.exitWithUsage("migrate-space-drain", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
+			c.exitWithUsage("v2-migrate-space-drain", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
 		}
 
 		tf := command.NewTokenFetcher(configPath(log))
@@ -178,31 +177,30 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				},
 			},
 			{
-				Name:     "drain-service",
+				Name:     "v2-drain-service",
 				HelpText: "Pushes app to drain a single service",
 				UsageDetails: plugin.Usage{
-					Usage: "drain-service SERVICE_NAME SYSLOG_DRAIN_URL --path PATH",
+					Usage: "v2-drain-service SERVICE_NAME SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
 						"-path": "Path to the service drain zip file.",
 					},
 				},
 			},
 			{
-				Name:     "drain-services-in-space",
+				Name:     "v2-drain-services-in-space",
 				HelpText: "Pushes app to drain all services in space",
 				UsageDetails: plugin.Usage{
-					Usage: "drain-services-in-space SYSLOG_DRAIN_URL --path PATH",
+					Usage: "v2-drain-services-in-space SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
-						"-path":  "Path to the service drain zip file. If omitted the latest release will be downloaded",
-						"-force": "Skip warning prompt. Default is false",
+						"-path": "Path to the service drain zip file. If omitted the latest release will be downloaded",
 					},
 				},
 			},
 			{
-				Name:     "migrate-space-drain",
+				Name:     "v2-migrate-space-drain",
 				HelpText: "Migrates space drain using CUPS to space drain using syslog-forwarder application",
 				UsageDetails: plugin.Usage{
-					Usage: "migrate-space-drain SYSLOG_DRAIN_URL",
+					Usage: "v2-migrate-space-drain SYSLOG_DRAIN_URL",
 					Options: map[string]string{
 						"-drain-name": "Name for the space drain",
 						"-path":       "Path to the syslog-forwarder zip file. If omitted the latest release will be downloaded",

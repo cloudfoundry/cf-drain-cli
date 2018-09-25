@@ -96,23 +96,37 @@ OPTIONS:
    --username                 Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)
 ```
 
-#### Drain Services In Space
+
+### V2 Commands
 
 **Note:**
-The drain services in space functionality is an experimental feature. It uses
-an experimental API known as the RLP (Reverse Log Proxy) Gateway. The RLP
-Gateway is not deployed with CF Deployment by default, if you are unsure if it
-is available to you, please check with your operator.
+These commands use an API known as the RLP (Reverse Log Proxy) Gateway. The
+RLP Gateway is not necessarily deployed with CF Deployment by default. If you
+are unsure if it is available to you, please check with your operator.
+
+#### Drain Service
 
 ```
 NAME:
-   drain-services-in-space - Pushes app to drain all services in space
+   v2-drain-service - Pushes app to drain a single service
 
 USAGE:
-   drain-services-in-space SYSLOG_DRAIN_URL --path PATH
+   v2-drain-service SERVICE_NAME SYSLOG_DRAIN_URL --path PATH
 
 OPTIONS:
-   --force       Skip warning prompt. Default is false
+   --path      Path to the service drain zip file.
+```
+
+#### Drain Services In Space
+
+```
+NAME:
+   v2-drain-services-in-space - Pushes app to drain all services in space
+
+USAGE:
+   v2-drain-services-in-space SYSLOG_DRAIN_URL --path PATH
+
+OPTIONS:
    --path        Path to the service drain zip file.
 ```
 
@@ -120,10 +134,10 @@ OPTIONS:
 
 ```
 NAME:
-   migrate-space-drain - Migrates space drain using CUPS to space drain using syslog-forwarder application
+   v2-migrate-space-drain - Migrates space drain using CUPS to space drain using syslog-forwarder application
 
 USAGE:
-   migrate-space-drain SYSLOG_DRAIN_URL
+   v2-migrate-space-drain SYSLOG_DRAIN_URL
 
 OPTIONS:
    --drain-name       Name for the space drain

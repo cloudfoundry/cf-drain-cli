@@ -1,10 +1,7 @@
 package command
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
 	flags "github.com/jessevdk/go-flags"
@@ -14,12 +11,10 @@ type pushSpaceServiceDrainOpts struct {
 	DrainName string
 	DrainURL  string
 	Path      string `long:"path"`
-	Force     bool   `long:"force"`
 }
 
 func PushSpaceServiceDrain(
 	cli plugin.CliConnection,
-	reader io.Reader,
 	args []string,
 	d Downloader,
 	f RefreshTokenFetcher,
@@ -27,31 +22,12 @@ func PushSpaceServiceDrain(
 	group GroupNameProvider,
 	guid GUIDProvider,
 ) {
-	opts := pushSpaceServiceDrainOpts{
-		Force: false,
-	}
+	var opts pushSpaceServiceDrainOpts
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
 	args, err := parser.ParseArgs(args)
 	if err != nil {
 		log.Fatalf("%s", err)
-	}
-
-	if !opts.Force {
-		log.Print(
-			"The drain services in space functionality is an experimental feature. " +
-				"See https://github.com/cloudfoundry/cf-drain-cli#drain-services-in-space for more details.\n" +
-				"Do you wish to proceed? [y/N] ",
-		)
-
-		buf := bufio.NewReader(reader)
-		resp, err := buf.ReadString('\n')
-		if err != nil {
-			log.Fatalf("Failed to read user input: %s", err)
-		}
-		if strings.TrimSpace(strings.ToLower(resp)) != "y" {
-			log.Fatalf("OK, exiting.")
-		}
 	}
 
 	if len(args) != 1 {

@@ -86,6 +86,36 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 		))
 	})
 
+	It("allows the user to name their forwarder app", func() {
+		command.PushSpaceServiceDrain(
+			cli,
+			[]string{
+				"https://syslog-drain",
+				"--path", "service-drain-zip",
+				"--name", "forwarder-name",
+			},
+			downloader,
+			refreshTokenFetcher,
+			logger,
+			groupNameProvider,
+			guidProvider,
+		)
+
+		Expect(cli.cliCommandArgs).To(HaveLen(2))
+		Expect(cli.cliCommandArgs[0]).To(Equal(
+			[]string{
+				"push", "forwarder-name",
+				"-p", "service-drain-zip",
+				"-i", "3",
+				"-b", "binary_buildpack",
+				"-c", "./run.sh",
+				"--health-check-type", "process",
+				"--no-start",
+				"--no-route",
+			},
+		))
+	})
+
 	It("downloads the app before pushing app", func() {
 		command.PushSpaceServiceDrain(
 			cli,

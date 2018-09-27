@@ -8,7 +8,7 @@ import (
 )
 
 type pushSpaceServiceDrainOpts struct {
-	DrainName string
+	DrainName string `long:"name"`
 	DrainURL  string
 	Path      string `long:"path"`
 }
@@ -54,7 +54,9 @@ func PushSpaceServiceDrain(
 		log.Fatalf("%s", err)
 	}
 
-	opts.DrainName = fmt.Sprintf("space-services-forwarder-%s", guid())
+	if opts.DrainName == "" {
+		opts.DrainName = fmt.Sprintf("space-services-forwarder-%s", guid())
+	}
 	opts.DrainURL = args[0]
 
 	if opts.Path == "" {

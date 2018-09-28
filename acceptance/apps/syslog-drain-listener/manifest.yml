@@ -1,5 +1,0 @@
----
-applications:
-- name: syslog-drain-listener
-  env:
-    GOPACKAGENAME: main

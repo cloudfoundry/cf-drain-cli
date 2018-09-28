@@ -72,9 +72,9 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		}
 		tf := command.NewTokenFetcher(configPath(log))
 		command.PushServiceDrain(conn, args[1:], tf, logger, groupProvider)
-	case "v2-drain-services-in-space":
+	case "v2-drain-space":
 		if len(args) < 2 {
-			c.exitWithUsage("v2-drain-services-in-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
+			c.exitWithUsage("v2-drain-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
 		}
 		tf := command.NewTokenFetcher(configPath(log))
 		command.PushSpaceServiceDrain(
@@ -187,10 +187,10 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				},
 			},
 			{
-				Name:     "v2-drain-services-in-space",
-				HelpText: "Pushes app to drain all services in space",
+				Name:     "v2-drain-space",
+				HelpText: "Pushes app to drain all apps and services in space",
 				UsageDetails: plugin.Usage{
-					Usage: "v2-drain-services-in-space SYSLOG_DRAIN_URL --path PATH",
+					Usage: "v2-drain-space SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
 						"-path": "Path to the service drain zip file. If omitted the latest release will be downloaded",
 					},

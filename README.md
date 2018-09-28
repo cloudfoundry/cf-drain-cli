@@ -117,14 +117,14 @@ OPTIONS:
    --path      Path to the service drain zip file.
 ```
 
-#### Drain Services In Space
+#### Drain Space
 
 ```
 NAME:
-   v2-drain-services-in-space - Pushes app to drain all services in space
+   v2-drain-space - Pushes app to drain all apps and services in space
 
 USAGE:
-   v2-drain-services-in-space SYSLOG_DRAIN_URL --path PATH
+   v2-drain-space SYSLOG_DRAIN_URL --path PATH
 
 OPTIONS:
    --path        Path to the service drain zip file.

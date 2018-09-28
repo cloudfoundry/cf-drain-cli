@@ -104,19 +104,6 @@ These commands use an API known as the RLP (Reverse Log Proxy) Gateway. The
 RLP Gateway is not necessarily deployed with CF Deployment by default. If you
 are unsure if it is available to you, please check with your operator.
 
-#### Drain Service
-
-```
-NAME:
-   v2-drain-service - Pushes app to drain a single service
-
-USAGE:
-   v2-drain-service SERVICE_NAME SYSLOG_DRAIN_URL --path PATH
-
-OPTIONS:
-   --path      Path to the service drain zip file.
-```
-
 #### Drain Space
 
 ```

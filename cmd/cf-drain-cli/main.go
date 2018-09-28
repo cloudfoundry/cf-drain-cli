@@ -66,12 +66,6 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("delete-drain-space")
 		}
 		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
-	case "v2-drain-service":
-		if len(args) < 2 {
-			c.exitWithUsage("v2-drain-service")
-		}
-		tf := command.NewTokenFetcher(configPath(log))
-		command.PushServiceDrain(conn, args[1:], tf, logger, groupProvider)
 	case "v2-drain-space":
 		if len(args) < 2 {
 			c.exitWithUsage("v2-drain-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
@@ -173,16 +167,6 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 					Usage: "delete-drain-space DRAIN_NAME [--force]",
 					Options: map[string]string{
 						"-force": "Skip warning prompt. Default is false",
-					},
-				},
-			},
-			{
-				Name:     "v2-drain-service",
-				HelpText: "Pushes app to drain a single service",
-				UsageDetails: plugin.Usage{
-					Usage: "v2-drain-service SERVICE_NAME SYSLOG_DRAIN_URL --path PATH",
-					Options: map[string]string{
-						"-path": "Path to the service drain zip file.",
 					},
 				},
 			},

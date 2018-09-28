@@ -14,6 +14,9 @@ type migrateSpaceDrainOpts struct {
 	Path      string `long:"path"`
 }
 
+type GroupNameProvider func() string
+type GUIDProvider func() string
+
 func MigrateSpaceDrain(
 	cli plugin.CliConnection,
 	args []string,
@@ -137,4 +140,29 @@ func MigrateSpaceDrain(
 			}
 		}
 	}
+}
+
+func pushSyslogForwarder(cli plugin.CliConnection, log Logger, drainName, path string, envs [][]string) {
+	_, err := cli.CliCommand(
+		"push", drainName,
+		"-p", path,
+		"-i", "3",
+		"-b", "binary_buildpack",
+		"-c", "./run.sh",
+		"--health-check-type", "process",
+		"--no-start",
+		"--no-route",
+	)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	for _, env := range envs {
+		_, err := cli.CliCommandWithoutTerminalOutput("set-env", drainName, env[0], env[1])
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
+
+	cli.CliCommand("start", drainName)
 }

@@ -13,7 +13,7 @@ type Config struct {
 
 	DrainName string `env:"DRAIN_NAME, required"`
 	DrainURL  string `env:"DRAIN_URL, required"`
-	DrainType string `env: "DRAIN_TYPE"`
+	DrainType string `env:"DRAIN_TYPE"`
 
 	APIAddr  string `env:"API_ADDR, required"`
 	UAAAddr  string `env:"UAA_ADDR, required"`

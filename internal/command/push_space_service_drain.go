@@ -8,7 +8,7 @@ import (
 )
 
 type pushSpaceServiceDrainOpts struct {
-	DrainName string `long:"name"`
+	DrainName string `long:"drain-name"`
 	DrainURL  string
 	Path      string `long:"path"`
 }

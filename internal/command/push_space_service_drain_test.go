@@ -92,7 +92,7 @@ var _ = Describe("PushSpaceServiceDrain", func() {
 			[]string{
 				"https://syslog-drain",
 				"--path", "service-drain-zip",
-				"--name", "forwarder-name",
+				"--drain-name", "forwarder-name",
 			},
 			downloader,
 			refreshTokenFetcher,

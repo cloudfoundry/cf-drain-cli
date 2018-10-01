@@ -115,6 +115,7 @@ USAGE:
 
 OPTIONS:
    --path        Path to the service drain zip file.
+   --drain-name  Name for the space drain. Required
 ```
 
 ### Migrate Space Drain

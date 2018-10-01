@@ -177,6 +177,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 					Usage: "v2-drain-space SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
 						"-path": "Path to the service drain zip file. If omitted the latest release will be downloaded",
+						"-drain-name": "Name for the space drain",
 					},
 				},
 			},

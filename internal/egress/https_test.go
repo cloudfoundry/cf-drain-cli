@@ -33,7 +33,7 @@ var _ = Describe("HTTPWriter", func() {
 		)
 
 		env := buildLogEnvelope("APP", "1", "just a test", loggregator_v2.Log_OUT)
-		Expect(writer.Write(env)).To(HaveOccurred())
+		Expect(writer.Write(env)).ToNot(Succeed())
 	})
 
 	It("errors on an invalid syslog message", func() {
@@ -51,7 +51,7 @@ var _ = Describe("HTTPWriter", func() {
 		env := buildLogEnvelope("APP", "1", "just a test", loggregator_v2.Log_OUT)
 		env.SourceId = "test-app-id-012345678901234567890012345678901234567890"
 
-		Expect(writer.Write(env)).To(HaveOccurred())
+		Expect(writer.Write(env)).ToNot(Succeed())
 	})
 
 	It("errors when the http POST fails", func() {
@@ -68,7 +68,7 @@ var _ = Describe("HTTPWriter", func() {
 		)
 
 		env := buildLogEnvelope("APP", "1", "just a test", loggregator_v2.Log_OUT)
-		Expect(writer.Write(env)).To(HaveOccurred())
+		Expect(writer.Write(env)).ToNot(Succeed())
 	})
 
 	It("writes syslog formatted messages to http drain", func() {

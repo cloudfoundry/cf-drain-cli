@@ -42,7 +42,7 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 		if len(args) < 3 {
 			c.exitWithUsage("drain")
 		}
-		command.CreateDrain(conn, args[1:], downloader, logger)
+		command.CreateDrain(conn, args[1:], logger)
 	case "delete-drain":
 		if len(args) < 2 {
 			c.exitWithUsage("delete-drain")
@@ -176,7 +176,7 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "v2-drain-space SYSLOG_DRAIN_URL --path PATH",
 					Options: map[string]string{
-						"-path": "Path to the service drain zip file. If omitted the latest release will be downloaded",
+						"-path":       "Path to the service drain zip file. If omitted the latest release will be downloaded",
 						"-drain-name": "Name for the space drain",
 					},
 				},

@@ -40,7 +40,6 @@ func (f *createDrainOpts) drainName() string {
 func CreateDrain(
 	cli plugin.CliConnection,
 	args []string,
-	d Downloader,
 	log Logger,
 ) {
 	opts := createDrainOpts{}

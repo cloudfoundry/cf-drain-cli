@@ -32,7 +32,6 @@ func Drains(
 	}
 
 	var drains []drain.Drain
-
 	for _, f := range fetchers {
 		d, err := f.Drains(space.Guid)
 		if err != nil {
@@ -44,7 +43,7 @@ func Drains(
 	tw := tabwriter.NewWriter(tableWriter, 10, 2, 2, ' ', 0)
 
 	// Header
-	fmt.Fprintln(tw, "App\tDrain\tType\tURL")
+	fmt.Fprintln(tw, "App\tDrain\tType\tURL\tUse Agent")
 	for _, d := range drains {
 		for _, app := range d.Apps {
 			drain := []string{
@@ -52,6 +51,7 @@ func Drains(
 				d.Name,
 				strings.Title(d.Type),
 				sanitizeDrainURL(d.DrainURL),
+				fmt.Sprint(d.UseAgent),
 			}
 			fmt.Fprintln(tw, strings.Join(drain, "\t"))
 		}

@@ -51,12 +51,42 @@ var _ = Describe("Drains", func() {
 		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"App       Drain     Type      URL",
-			"app-1     drain-1   Metrics   syslog://my-drain:1233",
-			"app-2     drain-1   Metrics   syslog://my-drain:1233",
-			"app-1     drain-2   Logs      syslog-tls://my-drain:1234",
+			"App       Drain     Type      URL                         Use Agent",
+			"app-1     drain-1   Metrics   syslog://my-drain:1233      false",
+			"app-2     drain-1   Metrics   syslog://my-drain:1233      false",
+			"app-1     drain-2   Logs      syslog-tls://my-drain:1234  false",
 			"",
 		}))
+	})
+
+	It("reports true for Use Agent if UseAgent is true", func() {
+		serviceDrainFetcher.drains = []drain.Drain{
+			{
+				Name:     "drain-1",
+				Apps:     []string{"app-1", "app-2"},
+				Type:     "metrics",
+				DrainURL: "syslog-v3://my-drain:1233",
+				UseAgent: true,
+			},
+			{
+				Name:     "drain-2",
+				Apps:     []string{"app-1"},
+				Type:     "logs",
+				DrainURL: "syslog-tls-v3://my-drain:1234",
+				UseAgent: true,
+			},
+		}
+
+		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
+
+		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
+			"App       Drain     Type      URL                            Use Agent",
+			"app-1     drain-1   Metrics   syslog-v3://my-drain:1233      true",
+			"app-2     drain-1   Metrics   syslog-v3://my-drain:1233      true",
+			"app-1     drain-2   Logs      syslog-tls-v3://my-drain:1234  true",
+			"",
+		}))
+
 	})
 
 	It("sanitizes drain urls", func() {
@@ -71,9 +101,9 @@ var _ = Describe("Drains", func() {
 		command.Drains(cli, []string{}, logger, tableWriter, drainFetchers...)
 
 		Expect(strings.Split(tableWriter.String(), "\n")).To(Equal([]string{
-			"App       Drain     Type      URL",
-			"app-1     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
-			"app-2     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>",
+			"App       Drain     Type      URL                                                                 Use Agent",
+			"app-1     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>  false",
+			"app-2     drain-1   Metrics   syslog://<redacted>:<redacted>@my-drain:1233?some-query=<redacted>  false",
 			"",
 		}))
 	})

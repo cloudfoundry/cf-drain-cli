@@ -66,35 +66,6 @@ func (c CFDrainCLI) Run(conn plugin.CliConnection, args []string) {
 			c.exitWithUsage("delete-drain-space")
 		}
 		command.DeleteSpaceDrain(conn, args[1:], logger, os.Stdin, sdClient, command.DeleteDrain)
-	case "v2-drain-space":
-		if len(args) < 2 {
-			c.exitWithUsage("v2-drain-space", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
-		}
-		tf := command.NewTokenFetcher(configPath(log))
-		command.PushSpaceServiceDrain(
-			conn,
-			args[1:],
-			downloader,
-			tf,
-			logger,
-			groupProvider,
-			guidProvider,
-		)
-	case "v2-migrate-space-drain":
-		if len(args) < 2 {
-			c.exitWithUsage("v2-migrate-space-drain", "SYSLOG_DRAIN_URL required of the form syslog://destinaton.url:port")
-		}
-
-		tf := command.NewTokenFetcher(configPath(log))
-		command.MigrateSpaceDrain(
-			conn,
-			args[1:],
-			downloader,
-			tf,
-			sdClient,
-			logger,
-			guidProvider,
-		)
 	}
 }
 
@@ -168,28 +139,6 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 					Usage: "delete-drain-space DRAIN_NAME [--force]",
 					Options: map[string]string{
 						"-force": "Skip warning prompt. Default is false",
-					},
-				},
-			},
-			{
-				Name:     "v2-drain-space",
-				HelpText: "Pushes app to drain all apps and services in space",
-				UsageDetails: plugin.Usage{
-					Usage: "v2-drain-space SYSLOG_DRAIN_URL --path PATH",
-					Options: map[string]string{
-						"-path":       "Path to the service drain zip file. If omitted the latest release will be downloaded",
-						"-drain-name": "Name for the space drain",
-					},
-				},
-			},
-			{
-				Name:     "v2-migrate-space-drain",
-				HelpText: "Migrates space drain using CUPS to space drain using syslog-forwarder application",
-				UsageDetails: plugin.Usage{
-					Usage: "v2-migrate-space-drain SYSLOG_DRAIN_URL",
-					Options: map[string]string{
-						"-drain-name": "Name for the space drain",
-						"-path":       "Path to the syslog-forwarder zip file. If omitted the latest release will be downloaded",
 					},
 				},
 			},

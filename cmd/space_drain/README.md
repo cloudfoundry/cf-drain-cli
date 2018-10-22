@@ -7,40 +7,40 @@ syslog drain.
 While the CF Drain CLI is the preferred deployment strategy, this app can be
 deployed with out it.
 
-Build the app with
+1. Build the app with
 
 ```
 go build
 ```
 
-Once the app is built, deploy it with the following command
+2. Once the app is built, deploy it with the following command
 
 ```
 cf push <name> -b binary_buildpack -c ./space_drain -u proccess --no-start
 ```
 
-Set the envrioronment variables in [Configuration](#config)
+3. Set the envrioronment variables in [Configuration](#Configuration)
 
-run
+4. Run
 
 ```
 cf start <name>
 ```
 
-## <a="config"></a> Configuration
+## Configuration
 Set the following environment variables on the app with the command
 
 ```
 cf set-env <name> VARIABLE <VALUE>
 ```
 
-SPACE_ID - The ID (rather than the name) of the space the drain is deployed to
-DRAIN_NAME - The space drain app name. This is used so the drain ignores itself
-DRAIN_URL - Where to drain the apps. https, syslog, and syslog-tls are supported
-DRAIN_TYPE - Wether to drain log, metrics, counter, or all
-API_ADDR - The address of your CF API
-UAA_ADDR - the address of your UAA API
-CLIENT_ID - The UAA client to fetch auth tokens given a UAA Refresh token
-SKIP_CERT_VERIFY - Whether to Skip SSL Validation on outbound calls
-REFRESH_TOKEN - The Refresh token to be used to get auth tokens
+* SPACE_ID - The ID (rather than the name) of the space the drain is deployed to
+* DRAIN_NAME - The space drain app name. This is used so the drain ignores itself
+* DRAIN_URL - Where to drain the apps. https, syslog, and syslog-tls are supported
+* DRAIN_TYPE - Wether to drain log, metrics, counter, or all
+* API_ADDR - The address of your CF API
+* UAA_ADDR - the address of your UAA API
+* CLIENT_ID - The UAA client to fetch auth tokens given a UAA Refresh token
+* SKIP_CERT_VERIFY - Whether to Skip SSL Validation on outbound calls
+* REFRESH_TOKEN - The Refresh token to be used to get auth tokens
 

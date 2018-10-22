@@ -71,9 +71,7 @@ func pushDrain(cli plugin.CliConnection, appName, command string, extraEnvs [][]
 		"-p", opts.Path,
 		"-b", "binary_buildpack",
 		"-c", fmt.Sprint("./", command),
-		"--health-check-type", "process",
 		"--no-start",
-		"--no-route",
 	)
 	if err != nil {
 		log.Fatalf("%s", err)

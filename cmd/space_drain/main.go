@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"code.cloudfoundry.org/cf-drain-cli/internal/drain"
 	"github.com/cloudfoundry-incubator/uaago"
 )
+
+var version string
 
 func main() {
 	log := log.New(os.Stderr, "", log.LstdFlags)
@@ -34,7 +37,6 @@ func main() {
 	}
 
 	var restager *cloudcontroller.Restager
-
 	saveAndRestager := cloudcontroller.SaveAndRestagerFunc(func(rt string) {
 		restager.SaveAndRestage(rt)
 	})
@@ -61,9 +63,16 @@ func main() {
 	appLister := cloudcontroller.NewAppListerClient(curler)
 
 	createAndBind(drainLister, drainCreator, drainBinder, appLister, curler, cfg, log)
-	for range time.Tick(time.Minute) {
-		createAndBind(drainLister, drainCreator, drainBinder, appLister, curler, cfg, log)
-	}
+	go func() {
+		for range time.Tick(time.Minute) {
+			createAndBind(drainLister, drainCreator, drainBinder, appLister, curler, cfg, log)
+		}
+	}()
+
+	http.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf(`{"version": "%s"}`, version)))
+	})
+	http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 }
 
 func createAndBind(

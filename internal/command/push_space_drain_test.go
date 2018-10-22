@@ -52,9 +52,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
-				"--health-check-type", "process",
 				"--no-start",
-				"--no-route",
 			},
 		))
 
@@ -100,9 +98,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				"-p", "/downloaded/temp/dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
-				"--health-check-type", "process",
 				"--no-start",
-				"--no-route",
 			},
 		))
 	})
@@ -127,9 +123,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				"-p", "/downloaded/temp/dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
-				"--health-check-type", "process",
 				"--no-start",
-				"--no-route",
 			},
 		))
 
@@ -173,9 +167,7 @@ var _ = Describe("PushSpaceDrain", func() {
 				"-p", "some-temp-dir",
 				"-b", "binary_buildpack",
 				"-c", "./space_drain",
-				"--health-check-type", "process",
 				"--no-start",
-				"--no-route",
 			},
 		))
 

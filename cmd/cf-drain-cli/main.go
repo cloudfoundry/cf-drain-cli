@@ -116,29 +116,29 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain DRAIN_NAME [--force]",
 					Options: map[string]string{
-						"-force": "Skip warning prompt. Default is false",
+						"-force": "Skip warning prompt. Default is false.",
 					},
 				},
 			},
 			{
 				Name:     "drain-space",
-				HelpText: "Pushes app to bind all apps in the space to the configured syslog drain",
+				HelpText: "Pushes app to bind all apps in the space to the configured syslog drain.",
 				UsageDetails: plugin.Usage{
 					Usage: "drain-space SYSLOG_DRAIN_URL [--drain-name NAME] [--path PATH] [--type TYPE]",
 					Options: map[string]string{
-						"-drain-name": "Name for the space drain",
-						"-path":       "Path to the space drain app to push. If omitted the latest release will be downloaded",
-						"-type":       "Which log type to filter on (logs, metrics, all). Default is all",
+						"-drain-name": "Name for the space drain.",
+						"-path":       "Path to the space drain app to push. If omitted the latest release will be downloaded.",
+						"-type":       "Which log type to filter on (logs, metrics, all). Default is all.",
 					},
 				},
 			},
 			{
 				Name:     "delete-drain-space",
-				HelpText: "Deletes space drain app and unbinds all the apps in the space from the configured syslog drain",
+				HelpText: "Deletes space drain app and unbinds all the apps in the space from the configured syslog drain.",
 				UsageDetails: plugin.Usage{
 					Usage: "delete-drain-space DRAIN_NAME [--force]",
 					Options: map[string]string{
-						"-force": "Skip warning prompt. Default is false",
+						"-force": "Skip warning prompt. Default is false.",
 					},
 				},
 			},

@@ -82,18 +82,17 @@ USAGE:
 #### Space Drain
 
 ```
+cf drain-space --help
 NAME:
-   drain-space - Pushes app to bind all apps in the space to the configured syslog drain
+   drain-space - Pushes app to bind all apps in the space to the configured syslog drain.
 
 USAGE:
-   drain-space [OPTIONS]
+   drain-space SYSLOG_DRAIN_URL [--drain-name NAME] [--path PATH] [--type TYPE]
 
 OPTIONS:
-   --drain-name               Name for the space drain. Required
-   --drain-url                Syslog endpoint for the space drain. Required
-   --path                     Path to the space drain app to push. If omitted the latest release will be downloaded
-   --type                     Which log type to filter on (logs, metrics, all). Default is all
-   --username                 Username to use when pushing the app. If not specified, a user will be created (requires admin permissions)
+   --drain-name       Name for the space drain.
+   --path             Path to the space drain app to push. If omitted the latest release will be downloaded.
+   --type             Which log type to filter on (logs, metrics, all). Default is all.
 ```
 
 

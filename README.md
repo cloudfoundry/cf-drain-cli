@@ -95,6 +95,19 @@ OPTIONS:
    --type             Which log type to filter on (logs, metrics, all). Default is all.
 ```
 
+#### Delete Space Drain
+
+```
+$ cf delete-drain-space --help
+NAME:
+   delete-drain-space - Deletes space drain app and unbinds all the apps in the space from the configured syslog drain.
+
+USAGE:
+   delete-drain-space DRAIN_NAME [--force]
+
+OPTIONS:
+   --force       Skip warning prompt. Default is false.
+```
 
 ### V2 Commands
 

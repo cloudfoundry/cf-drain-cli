@@ -22,7 +22,6 @@ type createDrainOpts struct {
 	DrainName string `long:"drain-name"`
 	DrainType string `long:"type"`
 	DrainURL  string
-	UseAgent  bool `long:"use-agent"`
 }
 
 func (f *createDrainOpts) drainName() string {
@@ -61,10 +60,6 @@ func CreateDrain(
 	u, err := url.Parse(opts.DrainURL)
 	if err != nil {
 		log.Fatalf("Invalid syslog drain URL: %s", err)
-	}
-
-	if opts.UseAgent {
-		u.Scheme = u.Scheme + "-v3"
 	}
 
 	if opts.DrainType != "" {

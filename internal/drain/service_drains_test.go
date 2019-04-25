@@ -49,24 +49,6 @@ var _ = Describe("ListDrainsClient", func() {
 		Expect(d).To(HaveLen(0))
 	})
 
-	It("sets UseAgent to true if the drain url scheme has a '-v3' suffix", func() {
-		key = "/v2/user_provided_service_instances?q=space_guid:space-guid"
-		curler.resps[key] = useAgentServiceInstanceJSON
-
-		key = "/v2/user_provided_service_instances/drain-2/service_bindings"
-		curler.resps[key] = useAgentServiceBindingJSON
-
-		key = "/v3/apps?guids=app-1"
-		curler.resps[key] = appJSONcall1
-
-		d, err := c.Drains("space-guid")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(d).To(HaveLen(1))
-
-		Expect(d[0].DrainURL).To(Equal("syslog-v3://your-app.cf-app.com"))
-		Expect(d[0].UseAgent).To(BeTrue())
-	})
-
 	Context("requesting more than apps than the batch limit", func() {
 		BeforeEach(func() {
 			key = "/v2/user_provided_service_instances?q=space_guid:space-guid"
@@ -205,6 +187,33 @@ var _ = Describe("ListDrainsClient", func() {
 
 		_, err := c.Drains("space-guid")
 		Expect(err).To(HaveOccurred())
+	})
+
+	Describe("TypeFromDrainURL", func() {
+		It("returns default type logs if no query parameters", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com")
+			Expect(drainType).To(Equal("logs"))
+		})
+
+		It("returns logs type if drain-type query parameter is logs", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=logs")
+			Expect(drainType).To(Equal("logs"))
+		})
+
+		It("returns metrics type if drain-type query parameter is metrics", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=metrics")
+			Expect(drainType).To(Equal("metrics"))
+		})
+
+		It("returns all type if drain-type query parameter is all", func() {
+			drainType, _ := c.TypeFromDrainURL("https://papertrail.com?drain-type=all")
+			Expect(drainType).To(Equal("all"))
+		})
+
+		It("returns default type if url is invalid", func() {
+			drainType, _ := c.TypeFromDrainURL("!!!so invalid")
+			Expect(drainType).To(Equal("logs"))
+		})
 	})
 })
 
@@ -481,42 +490,5 @@ var appJSONpage2 = `{
          "guid": "app-2",
          "name": "My App Two"
       }
-   ]
-}`
-
-var useAgentServiceBindingJSON = `{
-   "total_results": 1,
-   "total_pages": 1,
-   "prev_url": null,
-   "next_url": null,
-   "resources": [
-	  {
-		 "entity": {
-			"app_guid": "app-1",
-			"service_instance_guid": "drain-2",
-			"syslog_drain_url": "syslog-v3://your-app.cf-app.com",
-			"name": null,
-			"app_url": "/v2/apps/app-1"
-		 }
-	  }
-   ]
-}`
-
-var useAgentServiceInstanceJSON = `{
-   "total_results": 1,
-   "total_pages": 1,
-   "prev_url": null,
-   "next_url": null,
-   "resources": [
-	  {
-		 "metadata": {
-			"guid": "guid-2"
-		 },
-		 "entity": {
-			"name": "drain-2",
-			"syslog_drain_url": "syslog-v3://your-app.cf-app.com",
-			"service_bindings_url": "/v2/user_provided_service_instances/drain-2/service_bindings"
-		 }
-	  }
    ]
 }`

@@ -42,13 +42,12 @@ type Drain struct {
 	AppGuids []string
 	Type     string
 	DrainURL string
-	UseAgent bool
 }
 
 func (l *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
-	instances, err := l.fetchServiceInstances(
-		fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid),
-	)
+	var url string
+	url = fmt.Sprintf("/v2/user_provided_service_instances?q=space_guid:%s", spaceGuid)
+	instances, err := l.fetchServiceInstances(url)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +65,23 @@ func (l *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 		}
 		appGuids = append(appGuids, apps...)
 
-		drains = append(drains, s.drain(apps))
+		drainType, err := l.TypeFromDrainURL(s.Entity.SyslogDrainURL)
+		if err != nil {
+			return nil, err
+		}
+
+		drain, err := l.buildDrain(
+			apps,
+			s.Entity.Name,
+			s.MetaData.Guid,
+			drainType,
+			s.Entity.SyslogDrainURL,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		drains = append(drains, drain)
 	}
 
 	appNames, err := l.fetchBatchAppNames(appGuids)
@@ -76,7 +91,8 @@ func (l *ServiceDrainLister) Drains(spaceGuid string) ([]Drain, error) {
 
 	var namedDrains []Drain
 	for _, d := range drains {
-		var names, guids []string
+		var names []string
+		var guids []string
 		for _, guid := range d.Apps {
 			names = append(names, appNames[guid])
 			guids = append(guids, guid)
@@ -190,6 +206,30 @@ func (l *ServiceDrainLister) fetchAppNames(guids []string) (map[string]string, e
 	return apps, nil
 }
 
+func (l *ServiceDrainLister) TypeFromDrainURL(URL string) (string, error) {
+	uri, err := url.Parse(URL)
+	if err != nil {
+		return "", err
+	}
+
+	drainTypes := uri.Query()["drain-type"]
+	if len(drainTypes) == 0 {
+		return "logs", nil
+	} else {
+		return drainTypes[0], nil
+	}
+}
+
+func (l *ServiceDrainLister) buildDrain(apps []string, name, guid, drainType, drainURL string) (Drain, error) {
+	return Drain{
+		Name:     name,
+		Guid:     guid,
+		Apps:     apps,
+		Type:     drainType,
+		DrainURL: drainURL,
+	}, nil
+}
+
 type userProvidedServiceInstancesResponse struct {
 	NextURL   string                        `json:"next_url"`
 	Resources []userProvidedServiceInstance `json:"resources"`
@@ -204,39 +244,6 @@ type userProvidedServiceInstance struct {
 		ServiceBindingsURL string `json:"service_bindings_url"`
 		SyslogDrainURL     string `json:"syslog_drain_url"`
 	} `json:"entity"`
-}
-
-func (s userProvidedServiceInstance) drainType() string {
-	uri, err := url.Parse(s.Entity.SyslogDrainURL)
-	if err != nil {
-		return ""
-	}
-
-	drainTypes := uri.Query()["drain-type"]
-	if len(drainTypes) == 0 {
-		return "logs"
-	}
-	return drainTypes[0]
-}
-
-func (s userProvidedServiceInstance) useAgent() bool {
-	instanceURL, err := url.Parse(s.Entity.SyslogDrainURL)
-	if err != nil {
-		return false
-	}
-
-	return strings.HasSuffix(instanceURL.Scheme, "-v3")
-}
-
-func (s userProvidedServiceInstance) drain(apps []string) Drain {
-	return Drain{
-		Name:     s.Entity.Name,
-		Guid:     s.MetaData.Guid,
-		Apps:     apps,
-		Type:     s.drainType(),
-		DrainURL: s.Entity.SyslogDrainURL,
-		UseAgent: s.useAgent(),
-	}
 }
 
 type serviceBindingsResponse struct {

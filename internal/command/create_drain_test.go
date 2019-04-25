@@ -135,28 +135,6 @@ var _ = Describe("CreateDrain", func() {
 		})
 	})
 
-	Describe("use-agent flag", func() {
-		It("creates a CUPS binding with syslog-v3 scheme", func() {
-			args := []string{"app-name", "syslog://a.com?a=b", "--use-agent"}
-
-			command.CreateDrain(cli, args, logger)
-
-			Expect(cli.cliCommandArgs).To(HaveLen(2))
-			Expect(cli.cliCommandArgs[0]).To(ConsistOf(
-				"create-user-provided-service",
-				MatchRegexp("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
-				"-l",
-				"syslog-v3://a.com?a=b",
-			))
-
-			Expect(cli.cliCommandArgs[1]).To(ConsistOf(
-				"bind-service",
-				"app-name",
-				MatchRegexp("cf-drain-[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
-			))
-		})
-	})
-
 	It("fatally logs if the drain URL is invalid", func() {
 		args := []string{"app-name", "://://blablabla"}
 

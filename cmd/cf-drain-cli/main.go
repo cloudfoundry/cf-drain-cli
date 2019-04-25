@@ -95,11 +95,10 @@ func (c CFDrainCLI) GetMetadata() plugin.PluginMetadata {
 				Name:     "drain",
 				HelpText: "Creates a user provided service for syslog drains and binds it to a given application.",
 				UsageDetails: plugin.Usage{
-					Usage: "drain APP_NAME SYSLOG_DRAIN_URL [--drain-name NAME] [--type TYPE] [--use-agent]",
+					Usage: "drain APP_NAME SYSLOG_DRAIN_URL [--drain-name NAME] [--type TYPE]",
 					Options: map[string]string{
 						"-drain-name": "The name of the drain that will be created. If excluded, the drain name will be `cf-drain-UUID`.",
-						"-type":       "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`.",
-						"-use-agent":  "Use the new experimental syslog agent.",
+						"-type":       "The type of logs to be sent to the syslog drain. Available types: `logs`, `metrics`, and `all`. Default is `logs`",
 					},
 				},
 			},

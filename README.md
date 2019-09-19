@@ -32,8 +32,34 @@ go get code.cloudfoundry.org/cf-drain-cli/cmd/cf-drain-cli
 cf install-plugin $GOPATH/bin/cf-drain-cli
 ```
 
-### Usage
+### Quick Start
 
+#### Create an app Drain
+```
+cf drain my-app syslog://my-drain.com --drain-name my-drain
+```
+
+#### List all drains in a space
+```
+cf drains 
+```
+
+#### Delete a drain
+```
+cf delete-drain my-drain
+```
+
+#### Drain all apps in a space
+```
+cf drain-space syslog://my-drain.com --drain-name my-space-drain
+```
+
+#### Delete Space Drain
+```
+cf delete-drain-space my-space-drain
+```
+
+### Usage
 #### Create Drain
 ```
 $ cf drain --help

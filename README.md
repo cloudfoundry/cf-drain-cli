@@ -135,41 +135,6 @@ OPTIONS:
    --force       Skip warning prompt. Default is false.
 ```
 
-### V2 Commands
-
-**Note:**
-These commands use an API known as the RLP (Reverse Log Proxy) Gateway. The
-RLP Gateway is not necessarily deployed with CF Deployment by default. If you
-are unsure if it is available to you, please check with your operator.
-
-#### Drain Space
-
-```
-NAME:
-   v2-drain-space - Pushes app to drain all apps and services in space
-
-USAGE:
-   v2-drain-space SYSLOG_DRAIN_URL --path PATH
-
-OPTIONS:
-   --path        Path to the service drain zip file.
-   --drain-name  Name for the space drain. Required
-```
-
-### Migrate Space Drain
-
-```
-NAME:
-   v2-migrate-space-drain - Migrates space drain using CUPS to space drain using syslog-forwarder application
-
-USAGE:
-   v2-migrate-space-drain SYSLOG_DRAIN_URL
-
-OPTIONS:
-   --drain-name       Name for the space drain
-   --path             Path to the syslog-forwarder zip file. If omitted the latest release will be downloaded
-```
-
 [cf-cli]: https://code.cloudfoundry.org/cli
 [ci-badge]: https://loggregator.ci.cf-app.com/api/v1/pipelines/products/jobs/cf-drain-cli-tests/badge
 [ci-tests]: https://loggregator.ci.cf-app.com/teams/main/pipelines/products/jobs/cf-drain-cli-tests

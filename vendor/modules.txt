@@ -1,8 +1,3 @@
-# code.cloudfoundry.org/cf-drain-cli v2.0.0+incompatible
-## explicit
-code.cloudfoundry.org/cf-drain-cli/internal/cloudcontroller
-code.cloudfoundry.org/cf-drain-cli/internal/command
-code.cloudfoundry.org/cf-drain-cli/internal/drain
 # code.cloudfoundry.org/cli v6.51.0+incompatible
 ## explicit
 code.cloudfoundry.org/cli/plugin

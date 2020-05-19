@@ -1,9 +1,8 @@
-module github.com/cloudfoundry/cf-drain-cli
+module code.cloudfoundry.org/cf-drain-cli
 
 go 1.14
 
 require (
-	code.cloudfoundry.org/cf-drain-cli v2.0.0+incompatible
 	code.cloudfoundry.org/cli v6.51.0+incompatible
 	code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee // indirect
 	code.cloudfoundry.org/go-envstruct v1.5.0

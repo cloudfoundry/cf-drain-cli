@@ -1,6 +1,4 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-code.cloudfoundry.org/cf-drain-cli v2.0.0+incompatible h1:EqNZ94IYYgFFVeEmhwzoHI+dh0zK52KR3X0bpSAMNvA=
-code.cloudfoundry.org/cf-drain-cli v2.0.0+incompatible/go.mod h1:j8n0jQVOZad3sb0xkCfPpilhZviv6aPQ+dfqwMsnLWE=
 code.cloudfoundry.org/cli v6.51.0+incompatible h1:e3GuPc0ImRVJ4OywlersRNQXl08Onffp0jsy6uNYGIk=
 code.cloudfoundry.org/cli v6.51.0+incompatible/go.mod h1:e4d+EpbwevNhyTZKybrLlyTvpH+W22vMsmdmcTxs/Fo=
 code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee h1:iAAPf9s7/+BIiGf+RjgcXLm3NoZaLIJsBXJuUa63Lx8=

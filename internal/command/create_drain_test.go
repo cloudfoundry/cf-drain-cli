@@ -141,7 +141,7 @@ var _ = Describe("CreateDrain", func() {
 		Expect(func() {
 			command.CreateDrain(cli, args, logger)
 		}).To(Panic())
-		Expect(logger.fatalfMessage).To(Equal("Invalid syslog drain URL: parse ://://blablabla: missing protocol scheme"))
+		Expect(logger.fatalfMessage).To(Equal("Invalid syslog drain URL: parse \"://://blablabla\": missing protocol scheme"))
 	})
 
 	It("fatally logs if the incorrect number of arguments are given", func() {

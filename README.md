@@ -1,3 +1,6 @@
+### :warning: Deprecated :warning:
+This plugin is no longer actively maintained. This repo will be archived, and the cf-drain-cli entry in the community plugins repo removed, after June 2022.
+
 CF Drain CLI Plugin
 [![Concourse Badge][ci-badge]][ci-tests]
 ====================

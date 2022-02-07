@@ -259,10 +259,12 @@ type serviceBinding struct {
 }
 
 type appsResponse struct {
-	Apps       []appData `json:"resources"`
-	Pagination struct {
-		Next string `json:"next"`
-	} `json:pagination`
+	Apps       []appData  `json:"resources"`
+	Pagination Pagination `json:"pagination"`
+}
+
+type Pagination struct {
+	Next string `json:"next"`
 }
 
 type appData struct {
